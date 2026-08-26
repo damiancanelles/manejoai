@@ -1,0 +1,198 @@
+// manejoai data model
+// Core idea: an Account is who you do business with. An Account can be a
+// single "individual" customer, or a "multifamily" owner/management company
+// that has several Properties and several Contacts with different roles
+// (owner, sales, invoicing/AP). Jobs and Invoices always hang off an Account,
+// and optionally point at one Property when the account has several.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Staff / auth ----------
+
+enum StaffRole {
+  ADMIN // full access, e.g. Damian
+  STAFF // office/admin staff: create invoices, log jobs, manage accounts
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         StaffRole @default(STAFF)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  jobsCreated     Job[]     @relation("JobCreatedBy")
+  invoicesCreated Invoice[] @relation("InvoiceCreatedBy")
+}
+
+// ---------- Customers ----------
+
+enum AccountType {
+  INDIVIDUAL // a regular one-off/residential customer
+  MULTIFAMILY // a property owner / management company, can have many properties
+}
+
+model Account {
+  id        String      @id @default(cuid())
+  name      String // e.g. "Sunset Ridge Management LLC" or "Jane Smith"
+  type      AccountType
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  properties Property[]
+  contacts   Contact[]
+  jobs       Job[]
+  invoices   Invoice[]
+}
+
+// A physical property belonging to an account. For an INDIVIDUAL account this
+// is usually just their one address; for MULTIFAMILY accounts there can be many.
+model Property {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  name         String // e.g. "Sunset Ridge Apartments - Building C"
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  zip          String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobs     Job[]
+  invoices Invoice[]
+}
+
+enum ContactRole {
+  OWNER
+  SALES
+  INVOICING // accounts payable / billing contact
+  GENERAL
+}
+
+// A person at the account. A MULTIFAMILY account typically has one contact
+// per role (owner, sales, AP); an INDIVIDUAL account usually just has GENERAL.
+model Contact {
+  id        String      @id @default(cuid())
+  accountId String
+  account   Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  role  ContactRole
+  name  String
+  email String?
+  phone String?
+
+  // Who should get invoices / payment reminders for this account.
+  receivesInvoices Boolean @default(false)
+  receivesReminders Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------- Jobs (work performed) ----------
+
+enum JobStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
+model Job {
+  id         String    @id @default(cuid())
+  accountId  String
+  account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+
+  title       String
+  description String?
+  status      JobStatus @default(SCHEDULED)
+  scheduledAt DateTime?
+  completedAt DateTime?
+
+  createdById String
+  createdBy   User   @relation("JobCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos   JobPhoto[]
+  invoices Invoice[]
+}
+
+model JobPhoto {
+  id        String   @id @default(cuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  url       String // storage URL/key (see storage module)
+  caption   String?
+  createdAt DateTime @default(now())
+}
+
+// ---------- Invoices ----------
+
+enum InvoiceStatus {
+  DRAFT
+  SENT // invoice sent, not yet due
+  AWAITING_PAYMENT // due date passed very recently / grace period
+  OVERDUE // past the grace period, reminders active
+  PAID
+  CANCELED
+}
+
+model Invoice {
+  id         String    @id @default(cuid())
+  accountId  String
+  account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+  jobId      String?
+  job        Job?      @relation(fields: [jobId], references: [id])
+
+  invoiceNumber String   @unique // e.g. "INV-1042"
+  amountCents   Int // store money as integer cents
+  issueDate     DateTime @default(now())
+  dueDate       DateTime
+  status        InvoiceStatus @default(DRAFT)
+  notes         String?
+
+  paidAt     DateTime?
+  canceledAt DateTime?
+
+  createdById String
+  createdBy   User   @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reminders ReminderLog[]
+
+  @@index([status])
+  @@index([dueDate])
+}
+
+// One row per reminder email actually sent, so the scheduler never double-sends
+// and so staff can see the follow-up history on an invoice.
+model ReminderLog {
+  id        String   @id @default(cuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  sentAt    DateTime @default(now())
+  toEmail   String
+  subject   String
+}

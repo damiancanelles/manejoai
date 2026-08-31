@@ -1,0 +1,32 @@
+# Netlify deploy config for the web app. Build runs from the repo root
+# (npm workspaces need the install to happen there, not inside apps/web) and
+# publishes the Vite build output.
+[build]
+  command = "npm run build:web"
+  publish = "apps/web/dist"
+
+# Proxy /api/* straight through to the Heroku API. Keeps the frontend
+# calling relative paths ("/api/invoices") exactly like it does in local
+# dev, and means the browser never makes a cross-origin request - no CORS
+# config needed on top of what main.ts already has.
+#
+# Replace YOUR-HEROKU-APP with your actual Heroku app name once you have it
+# (heroku apps:info shows the URL).
+[[redirects]]
+  from = "/api/*"
+  to = "https://YOUR-HEROKU-APP.herokuapp.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://YOUR-HEROKU-APP.herokuapp.com/uploads/:splat"
+  status = 200
+  force = true
+
+# React Router client-side routing - any other path serves index.html so
+# refreshing on e.g. /invoices/123 doesn't 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

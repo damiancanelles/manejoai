@@ -6,3 +6,4 @@ build/
 apps/api/uploads/
 *.log
 .DS_Store
+*.tsbuildinfo

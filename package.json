@@ -2,6 +2,9 @@
   "name": "manejoai",
   "private": true,
   "version": "0.1.0",
+  "engines": {
+    "node": "20.x"
+  },
   "workspaces": [
     "apps/api",
     "apps/web"
@@ -13,6 +16,9 @@
     "build:web": "npm run build --workspace=@manejoai/web",
     "prisma:migrate": "npm run prisma:migrate --workspace=@manejoai/api",
     "prisma:studio": "npm run prisma:studio --workspace=@manejoai/api",
-    "seed": "npm run seed --workspace=@manejoai/api"
+    "prisma:deploy": "prisma migrate deploy --schema apps/api/prisma/schema.prisma",
+    "seed": "npm run seed --workspace=@manejoai/api",
+    "postinstall": "prisma generate --schema apps/api/prisma/schema.prisma",
+    "heroku-postbuild": "npm run build:api"
   }
 }

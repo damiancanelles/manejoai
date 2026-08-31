@@ -5,7 +5,13 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors({ origin: true, credentials: true });
+  // In dev there's no separate frontend origin (Vite proxies /api to this
+  // server, so the browser only ever talks to one origin) - FRONTEND_URL is
+  // unset and this falls back to allowing any origin. In production, once
+  // the frontend is on its own domain (e.g. Netlify), set FRONTEND_URL so
+  // only that origin is allowed.
+  const frontendUrl = process.env.FRONTEND_URL;
+  app.enableCors({ origin: frontendUrl || true, credentials: true });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

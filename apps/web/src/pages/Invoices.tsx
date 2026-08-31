@@ -10,6 +10,11 @@ interface Invoice {
   dueDate: string;
   account: { name: string };
 }
+interface SendDraftsResult {
+  sentCount: number;
+  emailCount: number;
+  skipped: { account: string; property: string | null; invoiceNumbers: string[]; reason: string }[];
+}
 
 const statuses = ['ALL', 'DRAFT', 'SENT', 'OVERDUE', 'PAID', 'CANCELED'];
 
@@ -21,37 +26,98 @@ export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [status, setStatus] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<SendDraftsResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  function load() {
     setLoading(true);
     const path = status === 'ALL' ? '/invoices' : `/invoices?status=${status}`;
     api
       .get<Invoice[]>(path)
       .then(setInvoices)
       .finally(() => setLoading(false));
-  }, [status]);
+  }
+
+  useEffect(load, [status]);
+
+  const draftCount = invoices.filter((i) => i.status === 'DRAFT').length;
+
+  async function sendAllDrafts() {
+    if (!confirm('This emails every draft invoice to its customer (grouped by property) and marks them Sent. Continue?')) {
+      return;
+    }
+    setSending(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await api.post<SendDraftsResult>('/invoices/send-drafts');
+      setResult(res);
+      load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Invoices</h1>
-        <Link to="/invoices/new" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
-          New invoice
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={sendAllDrafts}
+            disabled={sending}
+            className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+          >
+            {sending ? 'Sending...' : 'Send all drafts'}
+          </button>
+          <Link to="/invoices/new" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
+            New invoice
+          </Link>
+        </div>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        {statuses.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatus(s)}
-            className={`rounded px-3 py-1 text-sm ${
-              status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+      {error && <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+      {result && (
+        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          <p>
+            Sent {result.sentCount} invoice{result.sentCount === 1 ? '' : 's'} in {result.emailCount} email
+            {result.emailCount === 1 ? '' : 's'}.
+          </p>
+          {result.skipped.length > 0 && (
+            <div className="mt-2 border-t border-green-200 pt-2 text-amber-800">
+              <p className="font-medium">Skipped (no contact marked to receive invoices):</p>
+              <ul className="mt-1 list-disc pl-5">
+                {result.skipped.map((s, i) => (
+                  <li key={i}>
+                    {s.account}
+                    {s.property && ` — ${s.property}`}: {s.invoiceNumbers.join(', ')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex gap-2">
+          {statuses.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatus(s)}
+              className={`rounded px-3 py-1 text-sm ${
+                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        {draftCount > 0 && <p className="text-sm text-slate-500">{draftCount} draft(s) currently shown</p>}
       </div>
 
       {loading ? (

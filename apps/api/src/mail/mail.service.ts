@@ -1,10 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 export interface SendEmailInput {
   to: string;
   subject: string;
   html: string;
+  attachments?: EmailAttachment[];
 }
 
 /**
@@ -32,7 +39,10 @@ export class MailService {
     if (this.driver === 'resend') {
       return this.sendViaResend(input);
     }
-    this.logger.log(`[console-mail] To: ${input.to} | Subject: ${input.subject}\n${input.html}`);
+    const attachmentNote = input.attachments?.length
+      ? ` | Attachments: ${input.attachments.map((a) => a.filename).join(', ')}`
+      : '';
+    this.logger.log(`[console-mail] To: ${input.to} | Subject: ${input.subject}${attachmentNote}\n${input.html}`);
   }
 
   private async sendViaResend(input: SendEmailInput): Promise<void> {
@@ -55,6 +65,11 @@ export class MailService {
         to: input.to,
         subject: input.subject,
         html: input.html,
+        // Resend wants attachment content as base64 (https://resend.com/docs/api-reference/emails/send-email)
+        attachments: input.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content.toString('base64'),
+        })),
       }),
     });
 

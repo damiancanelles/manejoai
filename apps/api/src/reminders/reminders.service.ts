@@ -73,12 +73,18 @@ export class RemindersService {
 
       if (!dueForFirstReminder && !dueForFollowup) continue;
 
+      // A contact scoped to a property (propertyId set) only gets reminders
+      // for that property's invoices; a whole-account contact (propertyId
+      // null) gets reminders for every invoice on the account, including
+      // ones not tied to any property.
       const recipients = invoice.account.contacts.filter(
-        (c) => c.receivesReminders || c.role === ContactRole.INVOICING,
+        (c) =>
+          (c.propertyId === null || c.propertyId === invoice.propertyId) &&
+          (c.receivesReminders || c.role === ContactRole.INVOICING),
       );
       if (recipients.length === 0) {
         this.logger.warn(
-          `Invoice ${invoice.invoiceNumber} is overdue but account "${invoice.account.name}" has no contact marked to receive reminders - skipping`,
+          `Invoice ${invoice.invoiceNumber} is overdue but account "${invoice.account.name}" has no contact marked to receive reminders for it - skipping`,
         );
         continue;
       }

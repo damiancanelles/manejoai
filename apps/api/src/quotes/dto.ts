@@ -1,18 +1,7 @@
 import { Type } from 'class-transformer';
-import {
-  ArrayMinSize,
-  IsArray,
-  IsDateString,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Min,
-  ValidateNested,
-} from 'class-validator';
-import { InvoiceStatus } from '@prisma/client';
+import { ArrayMinSize, IsArray, IsDateString, IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 
-export class InvoiceItemInputDto {
+export class QuoteItemInputDto {
   @IsString()
   description!: string;
 
@@ -26,7 +15,7 @@ export class InvoiceItemInputDto {
   unitPriceCents!: number;
 }
 
-export class UpdateInvoiceItemDto {
+export class UpdateQuoteItemDto {
   @IsOptional()
   @IsString()
   description?: string;
@@ -42,7 +31,7 @@ export class UpdateInvoiceItemDto {
   unitPriceCents?: number;
 }
 
-export class CreateInvoiceDto {
+export class CreateQuoteDto {
   @IsString()
   accountId!: string;
 
@@ -54,36 +43,26 @@ export class CreateInvoiceDto {
   @IsString()
   jobId?: string;
 
-  // The invoice total isn't entered directly - it's the sum of these line
-  // items (quantity * unitPriceCents), computed server-side.
+  // The quote total isn't entered directly - it's the sum of these line
+  // items (quantity * unitPriceCents), computed server-side. Same rule as
+  // invoices.
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
-  @Type(() => InvoiceItemInputDto)
-  items!: InvoiceItemInputDto[];
+  @Type(() => QuoteItemInputDto)
+  items!: QuoteItemInputDto[];
 
   @IsOptional()
   @IsDateString()
   issueDate?: string;
-
-  @IsDateString()
-  dueDate!: string;
 
   @IsOptional()
   @IsString()
   notes?: string;
 }
 
-export class UpdateInvoiceDto {
-  @IsOptional()
-  @IsDateString()
-  dueDate?: string;
-
+export class UpdateQuoteDto {
   @IsOptional()
   @IsString()
   notes?: string;
-
-  @IsOptional()
-  @IsEnum(InvoiceStatus)
-  status?: InvoiceStatus;
 }

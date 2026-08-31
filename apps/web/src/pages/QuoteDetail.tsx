@@ -1,66 +1,49 @@
 import { FormEvent, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
-import { downloadInvoicePdf } from '../lib/invoicePdf';
 
-interface Reminder {
-  id: string;
-  sentAt: string;
-  toEmail: string;
-}
-interface InvoiceItem {
+interface QuoteItem {
   id: string;
   description: string;
   quantity: number;
   unitPriceCents: number;
 }
-interface Invoice {
+interface Quote {
   id: string;
-  invoiceNumber: string;
+  quoteNumber: string;
   amountCents: number;
   status: string;
   issueDate: string;
-  dueDate: string;
   notes?: string;
+  approvedAt?: string | null;
   account: { id: string; name: string };
-  property?: {
-    name: string;
-    addressLine1: string;
-    addressLine2?: string | null;
-    city: string;
-    state: string;
-    zip: string;
-  } | null;
+  property?: { name: string } | null;
   job?: { title: string } | null;
-  items: InvoiceItem[];
-  reminders: Reminder[];
+  invoice?: { id: string; invoiceNumber: string } | null;
+  items: QuoteItem[];
 }
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export default function InvoiceDetail() {
+export default function QuoteDetail() {
   const { id } = useParams<{ id: string }>();
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const navigate = useNavigate();
+  const [quote, setQuote] = useState<Quote | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [approving, setApproving] = useState(false);
 
   function load() {
     if (!id) return;
-    api.get<Invoice>(`/invoices/${id}`).then(setInvoice);
+    api.get<Quote>(`/quotes/${id}`).then(setQuote);
   }
 
   useEffect(load, [id]);
 
-  async function action(path: string) {
-    if (!id) return;
-    await api.post(`/invoices/${id}/${path}`);
-    load();
-  }
-
-  const locked = invoice?.status === 'PAID' || invoice?.status === 'CANCELED';
+  const locked = quote?.status === 'APPROVED';
 
   async function addItem(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -68,7 +51,7 @@ export default function InvoiceDetail() {
     setError(null);
     const form = new FormData(e.currentTarget);
     try {
-      await api.post(`/invoices/${id}/items`, {
+      await api.post(`/quotes/${id}/items`, {
         description: form.get('description'),
         quantity: Number(form.get('quantity')),
         unitPriceCents: Math.round(Number(form.get('unitPrice') || 0) * 100),
@@ -86,7 +69,7 @@ export default function InvoiceDetail() {
     setError(null);
     const form = new FormData(e.currentTarget);
     try {
-      await api.patch(`/invoices/${id}/items/${itemId}`, {
+      await api.patch(`/quotes/${id}/items/${itemId}`, {
         description: form.get('description'),
         quantity: Number(form.get('quantity')),
         unitPriceCents: Math.round(Number(form.get('unitPrice') || 0) * 100),
@@ -102,54 +85,83 @@ export default function InvoiceDetail() {
     if (!id) return;
     setError(null);
     try {
-      await api.delete(`/invoices/${id}/items/${itemId}`);
+      await api.delete(`/quotes/${id}/items/${itemId}`);
       load();
     } catch (err: any) {
       setError(err.message);
     }
   }
 
-  if (!invoice) return <p>Loading...</p>;
+  async function approve() {
+    if (!id) return;
+    setError(null);
+    setApproving(true);
+    try {
+      await api.post(`/quotes/${id}/approve`);
+      load();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setApproving(false);
+    }
+  }
+
+  async function removeQuote() {
+    if (!id) return;
+    setError(null);
+    try {
+      await api.delete(`/quotes/${id}`);
+      navigate('/quotes');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  if (!quote) return <p>Loading...</p>;
 
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{invoice.invoiceNumber}</h1>
-          <Link to={`/accounts/${invoice.account.id}`} className="text-sm text-blue-600 hover:underline">
-            {invoice.account.name}
+          <h1 className="text-2xl font-bold">{quote.quoteNumber}</h1>
+          <Link to={`/accounts/${quote.account.id}`} className="text-sm text-blue-600 hover:underline">
+            {quote.account.name}
           </Link>
-          {invoice.property && <span className="text-sm text-slate-500"> — {invoice.property.name}</span>}
+          {quote.property && <span className="text-sm text-slate-500"> — {quote.property.name}</span>}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => downloadInvoicePdf(invoice)}
-            className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
-          >
-            Download PDF
-          </button>
-          <span className="rounded bg-slate-100 px-2 py-1 text-sm font-medium">{invoice.status}</span>
-        </div>
+        <span
+          className={`rounded px-2 py-1 text-sm font-medium ${
+            locked ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
+          }`}
+        >
+          {quote.status}
+        </span>
       </div>
 
       {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
+      {locked && quote.invoice && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+          Approved {quote.approvedAt && `on ${new Date(quote.approvedAt).toLocaleDateString()}`} — converted to{' '}
+          <Link to={`/invoices/${quote.invoice.id}`} className="font-medium underline">
+            invoice {quote.invoice.invoiceNumber}
+          </Link>
+          .
+        </div>
+      )}
+
       <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
         <div className="mb-2 flex justify-between">
           <span className="text-slate-500">Issued</span>
-          <span>{new Date(invoice.issueDate).toLocaleDateString()}</span>
+          <span>{new Date(quote.issueDate).toLocaleDateString()}</span>
         </div>
-        <div className="mb-2 flex justify-between">
-          <span className="text-slate-500">Due</span>
-          <span>{new Date(invoice.dueDate).toLocaleDateString()}</span>
-        </div>
-        {invoice.job && (
+        {quote.job && (
           <div className="mb-2 flex justify-between">
             <span className="text-slate-500">Job</span>
-            <span>{invoice.job.title}</span>
+            <span>{quote.job.title}</span>
           </div>
         )}
-        {invoice.notes && <p className="mt-2 border-t border-slate-100 pt-2 text-slate-600">{invoice.notes}</p>}
+        {quote.notes && <p className="mt-2 border-t border-slate-100 pt-2 text-slate-600">{quote.notes}</p>}
       </div>
 
       <section>
@@ -174,7 +186,7 @@ export default function InvoiceDetail() {
               </tr>
             </thead>
             <tbody>
-              {invoice.items.map((item) =>
+              {quote.items.map((item) =>
                 editingItemId === item.id ? (
                   <tr key={item.id} className="border-t border-slate-100">
                     <td colSpan={locked ? 4 : 5} className="px-3 py-2">
@@ -229,7 +241,7 @@ export default function InvoiceDetail() {
                         </button>
                         <button
                           onClick={() => removeItem(item.id)}
-                          disabled={invoice.items.length === 1}
+                          disabled={quote.items.length === 1}
                           className="text-slate-400 hover:text-red-600 disabled:opacity-30"
                         >
                           Remove
@@ -282,7 +294,7 @@ export default function InvoiceDetail() {
                 <td colSpan={3} className="px-3 py-2 text-right">
                   Total
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">{money(invoice.amountCents)}</td>
+                <td className="px-3 py-2 text-right tabular-nums">{money(quote.amountCents)}</td>
                 {!locked && <td></td>}
               </tr>
             </tfoot>
@@ -290,35 +302,20 @@ export default function InvoiceDetail() {
         </div>
       </section>
 
-      <div className="flex gap-2">
-        {invoice.status === 'DRAFT' && (
-          <button onClick={() => action('mark-sent')} className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
-            Mark as sent
+      {!locked && (
+        <div className="flex gap-2">
+          <button
+            onClick={approve}
+            disabled={approving}
+            className="rounded bg-green-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+          >
+            {approving ? 'Approving...' : 'Approve → create invoice'}
           </button>
-        )}
-        {!locked && (
-          <>
-            <button onClick={() => action('mark-paid')} className="rounded bg-green-600 px-4 py-2 text-sm text-white">
-              Mark as paid
-            </button>
-            <button onClick={() => action('cancel')} className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-700">
-              Cancel
-            </button>
-          </>
-        )}
-      </div>
-
-      <section>
-        <h2 className="mb-2 text-lg font-semibold">Reminder history</h2>
-        <ul className="space-y-1 text-sm">
-          {invoice.reminders.map((r) => (
-            <li key={r.id} className="rounded border border-slate-200 bg-white px-3 py-2">
-              Sent to {r.toEmail} on {new Date(r.sentAt).toLocaleString()}
-            </li>
-          ))}
-          {invoice.reminders.length === 0 && <li className="text-slate-400">No reminders sent yet.</li>}
-        </ul>
-      </section>
+          <button onClick={removeQuote} className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-700">
+            Delete quote
+          </button>
+        </div>
+      )}
     </div>
   );
 }

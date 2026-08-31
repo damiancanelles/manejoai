@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { JobStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JobsService } from './jobs.service';
@@ -28,8 +29,14 @@ export class JobsController {
   }
 
   @Get()
-  findForAccount(@Query('accountId') accountId: string) {
-    return this.jobsService.findForAccount(accountId);
+  findAll(
+    @Query('status') status?: JobStatus,
+    @Query('accountId') accountId?: string,
+    @Query('search') search?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.jobsService.findAll({ status, accountId, search, dateFrom, dateTo });
   }
 
   @Get(':id')

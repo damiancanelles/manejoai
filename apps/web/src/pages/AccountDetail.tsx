@@ -18,6 +18,7 @@ interface Contact {
   phone?: string;
   receivesInvoices: boolean;
   receivesReminders: boolean;
+  property?: { id: string; name: string } | null;
 }
 interface Job {
   id: string;
@@ -32,6 +33,13 @@ interface Invoice {
   status: string;
   dueDate: string;
 }
+interface Quote {
+  id: string;
+  quoteNumber: string;
+  amountCents: number;
+  status: string;
+  issueDate: string;
+}
 interface Account {
   id: string;
   name: string;
@@ -39,6 +47,7 @@ interface Account {
   properties: Property[];
   contacts: Contact[];
   jobs: Job[];
+  quotes: Quote[];
   invoices: Invoice[];
 }
 
@@ -82,6 +91,7 @@ export default function AccountDetail() {
     const form = new FormData(e.currentTarget);
     await api.post('/contacts', {
       accountId: id,
+      propertyId: (form.get('propertyId') as string) || undefined,
       role: form.get('role'),
       name: form.get('name'),
       email: form.get('email') || undefined,
@@ -167,6 +177,19 @@ export default function AccountDetail() {
               <input name="email" placeholder="Email" type="email" className="rounded border border-slate-300 px-2 py-1" />
               <input name="phone" placeholder="Phone" className="rounded border border-slate-300 px-2 py-1" />
             </div>
+            {account.properties.length > 0 && (
+              <label className="block">
+                Property (optional — leave as "Whole account" for someone like the parent company's AP contact)
+                <select name="propertyId" className="mt-1 w-full rounded border border-slate-300 px-2 py-1">
+                  <option value="">Whole account</option>
+                  {account.properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="mr-4 inline-flex items-center gap-1">
               <input type="checkbox" name="receivesInvoices" /> Gets invoices
             </label>
@@ -182,6 +205,11 @@ export default function AccountDetail() {
           {account.contacts.map((c) => (
             <li key={c.id} className="rounded border border-slate-200 bg-white px-3 py-2">
               <span className="font-medium">{c.name}</span> ({c.role}) — {c.email || 'no email'}
+              {c.property ? (
+                <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{c.property.name}</span>
+              ) : (
+                <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">whole account</span>
+              )}
               {c.receivesReminders && <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">reminders</span>}
             </li>
           ))}
@@ -216,6 +244,27 @@ export default function AccountDetail() {
             </li>
           ))}
           {account.jobs.length === 0 && <li className="text-slate-400">No jobs logged yet.</li>}
+        </ul>
+      </section>
+
+      {/* Quotes */}
+      <section>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Quotes</h2>
+          <Link to={`/quotes/new?accountId=${id}`} className="text-sm text-blue-600">
+            + New quote
+          </Link>
+        </div>
+        <ul className="space-y-1 text-sm">
+          {account.quotes.map((q) => (
+            <li key={q.id} className="rounded border border-slate-200 bg-white px-3 py-2">
+              <Link to={`/quotes/${q.id}`} className="font-medium text-blue-600 hover:underline">
+                {q.quoteNumber}
+              </Link>{' '}
+              — {money(q.amountCents)} — {q.status} — issued {new Date(q.issueDate).toLocaleDateString()}
+            </li>
+          ))}
+          {account.quotes.length === 0 && <li className="text-slate-400">No quotes yet.</li>}
         </ul>
       </section>
 

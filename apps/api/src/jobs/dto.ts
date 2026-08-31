@@ -28,6 +28,15 @@ export class CreateJobDto {
 export class UpdateJobDto {
   @IsOptional()
   @IsString()
+  accountId?: string;
+
+  // null clears the property (e.g. after moving to a different customer)
+  @IsOptional()
+  @IsString()
+  propertyId?: string | null;
+
+  @IsOptional()
+  @IsString()
   title?: string;
 
   @IsOptional()
@@ -38,9 +47,10 @@ export class UpdateJobDto {
   @IsEnum(JobStatus)
   status?: JobStatus;
 
+  // null clears the scheduled date
   @IsOptional()
   @IsDateString()
-  scheduledAt?: string;
+  scheduledAt?: string | null;
 
   @IsOptional()
   @IsDateString()

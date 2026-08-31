@@ -11,6 +11,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
+    "seed:demo": "ts-node scripts/seed-demo-data.ts",
     "import:excel": "ts-node scripts/import-excel.ts"
   },
   "dependencies": {
@@ -26,6 +27,8 @@
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "multer": "^1.4.5-lts.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

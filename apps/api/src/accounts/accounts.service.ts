@@ -13,7 +13,7 @@ export class AccountsService {
   findAll() {
     return this.prisma.account.findMany({
       orderBy: { name: 'asc' },
-      include: { properties: true, contacts: true },
+      include: { properties: true, contacts: { include: { property: true } } },
     });
   }
 
@@ -22,8 +22,9 @@ export class AccountsService {
       where: { id },
       include: {
         properties: true,
-        contacts: true,
+        contacts: { include: { property: true } },
         jobs: { orderBy: { createdAt: 'desc' }, include: { photos: true } },
+        quotes: { orderBy: { issueDate: 'desc' } },
         invoices: { orderBy: { issueDate: 'desc' } },
       },
     });

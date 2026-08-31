@@ -11,6 +11,7 @@ import { AccountsModule } from './accounts/accounts.module';
 import { PropertiesModule } from './properties/properties.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { JobsModule } from './jobs/jobs.module';
+import { QuotesModule } from './quotes/quotes.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MailModule } from './mail/mail.module';
@@ -34,6 +35,7 @@ import { StorageModule } from './storage/storage.module';
     PropertiesModule,
     ContactsModule,
     JobsModule,
+    QuotesModule,
     InvoicesModule,
     RemindersModule,
   ],

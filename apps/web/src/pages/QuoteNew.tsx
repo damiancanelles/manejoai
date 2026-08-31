@@ -18,22 +18,11 @@ function emptyRow(): ItemRow {
   return { description: '', quantity: '1', unitPrice: '' };
 }
 
-// 30 days from today, in local time (not UTC - toISOString() would shift the
-// date back a day for anyone west of UTC).
-function defaultDueDate() {
-  const d = new Date();
-  d.setDate(d.getDate() + 30);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-export default function InvoiceNew() {
+export default function QuoteNew() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -92,15 +81,14 @@ export default function InvoiceNew() {
     }
 
     try {
-      const invoice = await api.post<{ id: string }>('/invoices', {
+      const quote = await api.post<{ id: string }>('/quotes', {
         accountId,
         propertyId: (form.get('propertyId') as string) || undefined,
         jobId: (form.get('jobId') as string) || undefined,
         items: parsedItems,
-        dueDate: new Date(form.get('dueDate') as string).toISOString(),
         notes: (form.get('notes') as string) || undefined,
       });
-      navigate(`/invoices/${invoice.id}`);
+      navigate(`/quotes/${quote.id}`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -108,7 +96,7 @@ export default function InvoiceNew() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold">New invoice</h1>
+      <h1 className="mb-6 text-2xl font-bold">New quote</h1>
       {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
       <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
         <label className="block text-sm">
@@ -241,23 +229,12 @@ export default function InvoiceNew() {
         </div>
 
         <label className="block text-sm">
-          Due date
-          <input
-            name="dueDate"
-            type="date"
-            defaultValue={defaultDueDate()}
-            required
-            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
-          />
-        </label>
-
-        <label className="block text-sm">
           Notes (optional)
           <textarea name="notes" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
         </label>
 
         <button type="submit" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
-          Create invoice
+          Create quote
         </button>
       </form>
     </div>

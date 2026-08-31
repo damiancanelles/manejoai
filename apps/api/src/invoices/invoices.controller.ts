@@ -3,7 +3,7 @@ import { InvoiceStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceDto, UpdateInvoiceDto } from './dto';
+import { CreateInvoiceDto, InvoiceItemInputDto, UpdateInvoiceDto, UpdateInvoiceItemDto } from './dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('invoices')
@@ -16,8 +16,14 @@ export class InvoicesController {
   }
 
   @Get()
-  findAll(@Query('status') status?: InvoiceStatus, @Query('accountId') accountId?: string) {
-    return this.invoicesService.findAll({ status, accountId });
+  findAll(
+    @Query('status') status?: InvoiceStatus,
+    @Query('accountId') accountId?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('full') full?: string,
+  ) {
+    return this.invoicesService.findAll({ status, accountId, dateFrom, dateTo, full: full === 'true' });
   }
 
   @Get(':id')
@@ -28,6 +34,40 @@ export class InvoicesController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateInvoiceDto) {
     return this.invoicesService.update(id, dto);
+  }
+
+  @Post('send-drafts')
+  sendAllDrafts() {
+    return this.invoicesService.sendAllDrafts();
+  }
+
+  @Post('send-report')
+  sendInvoicesReport(
+    @Query('status') status?: InvoiceStatus,
+    @Query('accountId') accountId?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.invoicesService.sendInvoicesReport({ status, accountId, dateFrom, dateTo });
+  }
+
+  @Post(':id/items')
+  addItem(@Param('id') id: string, @Body() dto: InvoiceItemInputDto) {
+    return this.invoicesService.addItem(id, dto);
+  }
+
+  @Patch(':id/items/:itemId')
+  updateItem(
+    @Param('id') id: string,
+    @Param('itemId') itemId: string,
+    @Body() dto: UpdateInvoiceItemDto,
+  ) {
+    return this.invoicesService.updateItem(id, itemId, dto);
+  }
+
+  @Delete(':id/items/:itemId')
+  removeItem(@Param('id') id: string, @Param('itemId') itemId: string) {
+    return this.invoicesService.removeItem(id, itemId);
   }
 
   @Post(':id/mark-sent')

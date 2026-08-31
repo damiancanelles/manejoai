@@ -32,6 +32,7 @@ model User {
 
   jobsCreated     Job[]     @relation("JobCreatedBy")
   invoicesCreated Invoice[] @relation("InvoiceCreatedBy")
+  quotesCreated   Quote[]   @relation("QuoteCreatedBy")
 }
 
 // ---------- Customers ----------
@@ -53,6 +54,7 @@ model Account {
   contacts   Contact[]
   jobs       Job[]
   invoices   Invoice[]
+  quotes     Quote[]
 }
 
 // A physical property belonging to an account. For an INDIVIDUAL account this
@@ -74,6 +76,8 @@ model Property {
 
   jobs     Job[]
   invoices Invoice[]
+  contacts Contact[]
+  quotes   Quote[]
 }
 
 enum ContactRole {
@@ -85,10 +89,17 @@ enum ContactRole {
 
 // A person at the account. A MULTIFAMILY account typically has one contact
 // per role (owner, sales, AP); an INDIVIDUAL account usually just has GENERAL.
+// A contact can optionally be scoped to one Property - a multifamily account
+// often has a different owner/sales/AP contact per building rather than one
+// set of contacts for the whole account. Leaving propertyId unset means the
+// contact applies to the account as a whole (e.g. the parent company's AP
+// contact).
 model Contact {
   id        String      @id @default(cuid())
   accountId String
   account   Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?  @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   role  ContactRole
   name  String
@@ -133,6 +144,7 @@ model Job {
 
   photos   JobPhoto[]
   invoices Invoice[]
+  quotes   Quote[]
 }
 
 model JobPhoto {
@@ -142,6 +154,62 @@ model JobPhoto {
   url       String // storage URL/key (see storage module)
   caption   String?
   createdAt DateTime @default(now())
+}
+
+// ---------- Quotes (pre-invoice proposals) ----------
+
+enum QuoteStatus {
+  PENDING // waiting on the customer's decision
+  APPROVED // customer signed off - converted to an Invoice (see Quote.invoice)
+}
+
+// A quote is a proposed invoice: same shape (account/property/job + line
+// items), but nothing is owed yet. Once approved, ApproveQuote copies its
+// items onto a brand-new Invoice (quoteId is set on that Invoice via the
+// inverse of this relation) and the quote itself becomes read-only history.
+model Quote {
+  id         String    @id @default(cuid())
+  accountId  String
+  account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+  jobId      String?
+  job        Job?      @relation(fields: [jobId], references: [id])
+
+  quoteNumber String      @unique // e.g. "QUO-1001"
+  // Always the sum of this quote's items - same rule as Invoice.amountCents.
+  amountCents Int
+  issueDate   DateTime    @default(now())
+  status      QuoteStatus @default(PENDING)
+  notes       String?
+
+  approvedAt DateTime?
+  // Set once approved. A quote converts to at most one invoice.
+  invoiceId String?  @unique
+  invoice   Invoice? @relation("QuoteToInvoice", fields: [invoiceId], references: [id])
+
+  createdById String
+  createdBy   User   @relation("QuoteCreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items QuoteItem[]
+}
+
+// One line item on a quote - identical shape to InvoiceItem, copied over
+// verbatim when the quote is approved.
+model QuoteItem {
+  id      String @id @default(cuid())
+  quoteId String
+  quote   Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  description    String
+  quantity       Int @default(1)
+  unitPriceCents Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ---------- Invoices ----------
@@ -165,7 +233,11 @@ model Invoice {
   job        Job?      @relation(fields: [jobId], references: [id])
 
   invoiceNumber String   @unique // e.g. "INV-1042"
-  amountCents   Int // store money as integer cents
+  // Always the sum of this invoice's items (quantity * unitPriceCents),
+  // recomputed server-side whenever an item is added/changed/removed - never
+  // set directly. Kept as a real column so listing/sorting by amount doesn't
+  // need to join+sum every time.
+  amountCents   Int
   issueDate     DateTime @default(now())
   dueDate       DateTime
   status        InvoiceStatus @default(DRAFT)
@@ -181,9 +253,27 @@ model Invoice {
   updatedAt DateTime @updatedAt
 
   reminders ReminderLog[]
+  items     InvoiceItem[]
+  quote     Quote? @relation("QuoteToInvoice")
 
   @@index([status])
   @@index([dueDate])
+}
+
+// One line item on an invoice, e.g. "Interior paint - Unit 101" x2 @ $150.
+// lineTotalCents (quantity * unitPriceCents) isn't stored - it's cheap to
+// compute on read, and storing it risks drifting from quantity/unitPriceCents.
+model InvoiceItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description    String
+  quantity       Int @default(1)
+  unitPriceCents Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // One row per reminder email actually sent, so the scheduler never double-sends

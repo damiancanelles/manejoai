@@ -20,8 +20,17 @@ export default function Layout() {
           <NavLink to="/accounts" className={linkClass}>
             Customers
           </NavLink>
+          <NavLink to="/jobs" className={linkClass}>
+            Jobs
+          </NavLink>
+          <NavLink to="/quotes" className={linkClass}>
+            Quotes
+          </NavLink>
           <NavLink to="/invoices" className={linkClass}>
             Invoices
+          </NavLink>
+          <NavLink to="/reports" className={linkClass}>
+            Reports
           </NavLink>
         </nav>
         <div className="mt-8 border-t border-slate-200 pt-4 text-sm text-slate-500">

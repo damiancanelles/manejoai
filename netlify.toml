@@ -9,18 +9,15 @@
 # calling relative paths ("/api/invoices") exactly like it does in local
 # dev, and means the browser never makes a cross-origin request - no CORS
 # config needed on top of what main.ts already has.
-#
-# Replace YOUR-HEROKU-APP with your actual Heroku app name once you have it
-# (heroku apps:info shows the URL).
 [[redirects]]
   from = "/api/*"
-  to = "https://YOUR-HEROKU-APP.herokuapp.com/api/:splat"
+  to = "https://manejoai-api-e635869ff3d6.herokuapp.com/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/uploads/*"
-  to = "https://YOUR-HEROKU-APP.herokuapp.com/uploads/:splat"
+  to = "https://manejoai-api-e635869ff3d6.herokuapp.com/uploads/:splat"
   status = 200
   force = true
 

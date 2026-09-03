@@ -51,9 +51,9 @@ export class RemindersService {
   }
 
   /** SENT invoices whose due date has passed become OVERDUE. */
-  async flagOverdueInvoices() {
+  async flagOverdueInvoices(accountId?: string) {
     const result = await this.prisma.invoice.updateMany({
-      where: { status: InvoiceStatus.SENT, dueDate: { lt: new Date() } },
+      where: { status: InvoiceStatus.SENT, dueDate: { lt: new Date() }, accountId },
       data: { status: InvoiceStatus.OVERDUE },
     });
     if (result.count > 0) {
@@ -65,13 +65,16 @@ export class RemindersService {
   /**
    * One email per property (or whole account) listing every overdue invoice
    * that's cleared the grace period, sent to that property's contact.
+   * Pass accountId to scope this to one customer - used by the "Send
+   * payment reminder" button on the account page for an on-demand send
+   * outside the normal weekly schedule, same logic either way.
    */
-  async sendOverdueDigest() {
+  async sendOverdueDigest(accountId?: string) {
     const gracePeriodDays = Number(this.config.get('REMINDER_GRACE_PERIOD_DAYS', 14));
     const now = Date.now();
 
     const overdueInvoices = await this.prisma.invoice.findMany({
-      where: { status: InvoiceStatus.OVERDUE },
+      where: { status: InvoiceStatus.OVERDUE, accountId },
       include: { account: { include: { contacts: true } }, property: true },
     });
 

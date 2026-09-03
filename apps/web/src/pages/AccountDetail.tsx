@@ -50,6 +50,12 @@ interface Account {
   quotes: Quote[];
   invoices: Invoice[];
 }
+interface ReminderResult {
+  flaggedOverdue: number;
+  invoicesIncluded: number;
+  emailsSent: number;
+  skipped: { account: string; property: string | null; invoiceNumbers: string[] }[];
+}
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -61,6 +67,9 @@ export default function AccountDetail() {
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
   const [showJobForm, setShowJobForm] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [reminderResult, setReminderResult] = useState<ReminderResult | null>(null);
+  const [reminderError, setReminderError] = useState<string | null>(null);
 
   function load() {
     if (!id) return;
@@ -103,6 +112,28 @@ export default function AccountDetail() {
     load();
   }
 
+  async function sendPaymentReminder() {
+    if (
+      !confirm(
+        "This finds this customer's overdue invoices and emails a reminder to each property's contact, same as the weekly automated reminder. Continue?",
+      )
+    ) {
+      return;
+    }
+    setSendingReminder(true);
+    setReminderError(null);
+    setReminderResult(null);
+    try {
+      const res = await api.post<ReminderResult>(`/reminders/run?accountId=${id}`);
+      setReminderResult(res);
+      load();
+    } catch (err: any) {
+      setReminderError(err.message);
+    } finally {
+      setSendingReminder(false);
+    }
+  }
+
   async function addJob(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
@@ -117,12 +148,48 @@ export default function AccountDetail() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold">{account.name}</h1>
-        <p className="text-sm text-slate-500">
-          {account.type === 'MULTIFAMILY' ? 'Multifamily / property owner' : 'Individual customer'}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">{account.name}</h1>
+          <p className="text-sm text-slate-500">
+            {account.type === 'MULTIFAMILY' ? 'Multifamily / property owner' : 'Individual customer'}
+          </p>
+        </div>
+        <button
+          onClick={sendPaymentReminder}
+          disabled={sendingReminder}
+          className="shrink-0 rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+        >
+          {sendingReminder ? 'Sending...' : 'Send payment reminder'}
+        </button>
       </div>
+
+      {reminderError && <div className="rounded bg-red-50 p-3 text-sm text-red-700">{reminderError}</div>}
+
+      {reminderResult && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          {reminderResult.emailsSent > 0 ? (
+            <p>
+              Sent {reminderResult.emailsSent} reminder email{reminderResult.emailsSent === 1 ? '' : 's'} covering{' '}
+              {reminderResult.invoicesIncluded} overdue invoice{reminderResult.invoicesIncluded === 1 ? '' : 's'}.
+            </p>
+          ) : (
+            <p>No reminder emails to send — nothing overdue past the grace period right now.</p>
+          )}
+          {reminderResult.skipped.length > 0 && (
+            <div className="mt-2 border-t border-green-200 pt-2 text-amber-800">
+              <p className="font-medium">Skipped (no contact marked to receive reminders):</p>
+              <ul className="mt-1 list-disc pl-5">
+                {reminderResult.skipped.map((s, i) => (
+                  <li key={i}>
+                    {s.property || 'Whole account'}: {s.invoiceNumbers.join(', ')}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Properties */}
       <section>

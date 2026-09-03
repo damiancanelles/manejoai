@@ -7,11 +7,12 @@ import { RemindersService } from './reminders.service';
 export class RemindersController {
   constructor(private remindersService: RemindersService) {}
 
-  // Manual trigger for testing without waiting for the daily cron.
+  // Manual trigger for testing without waiting for the daily flagging /
+  // weekly digest cron jobs.
   @Post('run')
   async run() {
-    const flagged = await this.remindersService.flagOverdueInvoices();
-    const sent = await this.remindersService.sendDueReminders();
-    return { flaggedOverdue: flagged, remindersSent: sent };
+    const flaggedOverdue = await this.remindersService.flagOverdueInvoices();
+    const digest = await this.remindersService.sendOverdueDigest();
+    return { flaggedOverdue, ...digest };
   }
 }

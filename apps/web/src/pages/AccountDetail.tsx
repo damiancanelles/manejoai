@@ -1,6 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import StatTile from '../components/StatTile';
+import MonthlyIncomeChart from '../components/MonthlyIncomeChart';
+import RankedTable from '../components/RankedTable';
+import { sumByStatus, monthlyIncome, incomeByProperty, money } from '../lib/invoiceStats';
 
 interface Property {
   id: string;
@@ -32,6 +36,9 @@ interface Invoice {
   amountCents: number;
   status: string;
   dueDate: string;
+  issueDate: string;
+  paidAt?: string | null;
+  propertyId?: string | null;
 }
 interface Quote {
   id: string;
@@ -55,10 +62,6 @@ interface ReminderResult {
   invoicesIncluded: number;
   emailsSent: number;
   skipped: { account: string; property: string | null; invoiceNumbers: string[] }[];
-}
-
-function money(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
 }
 
 export default function AccountDetail() {
@@ -146,6 +149,12 @@ export default function AccountDetail() {
     load();
   }
 
+  const paidTotal = sumByStatus(account.invoices, 'PAID');
+  const overdueTotal = sumByStatus(account.invoices, 'OVERDUE');
+  const monthly = monthlyIncome(account.invoices);
+  const propertyNames = new Map(account.properties.map((p) => [p.id, p.name]));
+  const byProperty = incomeByProperty(account.invoices, propertyNames);
+
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between">
@@ -190,6 +199,24 @@ export default function AccountDetail() {
           )}
         </div>
       )}
+
+      {/* Financials */}
+      <section>
+        <div className="mb-3 grid grid-cols-2 gap-4">
+          <StatTile label="Paid (all time)" value={money(paidTotal)} tone="green" />
+          <StatTile label="Overdue" value={money(overdueTotal)} tone="red" />
+        </div>
+        <h2 className="mb-2 text-lg font-semibold">Gross income by month</h2>
+        <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4">
+          <MonthlyIncomeChart data={monthly} />
+        </div>
+        {account.properties.length > 0 && (
+          <>
+            <h2 className="mb-2 text-lg font-semibold">Gross income by property</h2>
+            <RankedTable rows={byProperty} emptyLabel="No paid invoices yet." />
+          </>
+        )}
+      </section>
 
       {/* Properties */}
       <section>

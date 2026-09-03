@@ -1,56 +1,63 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import StatTile from '../components/StatTile';
+import MonthlyIncomeChart from '../components/MonthlyIncomeChart';
+import RankedTable from '../components/RankedTable';
+import { sumByStatus, monthlyIncome, incomeByCustomer, money } from '../lib/invoiceStats';
 
 interface Invoice {
   id: string;
   invoiceNumber: string;
   amountCents: number;
   dueDate: string;
+  issueDate: string;
+  paidAt?: string | null;
   status: string;
   account: { name: string };
 }
 
-function money(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`;
-}
-
 export default function Dashboard() {
-  const [overdue, setOverdue] = useState<Invoice[]>([]);
-  const [sent, setSent] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      api.get<Invoice[]>('/invoices?status=OVERDUE'),
-      api.get<Invoice[]>('/invoices?status=SENT'),
-    ])
-      .then(([o, s]) => {
-        setOverdue(o);
-        setSent(s);
-      })
+    api
+      .get<Invoice[]>('/invoices')
+      .then(setInvoices)
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) return <p>Loading...</p>;
 
-  const overdueTotal = overdue.reduce((sum, i) => sum + i.amountCents, 0);
+  const overdue = invoices.filter((i) => i.status === 'OVERDUE');
+  const sent = invoices.filter((i) => i.status === 'SENT');
+  const overdueTotal = sumByStatus(invoices, 'OVERDUE');
+  const paidTotal = sumByStatus(invoices, 'PAID');
+  const monthly = monthlyIncome(invoices);
+  const byCustomer = incomeByCustomer(invoices);
 
   return (
     <div>
       <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
 
       <div className="mb-8 grid grid-cols-3 gap-4">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-          <div className="text-sm text-red-700">Overdue</div>
-          <div className="text-2xl font-bold text-red-800">{overdue.length}</div>
-          <div className="text-sm text-red-700">{money(overdueTotal)} outstanding</div>
-        </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <div className="text-sm text-amber-700">Sent, not yet due</div>
-          <div className="text-2xl font-bold text-amber-800">{sent.length}</div>
-        </div>
+        <StatTile label="Overdue" value={String(overdue.length)} sub={`${money(overdueTotal)} outstanding`} tone="red" />
+        <StatTile label="Sent, not yet due" value={String(sent.length)} tone="amber" />
+        <StatTile label="Paid (all time)" value={money(paidTotal)} tone="green" />
       </div>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-lg font-semibold">Gross income by month</h2>
+        <div className="rounded-lg border border-slate-200 bg-white p-4">
+          <MonthlyIncomeChart data={monthly} />
+        </div>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-lg font-semibold">Gross income by customer</h2>
+        <RankedTable rows={byCustomer} emptyLabel="No paid invoices yet." />
+      </section>
 
       <h2 className="mb-3 text-lg font-semibold">Overdue invoices</h2>
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">

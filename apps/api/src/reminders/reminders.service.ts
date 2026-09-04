@@ -39,6 +39,7 @@ export class RemindersService {
   // how often we actually email about it.
   @Cron('0 8 * * *') // every day at 8am server time
   async runDailyFlagging() {
+    if (!this.remindersEnabled()) return;
     await this.flagOverdueInvoices();
   }
 
@@ -47,7 +48,18 @@ export class RemindersService {
   // POST /api/reminders/run while testing.
   @Cron('0 8 * * 1') // every Monday at 8am server time
   async runWeeklyDigest() {
+    if (!this.remindersEnabled()) return;
     await this.sendOverdueDigest();
+  }
+
+  // Kill switch for the automated cron jobs above - defaults to OFF so a
+  // fresh/still-being-populated database (backdated invoices, test data,
+  // etc.) never triggers a surprise reminder email to a real customer.
+  // Set REMINDERS_ENABLED=true once real data is in and you're ready to go
+  // live with this. The manual "Send payment reminder" button and
+  // POST /api/reminders/run are NOT affected - those are always explicit.
+  private remindersEnabled(): boolean {
+    return this.config.get<string>('REMINDERS_ENABLED') === 'true';
   }
 
   /** SENT invoices whose due date has passed become OVERDUE. */

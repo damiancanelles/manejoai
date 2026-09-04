@@ -34,6 +34,7 @@ model User {
   invoicesCreated Invoice[] @relation("InvoiceCreatedBy")
   quotesCreated   Quote[]   @relation("QuoteCreatedBy")
   paymentsCreated Payment[] @relation("PaymentCreatedBy")
+  reportsReviewed IncomingReport[] @relation("ReportReviewedBy")
 }
 
 // ---------- Customers ----------
@@ -80,6 +81,7 @@ model Property {
   invoices Invoice[]
   contacts Contact[]
   quotes   Quote[]
+  matchedReports IncomingReport[]
 }
 
 enum ContactRole {
@@ -147,6 +149,7 @@ model Job {
   photos   JobPhoto[]
   invoices Invoice[]
   quotes   Quote[]
+  incomingReport IncomingReport?
 }
 
 model JobPhoto {
@@ -307,6 +310,47 @@ model InvoiceItem {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ---------- Telegram job-report intake ----------
+
+enum ReportStatus {
+  PENDING // captured, not yet reviewed
+  CONVERTED // staff approved - became a real Job
+  DISMISSED // staff rejected (spam, unrelated chat, duplicate, etc.)
+}
+
+// A worker's report (text + photos) posted in the Telegram job-reports
+// group, captured here before it becomes a real Job - a Job always needs a
+// resolved accountId, and a chat message can't reliably provide one, so
+// this is where AI-parsed guesses live until a human confirms them.
+model IncomingReport {
+  id     String @id @default(cuid())
+  source String @default("telegram")
+
+  senderName String? // Telegram display name - free text, no worker accounts yet
+  rawText    String? // concatenated text from the message burst
+  photoUrls  String[] // already-uploaded R2 URLs
+
+  // Claude's best-effort extraction - always shown to staff, never auto-trusted
+  suggestedTitle        String?
+  suggestedDescription  String?
+  suggestedPropertyText String? // raw property name text Claude read, e.g. "bldg C"
+
+  // Server-side match of suggestedPropertyText against real Property names.
+  // The account always comes from matchedProperty.accountId, never set
+  // independently, so the two can't disagree.
+  matchedPropertyId String?
+  matchedProperty   Property? @relation(fields: [matchedPropertyId], references: [id])
+
+  status ReportStatus @default(PENDING)
+  jobId  String?      @unique
+  job    Job?         @relation(fields: [jobId], references: [id])
+
+  receivedAt   DateTime  @default(now())
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewedBy   User?     @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
 }
 
 // One row per reminder email actually sent, so the scheduler never double-sends

@@ -17,6 +17,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MailModule } from './mail/mail.module';
 import { StorageModule } from './storage/storage.module';
+import { TelegramModule } from './telegram/telegram.module';
+import { IncomingReportsModule } from './incoming-reports/incoming-reports.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { StorageModule } from './storage/storage.module';
     PaymentsModule,
     InvoicesModule,
     RemindersModule,
+    TelegramModule,
+    IncomingReportsModule,
   ],
 })
 export class AppModule {}

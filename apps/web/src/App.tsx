@@ -15,6 +15,7 @@ import Invoices from './pages/Invoices';
 import InvoiceDetail from './pages/InvoiceDetail';
 import InvoiceNew from './pages/InvoiceNew';
 import Reports from './pages/Reports';
+import IncomingReports from './pages/IncomingReports';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
           <Route path="/invoices/new" element={<InvoiceNew />} />
           <Route path="/invoices/:id" element={<InvoiceDetail />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/job-reports" element={<IncomingReports />} />
         </Route>
       </Route>
     </Routes>

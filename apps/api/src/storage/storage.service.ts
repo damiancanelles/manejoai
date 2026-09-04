@@ -5,7 +5,7 @@ import { join } from 'path';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
 /**
- * Where job photos live.
+ * Where job photos (and Telegram report photos) live.
  *
  * STORAGE_DRIVER=local (default): writes to disk under UPLOADS_DIR, served
  * back at /uploads/<key> (see ServeStaticModule in app.module.ts). Fine for
@@ -52,25 +52,35 @@ export class StorageService {
     }
   }
 
-  async saveJobPhoto(jobId: string, file: Express.Multer.File): Promise<string> {
-    const safeName = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const key = `jobs/${jobId}/${safeName}`;
-
+  /** Writes a buffer to `key` (either driver) and returns its public URL. */
+  private async put(key: string, body: Buffer, contentType: string): Promise<string> {
     if (this.driver === 's3') {
       await this.s3!.send(
-        new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: key,
-          Body: file.buffer,
-          ContentType: file.mimetype,
-        }),
+        new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: body, ContentType: contentType }),
       );
       return `${this.publicUrlBase!.replace(/\/$/, '')}/${key}`;
     }
 
-    const dir = join(this.uploadsDir, 'jobs', jobId);
+    const segments = key.split('/');
+    const dir = join(this.uploadsDir, ...segments.slice(0, -1));
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(join(dir, safeName), file.buffer);
-    return `/uploads/jobs/${jobId}/${safeName}`;
+    await fs.writeFile(join(this.uploadsDir, ...segments), body);
+    return `/uploads/${key}`;
+  }
+
+  async saveJobPhoto(jobId: string, file: Express.Multer.File): Promise<string> {
+    const safeName = `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+    return this.put(`jobs/${jobId}/${safeName}`, file.buffer, file.mimetype);
+  }
+
+  /**
+   * Same idea as saveJobPhoto, but for photos that don't come from a
+   * multipart upload (e.g. downloaded from a Telegram message) - just a raw
+   * buffer, no Express.Multer.File wrapper.
+   */
+  async saveReportPhoto(reportId: string, buffer: Buffer, contentType = 'image/jpeg'): Promise<string> {
+    const ext = contentType === 'image/png' ? 'png' : 'jpg';
+    const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    return this.put(`reports/${reportId}/${safeName}`, buffer, contentType);
   }
 }

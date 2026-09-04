@@ -23,6 +23,9 @@ export default function Layout() {
           <NavLink to="/jobs" className={linkClass}>
             Jobs
           </NavLink>
+          <NavLink to="/job-reports" className={linkClass}>
+            Job Reports
+          </NavLink>
           <NavLink to="/quotes" className={linkClass}>
             Quotes
           </NavLink>

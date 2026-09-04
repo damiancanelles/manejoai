@@ -10,3 +10,7 @@ apps/api/uploads/
 
 # Local Netlify folder
 .netlify
+
+# Real business records (invoices/estimates/spreadsheets) staged for import -
+# not source code, and not something that belongs in git history.
+/real data/

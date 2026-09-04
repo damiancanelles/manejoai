@@ -33,6 +33,7 @@ model User {
   jobsCreated     Job[]     @relation("JobCreatedBy")
   invoicesCreated Invoice[] @relation("InvoiceCreatedBy")
   quotesCreated   Quote[]   @relation("QuoteCreatedBy")
+  paymentsCreated Payment[] @relation("PaymentCreatedBy")
 }
 
 // ---------- Customers ----------
@@ -55,6 +56,7 @@ model Account {
   jobs       Job[]
   invoices   Invoice[]
   quotes     Quote[]
+  payments   Payment[]
 }
 
 // A physical property belonging to an account. For an INDIVIDUAL account this
@@ -245,6 +247,11 @@ model Invoice {
 
   paidAt     DateTime?
   canceledAt DateTime?
+  // Set when this invoice was paid as part of a batch/recorded Payment
+  // (see Payment below) - null for invoices paid before that existed, or
+  // marked paid some other way.
+  paymentId String?
+  payment   Payment? @relation(fields: [paymentId], references: [id])
 
   createdById String
   createdBy   User   @relation("InvoiceCreatedBy", fields: [createdById], references: [id])
@@ -258,6 +265,32 @@ model Invoice {
 
   @@index([status])
   @@index([dueDate])
+}
+
+// A record of money actually received - one payment can cover several
+// invoices at once (e.g. a customer settles 3 invoices with one check), so
+// this is the durable "record" of that event for bookkeeping/statistics,
+// separate from the invoices' own PAID status. All invoices in a payment
+// belong to the same account (see PaymentsService.record).
+model Payment {
+  id        String  @id @default(cuid())
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  paidAt      DateTime // the date the payment was actually received (may be backdated)
+  // Sum of the covered invoices' amountCents at the moment this payment was
+  // recorded - a snapshot, not recomputed if an invoice later changes.
+  amountCents Int
+  notes       String?
+
+  createdById String
+  createdBy   User   @relation("PaymentCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  invoices Invoice[]
+
+  @@index([accountId])
+  @@index([paidAt])
 }
 
 // One line item on an invoice, e.g. "Interior paint - Unit 101" x2 @ $150.

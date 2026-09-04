@@ -3,12 +3,16 @@ import { InvoiceStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { InvoicesService } from './invoices.service';
+import { PaymentsService } from '../payments/payments.service';
 import { CreateInvoiceDto, InvoiceItemInputDto, UpdateInvoiceDto, UpdateInvoiceItemDto } from './dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('invoices')
 export class InvoicesController {
-  constructor(private invoicesService: InvoicesService) {}
+  constructor(
+    private invoicesService: InvoicesService,
+    private paymentsService: PaymentsService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateInvoiceDto, @CurrentUser() user: { userId: string }) {
@@ -75,9 +79,12 @@ export class InvoicesController {
     return this.invoicesService.markSent(id);
   }
 
+  // Goes through PaymentsService so a single invoice marked paid this way
+  // gets the same Payment record (with one invoice in it) as a batch
+  // payment does - one consistent trail for every paid invoice.
   @Post(':id/mark-paid')
-  markPaid(@Param('id') id: string) {
-    return this.invoicesService.markPaid(id);
+  markPaid(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
+    return this.paymentsService.record({ invoiceIds: [id], paidAt: new Date().toISOString() }, user.userId);
   }
 
   @Post(':id/cancel')

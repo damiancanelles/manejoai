@@ -13,6 +13,7 @@ import { ContactsModule } from './contacts/contacts.module';
 import { JobsModule } from './jobs/jobs.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { InvoicesModule } from './invoices/invoices.module';
+import { PaymentsModule } from './payments/payments.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { MailModule } from './mail/mail.module';
 import { StorageModule } from './storage/storage.module';
@@ -36,6 +37,7 @@ import { StorageModule } from './storage/storage.module';
     ContactsModule,
     JobsModule,
     QuotesModule,
+    PaymentsModule,
     InvoicesModule,
     RemindersModule,
   ],

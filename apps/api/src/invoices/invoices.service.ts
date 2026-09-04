@@ -108,6 +108,7 @@ export class InvoicesService {
         job: true,
         items: { orderBy: { createdAt: 'asc' } },
         reminders: { orderBy: { sentAt: 'desc' } },
+        payment: { include: { invoices: true } },
       },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
@@ -157,14 +158,6 @@ export class InvoicesService {
   async markSent(id: string) {
     await this.findOne(id);
     return this.prisma.invoice.update({ where: { id }, data: { status: InvoiceStatus.SENT } });
-  }
-
-  async markPaid(id: string) {
-    await this.findOne(id);
-    return this.prisma.invoice.update({
-      where: { id },
-      data: { status: InvoiceStatus.PAID, paidAt: new Date() },
-    });
   }
 
   async cancel(id: string) {

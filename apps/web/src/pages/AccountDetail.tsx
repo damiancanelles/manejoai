@@ -47,6 +47,13 @@ interface Quote {
   status: string;
   issueDate: string;
 }
+interface Payment {
+  id: string;
+  paidAt: string;
+  amountCents: number;
+  notes?: string | null;
+  invoices: { id: string; invoiceNumber: string }[];
+}
 interface Account {
   id: string;
   name: string;
@@ -56,6 +63,7 @@ interface Account {
   jobs: Job[];
   quotes: Quote[];
   invoices: Invoice[];
+  payments: Payment[];
 }
 interface ReminderResult {
   flaggedOverdue: number;
@@ -135,6 +143,14 @@ export default function AccountDetail() {
     } finally {
       setSendingReminder(false);
     }
+  }
+
+  async function undoPayment(paymentId: string) {
+    if (!confirm('This un-marks every invoice in this payment as paid (reverting to Sent or Overdue). Continue?')) {
+      return;
+    }
+    await api.delete(`/payments/${paymentId}`);
+    load();
   }
 
   async function addJob(e: FormEvent<HTMLFormElement>) {
@@ -380,6 +396,33 @@ export default function AccountDetail() {
             </li>
           ))}
           {account.invoices.length === 0 && <li className="text-slate-400">No invoices yet.</li>}
+        </ul>
+      </section>
+
+      {/* Payments */}
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Payments</h2>
+        <ul className="space-y-1 text-sm">
+          {account.payments.map((p) => (
+            <li key={p.id} className="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2">
+              <span>
+                <span className="font-medium">{money(p.amountCents)}</span> on {new Date(p.paidAt).toLocaleDateString()} —{' '}
+                {p.invoices.map((i, idx) => (
+                  <span key={i.id}>
+                    <Link to={`/invoices/${i.id}`} className="text-blue-600 hover:underline">
+                      {i.invoiceNumber}
+                    </Link>
+                    {idx < p.invoices.length - 1 ? ', ' : ''}
+                  </span>
+                ))}
+                {p.notes && <span className="text-slate-500"> — {p.notes}</span>}
+              </span>
+              <button onClick={() => undoPayment(p.id)} className="shrink-0 text-xs text-red-600 hover:underline">
+                Undo
+              </button>
+            </li>
+          ))}
+          {account.payments.length === 0 && <li className="text-slate-400">No payments recorded yet.</li>}
         </ul>
       </section>
     </div>

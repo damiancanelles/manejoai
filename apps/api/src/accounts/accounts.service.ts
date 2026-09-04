@@ -26,6 +26,7 @@ export class AccountsService {
         jobs: { orderBy: { createdAt: 'desc' }, include: { photos: true } },
         quotes: { orderBy: { issueDate: 'desc' } },
         invoices: { orderBy: { issueDate: 'desc' } },
+        payments: { orderBy: { paidAt: 'desc' }, include: { invoices: true } },
       },
     });
     if (!account) throw new NotFoundException('Account not found');

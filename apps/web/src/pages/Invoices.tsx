@@ -32,6 +32,8 @@ function todayStr() {
 export default function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [status, setStatus] = useState('ALL');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<SendDraftsResult | null>(null);
@@ -43,11 +45,19 @@ export default function Invoices() {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [paymentResult, setPaymentResult] = useState<{ amountCents: number; invoices: unknown[] } | null>(null);
 
+  // Debounce the free-text search so we're not firing a request per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   function load() {
     setLoading(true);
-    const path = status === 'ALL' ? '/invoices' : `/invoices?status=${status}`;
+    const params = new URLSearchParams();
+    if (status !== 'ALL') params.set('status', status);
+    if (debouncedSearch) params.set('search', debouncedSearch);
     api
-      .get<Invoice[]>(path)
+      .get<Invoice[]>(`/invoices?${params.toString()}`)
       .then(setInvoices)
       .finally(() => setLoading(false));
   }
@@ -56,7 +66,8 @@ export default function Invoices() {
     load();
     setSelected(new Set());
     setShowPaymentForm(false);
-  }, [status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, debouncedSearch]);
 
   const draftCount = invoices.filter((i) => i.status === 'DRAFT').length;
   const payable = invoices.filter((i) => !UNPAYABLE.has(i.status));
@@ -169,7 +180,7 @@ export default function Invoices() {
         </div>
       )}
 
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex gap-2">
           {statuses.map((s) => (
             <button
@@ -184,6 +195,13 @@ export default function Invoices() {
           ))}
         </div>
         {draftCount > 0 && <p className="text-sm text-slate-500">{draftCount} draft(s) currently shown</p>}
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search invoice #, customer, property, notes..."
+          className="ml-auto w-72 rounded border border-slate-300 px-3 py-1.5 text-sm"
+        />
       </div>
 
       {selected.size > 0 && (
@@ -298,7 +316,7 @@ export default function Invoices() {
               {invoices.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-4 text-slate-400">
-                    No invoices.
+                    No invoices match these filters.
                   </td>
                 </tr>
               )}

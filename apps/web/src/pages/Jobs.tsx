@@ -16,16 +16,26 @@ const statuses = ['ALL', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED'];
 export default function Jobs() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [status, setStatus] = useState('ALL');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Debounce the free-text search so we're not firing a request per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
     setLoading(true);
-    const path = status === 'ALL' ? '/jobs' : `/jobs?status=${status}`;
+    const params = new URLSearchParams();
+    if (status !== 'ALL') params.set('status', status);
+    if (debouncedSearch) params.set('search', debouncedSearch);
     api
-      .get<Job[]>(path)
+      .get<Job[]>(`/jobs?${params.toString()}`)
       .then(setJobs)
       .finally(() => setLoading(false));
-  }, [status]);
+  }, [status, debouncedSearch]);
 
   return (
     <div>
@@ -36,18 +46,27 @@ export default function Jobs() {
         </Link>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        {statuses.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatus(s)}
-            className={`rounded px-3 py-1 text-sm ${
-              status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex gap-2">
+          {statuses.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatus(s)}
+              className={`rounded px-3 py-1 text-sm ${
+                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search title, description, customer, property..."
+          className="ml-auto w-72 rounded border border-slate-300 px-3 py-1.5 text-sm"
+        />
       </div>
 
       {loading ? (
@@ -81,7 +100,7 @@ export default function Jobs() {
               {jobs.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-4 text-slate-400">
-                    No jobs.
+                    No jobs match these filters.
                   </td>
                 </tr>
               )}

@@ -58,11 +58,21 @@ export class QuotesService {
     });
   }
 
-  findAll(filters: { status?: QuoteStatus; accountId?: string }) {
+  findAll(filters: { status?: QuoteStatus; accountId?: string; search?: string }) {
     return this.prisma.quote.findMany({
       where: {
         status: filters.status,
         accountId: filters.accountId,
+        ...(filters.search
+          ? {
+              OR: [
+                { quoteNumber: { contains: filters.search, mode: 'insensitive' as const } },
+                { notes: { contains: filters.search, mode: 'insensitive' as const } },
+                { account: { name: { contains: filters.search, mode: 'insensitive' as const } } },
+                { property: { name: { contains: filters.search, mode: 'insensitive' as const } } },
+              ],
+            }
+          : {}),
       },
       orderBy: { issueDate: 'desc' },
       include: { account: true, property: true },

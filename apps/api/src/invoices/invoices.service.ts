@@ -74,6 +74,7 @@ export class InvoicesService {
     accountId?: string;
     dateFrom?: string;
     dateTo?: string;
+    search?: string;
     // Include items + job (report exports need these to render a PDF/CSV
     // without an extra round trip per invoice) - skipped by default since
     // the plain list views (Invoices page, Dashboard) don't need them.
@@ -91,6 +92,16 @@ export class InvoicesService {
                 lte: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`) : undefined,
               }
             : undefined,
+        ...(filters.search
+          ? {
+              OR: [
+                { invoiceNumber: { contains: filters.search, mode: 'insensitive' as const } },
+                { notes: { contains: filters.search, mode: 'insensitive' as const } },
+                { account: { name: { contains: filters.search, mode: 'insensitive' as const } } },
+                { property: { name: { contains: filters.search, mode: 'insensitive' as const } } },
+              ],
+            }
+          : {}),
       },
       orderBy: { issueDate: 'desc' },
       include: filters.full

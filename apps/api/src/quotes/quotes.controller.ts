@@ -16,8 +16,12 @@ export class QuotesController {
   }
 
   @Get()
-  findAll(@Query('status') status?: QuoteStatus, @Query('accountId') accountId?: string) {
-    return this.quotesService.findAll({ status, accountId });
+  findAll(
+    @Query('status') status?: QuoteStatus,
+    @Query('accountId') accountId?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.quotesService.findAll({ status, accountId, search });
   }
 
   @Get(':id')

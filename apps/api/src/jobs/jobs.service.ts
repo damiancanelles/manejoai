@@ -45,6 +45,8 @@ export class JobsService {
               OR: [
                 { title: { contains: filters.search, mode: 'insensitive' as const } },
                 { description: { contains: filters.search, mode: 'insensitive' as const } },
+                { account: { name: { contains: filters.search, mode: 'insensitive' as const } } },
+                { property: { name: { contains: filters.search, mode: 'insensitive' as const } } },
               ],
             }
           : {}),

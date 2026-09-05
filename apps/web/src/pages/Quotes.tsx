@@ -20,16 +20,25 @@ function money(cents: number) {
 export default function Quotes() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [status, setStatus] = useState('ALL');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
     setLoading(true);
-    const path = status === 'ALL' ? '/quotes' : `/quotes?status=${status}`;
+    const params = new URLSearchParams();
+    if (status !== 'ALL') params.set('status', status);
+    if (debouncedSearch) params.set('search', debouncedSearch);
     api
-      .get<Quote[]>(path)
+      .get<Quote[]>(`/quotes?${params.toString()}`)
       .then(setQuotes)
       .finally(() => setLoading(false));
-  }, [status]);
+  }, [status, debouncedSearch]);
 
   return (
     <div>
@@ -40,18 +49,27 @@ export default function Quotes() {
         </Link>
       </div>
 
-      <div className="mb-4 flex gap-2">
-        {statuses.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatus(s)}
-            className={`rounded px-3 py-1 text-sm ${
-              status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="flex gap-2">
+          {statuses.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatus(s)}
+              className={`rounded px-3 py-1 text-sm ${
+                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search quote #, customer, property, notes..."
+          className="ml-auto w-72 rounded border border-slate-300 px-3 py-1.5 text-sm"
+        />
       </div>
 
       {loading ? (
@@ -85,7 +103,7 @@ export default function Quotes() {
               {quotes.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-4 text-slate-400">
-                    No quotes.
+                    No quotes match these filters.
                   </td>
                 </tr>
               )}

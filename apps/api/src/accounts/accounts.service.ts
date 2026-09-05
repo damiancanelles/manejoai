@@ -10,8 +10,16 @@ export class AccountsService {
     return this.prisma.account.create({ data: dto });
   }
 
-  findAll() {
+  findAll(search?: string) {
     return this.prisma.account.findMany({
+      where: search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { properties: { some: { name: { contains: search, mode: 'insensitive' as const } } } },
+            ],
+          }
+        : undefined,
       orderBy: { name: 'asc' },
       include: { properties: true, contacts: { include: { property: true } } },
     });

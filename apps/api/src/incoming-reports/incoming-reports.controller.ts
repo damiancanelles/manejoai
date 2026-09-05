@@ -11,8 +11,8 @@ export class IncomingReportsController {
   constructor(private incomingReportsService: IncomingReportsService) {}
 
   @Get()
-  findAll(@Query('status') status?: ReportStatus) {
-    return this.incomingReportsService.findAll(status);
+  findAll(@Query('status') status?: ReportStatus, @Query('search') search?: string) {
+    return this.incomingReportsService.findAll(status, search);
   }
 
   @Get(':id')

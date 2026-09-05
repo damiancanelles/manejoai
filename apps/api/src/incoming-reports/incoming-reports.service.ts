@@ -11,9 +11,22 @@ export class IncomingReportsService {
     private jobsService: JobsService,
   ) {}
 
-  findAll(status?: ReportStatus) {
+  findAll(status?: ReportStatus, search?: string) {
     return this.prisma.incomingReport.findMany({
-      where: { status: status ?? ReportStatus.PENDING },
+      where: {
+        status,
+        ...(search
+          ? {
+              OR: [
+                { senderName: { contains: search, mode: 'insensitive' as const } },
+                { rawText: { contains: search, mode: 'insensitive' as const } },
+                { suggestedTitle: { contains: search, mode: 'insensitive' as const } },
+                { suggestedPropertyText: { contains: search, mode: 'insensitive' as const } },
+                { matchedProperty: { name: { contains: search, mode: 'insensitive' as const } } },
+              ],
+            }
+          : {}),
+      },
       include: { matchedProperty: { include: { account: true } } },
       orderBy: { receivedAt: 'desc' },
     });

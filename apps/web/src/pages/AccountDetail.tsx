@@ -4,7 +4,7 @@ import { api } from '../api/client';
 import StatTile from '../components/StatTile';
 import MonthlyIncomeChart from '../components/MonthlyIncomeChart';
 import RankedTable from '../components/RankedTable';
-import { sumByStatus, monthlyIncome, incomeByProperty, money } from '../lib/invoiceStats';
+import { sumByStatus, monthlyIncome, incomeByProperty, paidByProperty, overdueByProperty, money } from '../lib/invoiceStats';
 
 interface Property {
   id: string;
@@ -170,6 +170,8 @@ export default function AccountDetail() {
   const monthly = monthlyIncome(account.invoices);
   const propertyNames = new Map(account.properties.map((p) => [p.id, p.name]));
   const byProperty = incomeByProperty(account.invoices, propertyNames);
+  const paidByProp = paidByProperty(account.invoices, propertyNames);
+  const overdueByProp = overdueByProperty(account.invoices, propertyNames);
 
   return (
     <div className="space-y-8">
@@ -229,7 +231,13 @@ export default function AccountDetail() {
         {account.properties.length > 0 && (
           <>
             <h2 className="mb-2 text-lg font-semibold">Gross income by property</h2>
-            <RankedTable rows={byProperty} emptyLabel="No paid invoices yet." />
+            <RankedTable rows={byProperty} emptyLabel="No invoices yet." />
+
+            <h2 className="mb-2 mt-4 text-lg font-semibold">Total paid by property</h2>
+            <RankedTable rows={paidByProp} emptyLabel="No paid invoices yet." />
+
+            <h2 className="mb-2 mt-4 text-lg font-semibold">Total overdue by property</h2>
+            <RankedTable rows={overdueByProp} emptyLabel="No overdue invoices." />
           </>
         )}
       </section>

@@ -65,19 +65,41 @@ export function incomeByCustomer(invoices: StatsInvoice[]): RankedRow[] {
 }
 
 /**
- * Every non-canceled invoice's amount grouped by property name, highest first.
- * `properties` maps propertyId -> name (the caller already has this loaded,
- * e.g. from account.properties) - invoices with no propertyId fold into
- * "No property".
+ * Sums `invoices` grouped by property name, highest first. `properties`
+ * maps propertyId -> name (the caller already has this loaded, e.g. from
+ * account.properties) - invoices with no propertyId fold into "No property".
  */
-export function incomeByProperty(invoices: StatsInvoice[], properties: Map<string, string>): RankedRow[] {
+function groupByProperty(invoices: StatsInvoice[], properties: Map<string, string>): RankedRow[] {
   const totals = new Map<string, number>();
   for (const inv of invoices) {
-    if (inv.status === 'CANCELED') continue;
     const name = (inv.propertyId && properties.get(inv.propertyId)) || 'No property';
     totals.set(name, (totals.get(name) || 0) + inv.amountCents);
   }
   return [...totals.entries()].map(([name, cents]) => ({ name, cents })).sort((a, b) => b.cents - a.cents);
+}
+
+/** Every non-canceled invoice's amount grouped by property name, highest first. */
+export function incomeByProperty(invoices: StatsInvoice[], properties: Map<string, string>): RankedRow[] {
+  return groupByProperty(
+    invoices.filter((i) => i.status !== 'CANCELED'),
+    properties,
+  );
+}
+
+/** Only PAID invoices - actual money collected - grouped by property, highest first. */
+export function paidByProperty(invoices: StatsInvoice[], properties: Map<string, string>): RankedRow[] {
+  return groupByProperty(
+    invoices.filter((i) => i.status === 'PAID'),
+    properties,
+  );
+}
+
+/** Only OVERDUE invoices grouped by property, highest first. */
+export function overdueByProperty(invoices: StatsInvoice[], properties: Map<string, string>): RankedRow[] {
+  return groupByProperty(
+    invoices.filter((i) => i.status === 'OVERDUE'),
+    properties,
+  );
 }
 
 export function money(cents: number): string {

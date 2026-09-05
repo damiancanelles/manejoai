@@ -65,7 +65,13 @@ export class StorageService {
     const dir = join(this.uploadsDir, ...segments.slice(0, -1));
     await fs.mkdir(dir, { recursive: true });
     await fs.writeFile(join(this.uploadsDir, ...segments), body);
-    return `/uploads/${key}`;
+    // Relative by default (works via the frontend's same-origin /uploads
+    // proxy). If the frontend calls this API directly cross-origin instead
+    // (e.g. a staging site hitting a staging API on its own Heroku URL,
+    // bypassing the proxy), PUBLIC_API_URL makes the link absolute so it
+    // still resolves correctly regardless of what site is asking.
+    const base = this.config.get<string>('PUBLIC_API_URL');
+    return base ? `${base.replace(/\/$/, '')}/uploads/${key}` : `/uploads/${key}`;
   }
 
   async saveJobPhoto(jobId: string, file: Express.Multer.File): Promise<string> {

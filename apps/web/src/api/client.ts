@@ -1,5 +1,13 @@
 const TOKEN_KEY = 'manejoai_token';
 
+// Empty by default - the frontend calls relative "/api/..." paths, which
+// Vite's dev proxy (local) or netlify.toml's redirect (production) forwards
+// to the real API, same origin as far as the browser's concerned. Setting
+// this at build time (e.g. VITE_API_BASE_URL=https://manejoai-api-staging...)
+// makes the frontend call a different API directly instead - used for the
+// staging site, which has its own separate backend to hit.
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
 }
@@ -17,7 +25,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`/api${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}/api${path}`, { ...options, headers });
 
   if (res.status === 401) {
     setToken(null);

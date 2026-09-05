@@ -35,7 +35,13 @@ export class MailService {
     this.driver = this.config.get<string>('MAIL_DRIVER', 'console');
   }
 
-  async send(input: SendEmailInput): Promise<void> {
+  async send(rawInput: SendEmailInput): Promise<void> {
+    // Optional - set on staging/test environments so a real send is always
+    // visually distinguishable from a production one, even if it reuses the
+    // same Resend key/from address.
+    const prefix = this.config.get<string>('MAIL_SUBJECT_PREFIX');
+    const input = prefix ? { ...rawInput, subject: `${prefix}${rawInput.subject}` } : rawInput;
+
     if (this.driver === 'resend') {
       return this.sendViaResend(input);
     }

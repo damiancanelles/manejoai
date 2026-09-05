@@ -16,6 +16,7 @@ import InvoiceDetail from './pages/InvoiceDetail';
 import InvoiceNew from './pages/InvoiceNew';
 import Reports from './pages/Reports';
 import IncomingReports from './pages/IncomingReports';
+import ChangePassword from './pages/ChangePassword';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/invoices/:id" element={<InvoiceDetail />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/job-reports" element={<IncomingReports />} />
+          <Route path="/change-password" element={<ChangePassword />} />
         </Route>
       </Route>
     </Routes>

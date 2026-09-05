@@ -41,6 +41,9 @@ export default function Layout() {
       </nav>
       <div className="mt-8 border-t border-slate-200 pt-4 text-sm text-slate-500">
         <div>{user?.name}</div>
+        <NavLink to="/change-password" className="mt-1 block text-slate-400 underline hover:text-indigo-600">
+          Change password
+        </NavLink>
         <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-indigo-600">
           Log out
         </button>

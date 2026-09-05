@@ -67,7 +67,11 @@ export default function Invoices() {
 
   useEffect(() => {
     load();
-    setSelected(new Set());
+    // Selections deliberately survive a filter/search change - the same
+    // page-independent behavior already used for pagination - so building
+    // up a multi-invoice pick via repeated searches doesn't lose earlier
+    // picks. "Clear" and a successful payment are the only things that
+    // reset it.
     setShowPaymentForm(false);
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps

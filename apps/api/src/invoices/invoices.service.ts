@@ -257,19 +257,77 @@ export class InvoicesService {
       }));
 
       const totalCents = group.reduce((sum, i) => sum + i.amountCents, 0);
-      const total = `$${(totalCents / 100).toFixed(2)}`;
+      const total = money(totalCents);
       const subject =
         group.length === 1
           ? `Invoice ${invoiceNumbers[0]} from ${COMPANY.name}`
           : `${group.length} invoices from ${COMPANY.name}`;
-      const html = `
-        <p>Hi,</p>
-        <p>Please find attached ${group.length === 1 ? 'invoice' : `${group.length} invoices`}
-        (${invoiceNumbers.join(', ')}) totaling <strong>${total}</strong>.</p>
-        <p>Reply to this email with any questions.</p>
-      `;
+
+      // Invoices in one send can carry different due dates - break the list
+      // into one sub-table per due date, oldest first, each with its own
+      // subtotal, same structure as the payment reminder email.
+      const byDueDate = new Map<string, typeof group>();
+      for (const inv of group) {
+        const key = inv.dueDate.toISOString().slice(0, 10);
+        const bucket = byDueDate.get(key);
+        if (bucket) bucket.push(inv);
+        else byDueDate.set(key, [inv]);
+      }
+      const sortedDueDateKeys = [...byDueDate.keys()].sort();
+      const sections = sortedDueDateKeys
+        .map((key) => {
+          const invs = byDueDate.get(key)!;
+          const subtotalCents = invs.reduce((sum, i) => sum + i.amountCents, 0);
+          const rows = invs
+            .map(
+              (i) => `
+        <tr>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${i.invoiceNumber}</td>
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">${money(i.amountCents)}</td>
+        </tr>`,
+            )
+            .join('');
+          return `
+        <p style="margin:16px 0 4px;font-family:sans-serif;font-size:14px;font-weight:600;">
+          Due ${invs[0].dueDate.toDateString()}
+        </p>
+        <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px;width:100%;max-width:420px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Invoice</th>
+              <th style="text-align:right;padding:4px 8px;border-bottom:2px solid #1f2937;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot>
+            <tr>
+              <td style="padding:4px 8px;font-weight:600;">Subtotal</td>
+              <td style="padding:4px 8px;text-align:right;font-weight:600;">${money(subtotalCents)}</td>
+            </tr>
+          </tfoot>
+        </table>`;
+        })
+        .join('');
+
+      const propertyLine = first.property
+        ? `<strong>${first.account.name}</strong> — ${first.property.name}`
+        : `<strong>${first.account.name}</strong>`;
 
       for (const contact of recipients) {
+        const html = `
+        <p style="font-family:sans-serif;font-size:14px;">Hi ${contact.name},</p>
+        <p style="font-family:sans-serif;font-size:14px;">
+          Please find attached ${group.length === 1 ? 'the invoice' : `the ${group.length} invoices`} below
+          for ${propertyLine}, totaling <strong>${total}</strong>:
+        </p>
+        ${sections}
+        <p style="font-family:sans-serif;font-size:14px;">
+          Each invoice is attached as its own PDF. Reply to this email with any questions.
+        </p>
+        <p style="font-family:sans-serif;font-size:14px;">
+          Thank you for your business.<br/>${COMPANY.name}
+        </p>
+      `;
         await this.mail.send({ to: contact.email!, subject, html, attachments });
         emailCount++;
       }
@@ -348,45 +406,29 @@ export class InvoicesService {
         continue;
       }
 
+      const now = Date.now();
       const totalCents = group.reduce((sum, i) => sum + i.amountCents, 0);
       const overdue = group.filter((i) => i.status === InvoiceStatus.OVERDUE);
       const overdueCents = overdue.reduce((sum, i) => sum + i.amountCents, 0);
 
       const rows = group
-        .map(
-          (i) => `
+        .map((i) => {
+          const daysPastDue =
+            i.status === InvoiceStatus.OVERDUE ? Math.floor((now - i.dueDate.getTime()) / 86_400_000) : null;
+          return `
         <tr>
           <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${i.invoiceNumber}</td>
           <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${i.status}</td>
           <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">${money(i.amountCents)}</td>
           <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${i.dueDate.toDateString()}</td>
-        </tr>`,
-        )
+          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${daysPastDue != null ? `${daysPastDue} day${daysPastDue === 1 ? '' : 's'}` : '—'}</td>
+        </tr>`;
+        })
         .join('');
 
-      const recipientLabel = first.property ? first.property.name : first.account.name;
-      const html = `
-        <p>Hi,</p>
-        <p>Here's a summary of ${group.length} invoice${group.length === 1 ? '' : 's'} on file for ${recipientLabel}:</p>
-        <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Invoice</th>
-              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Status</th>
-              <th style="text-align:right;padding:4px 8px;border-bottom:2px solid #1f2937;">Amount</th>
-              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Due date</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <p style="margin-top:12px;"><strong>Total: ${money(totalCents)}</strong></p>
-        ${
-          overdue.length > 0
-            ? `<p style="color:#b91c1c;"><strong>Overdue: ${money(overdueCents)} across ${overdue.length} invoice${overdue.length === 1 ? '' : 's'}</strong></p>`
-            : ''
-        }
-        <p>Each invoice is attached as its own PDF. Reply to this email with any questions.</p>
-      `;
+      const propertyLine = first.property
+        ? `<strong>${first.account.name}</strong> — ${first.property.name}`
+        : `<strong>${first.account.name}</strong>`;
       const subject = `Invoice summary${overdue.length > 0 ? ' - payment overdue' : ''} from ${COMPANY.name}`;
 
       const attachments = group.map((invoice) => ({
@@ -406,6 +448,36 @@ export class InvoicesService {
       }));
 
       for (const contact of recipients) {
+        const html = `
+        <p style="font-family:sans-serif;font-size:14px;">Hi ${contact.name},</p>
+        <p style="font-family:sans-serif;font-size:14px;">
+          Here's a summary of ${group.length} invoice${group.length === 1 ? '' : 's'} on file for ${propertyLine}:
+        </p>
+        <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Invoice</th>
+              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Status</th>
+              <th style="text-align:right;padding:4px 8px;border-bottom:2px solid #1f2937;">Amount</th>
+              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Due date</th>
+              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Past due</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p style="margin-top:12px;font-family:sans-serif;font-size:14px;"><strong>Total: ${money(totalCents)}</strong></p>
+        ${
+          overdue.length > 0
+            ? `<p style="font-family:sans-serif;font-size:14px;color:#b91c1c;"><strong>Overdue: ${money(overdueCents)} across ${overdue.length} invoice${overdue.length === 1 ? '' : 's'}</strong></p>`
+            : ''
+        }
+        <p style="font-family:sans-serif;font-size:14px;">
+          Each invoice is attached as its own PDF. Reply to this email with any questions.
+        </p>
+        <p style="font-family:sans-serif;font-size:14px;">
+          Thank you for your business.<br/>${COMPANY.name}
+        </p>
+      `;
         await this.mail.send({ to: contact.email!, subject, html, attachments });
         emailCount++;
       }

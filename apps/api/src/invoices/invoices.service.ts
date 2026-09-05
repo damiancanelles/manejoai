@@ -72,6 +72,7 @@ export class InvoicesService {
   findAll(filters: {
     status?: InvoiceStatus;
     accountId?: string;
+    propertyId?: string;
     dateFrom?: string;
     dateTo?: string;
     search?: string;
@@ -84,6 +85,7 @@ export class InvoicesService {
       where: {
         status: filters.status,
         accountId: filters.accountId,
+        propertyId: filters.propertyId,
         issueDate:
           filters.dateFrom || filters.dateTo
             ? {

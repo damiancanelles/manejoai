@@ -23,12 +23,21 @@ export class InvoicesController {
   findAll(
     @Query('status') status?: InvoiceStatus,
     @Query('accountId') accountId?: string,
+    @Query('propertyId') propertyId?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
     @Query('search') search?: string,
     @Query('full') full?: string,
   ) {
-    return this.invoicesService.findAll({ status, accountId, dateFrom, dateTo, search, full: full === 'true' });
+    return this.invoicesService.findAll({
+      status,
+      accountId,
+      propertyId,
+      dateFrom,
+      dateTo,
+      search,
+      full: full === 'true',
+    });
   }
 
   @Get(':id')

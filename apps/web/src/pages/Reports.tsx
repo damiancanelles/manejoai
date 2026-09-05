@@ -9,6 +9,7 @@ import { PAGE_SIZE, paginate } from '../lib/paginate';
 interface Account {
   id: string;
   name: string;
+  properties: { id: string; name: string }[];
 }
 interface Job {
   id: string;
@@ -257,6 +258,7 @@ interface SendReportResult {
 
 function InvoicesReport({ accounts }: { accounts: Account[] }) {
   const [accountId, setAccountId] = useState('');
+  const [propertyId, setPropertyId] = useState('');
   const [status, setStatus] = useState('PAID');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -267,9 +269,12 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
   const [sendResult, setSendResult] = useState<SendReportResult | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
 
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+
   function filterParams() {
     const params = new URLSearchParams();
     if (accountId) params.set('accountId', accountId);
+    if (propertyId) params.set('propertyId', propertyId);
     if (status !== 'ALL') params.set('status', status);
     if (dateFrom) params.set('dateFrom', dateFrom);
     if (dateTo) params.set('dateTo', dateTo);
@@ -286,7 +291,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
       .then(setInvoices)
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accountId, status, dateFrom, dateTo]);
+  }, [accountId, propertyId, status, dateFrom, dateTo]);
 
   const totalCents = invoices.reduce((sum, inv) => sum + inv.amountCents, 0);
   const pageInvoices = paginate(invoices, page);
@@ -324,13 +329,32 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
           Customer
           <select
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
+            onChange={(e) => {
+              setAccountId(e.target.value);
+              setPropertyId('');
+            }}
             className="mt-1 rounded border border-slate-300 px-2 py-1"
           >
             <option value="">All customers</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          Property
+          <select
+            value={propertyId}
+            onChange={(e) => setPropertyId(e.target.value)}
+            disabled={!selectedAccount || selectedAccount.properties.length === 0}
+            className="mt-1 rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
+          >
+            <option value="">All properties</option>
+            {selectedAccount?.properties.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
               </option>
             ))}
           </select>

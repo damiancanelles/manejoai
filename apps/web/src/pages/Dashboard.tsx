@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import StatTile from '../components/StatTile';
 import MonthlyIncomeChart from '../components/MonthlyIncomeChart';
@@ -54,45 +53,10 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="mb-8">
+      <section>
         <h2 className="mb-3 text-lg font-semibold">Gross income by customer</h2>
-        <RankedTable rows={byCustomer} emptyLabel="No paid invoices yet." />
+        <RankedTable rows={byCustomer} emptyLabel="No invoices yet." />
       </section>
-
-      <h2 className="mb-3 text-lg font-semibold">Overdue invoices</h2>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-100 text-left text-slate-500">
-            <tr>
-              <th className="px-4 py-2">Invoice</th>
-              <th className="px-4 py-2">Customer</th>
-              <th className="px-4 py-2">Amount</th>
-              <th className="px-4 py-2">Due date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {overdue.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-4 text-slate-400">
-                  Nothing overdue right now.
-                </td>
-              </tr>
-            )}
-            {overdue.map((inv) => (
-              <tr key={inv.id} className="border-t border-slate-100">
-                <td className="px-4 py-2">
-                  <Link to={`/invoices/${inv.id}`} className="text-blue-600 hover:underline">
-                    {inv.invoiceNumber}
-                  </Link>
-                </td>
-                <td className="px-4 py-2">{inv.account.name}</td>
-                <td className="px-4 py-2">{money(inv.amountCents)}</td>
-                <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }

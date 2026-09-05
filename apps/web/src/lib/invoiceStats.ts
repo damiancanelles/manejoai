@@ -1,10 +1,11 @@
 // Pure aggregation helpers shared by the Dashboard (business-wide) and the
 // customer page (scoped to one account). "Gross income" here means the
 // total invoiced amount - every invoice counts regardless of status (DRAFT,
-// SENT, OVERDUE, PAID, even CANCELED), bucketed by issueDate (when the
-// invoice was created), not when/whether it was actually paid. That's a
-// billed-amount view, not a cash-collected view - see sumByStatus below for
-// the PAID-only figures (the Dashboard's "Paid (all time)" tile, etc).
+// SENT, OVERDUE, PAID) except CANCELED, which never became real business,
+// bucketed by issueDate (when the invoice was created), not when/whether it
+// was actually paid. That's a billed-amount view, not a cash-collected view
+// - see sumByStatus below for the PAID-only figures (the Dashboard's
+// "Paid (all time)" tile, etc).
 
 export interface StatsInvoice {
   amountCents: number;
@@ -26,7 +27,7 @@ export interface MonthBucket {
   cents: number;
 }
 
-/** Trailing N calendar months (oldest first), every invoice's amount bucketed by issueDate. */
+/** Trailing N calendar months (oldest first), every non-canceled invoice's amount bucketed by issueDate. */
 export function monthlyIncome(invoices: StatsInvoice[], monthsBack = 12): MonthBucket[] {
   const buckets: MonthBucket[] = [];
   const now = new Date();
@@ -39,6 +40,7 @@ export function monthlyIncome(invoices: StatsInvoice[], monthsBack = 12): MonthB
   const byKey = new Map(buckets.map((b) => [b.key, b]));
 
   for (const inv of invoices) {
+    if (inv.status === 'CANCELED') continue;
     const issueDate = new Date(inv.issueDate);
     const key = `${issueDate.getFullYear()}-${String(issueDate.getMonth() + 1).padStart(2, '0')}`;
     const bucket = byKey.get(key);
@@ -52,18 +54,18 @@ export interface RankedRow {
   cents: number;
 }
 
-/** Every invoice's amount grouped by customer name, highest first. */
+/** Every non-canceled invoice's amount grouped by customer name, highest first. */
 export function incomeByCustomer(invoices: StatsInvoice[]): RankedRow[] {
   const totals = new Map<string, number>();
   for (const inv of invoices) {
-    if (!inv.account) continue;
+    if (inv.status === 'CANCELED' || !inv.account) continue;
     totals.set(inv.account.name, (totals.get(inv.account.name) || 0) + inv.amountCents);
   }
   return [...totals.entries()].map(([name, cents]) => ({ name, cents })).sort((a, b) => b.cents - a.cents);
 }
 
 /**
- * Every invoice's amount grouped by property name, highest first.
+ * Every non-canceled invoice's amount grouped by property name, highest first.
  * `properties` maps propertyId -> name (the caller already has this loaded,
  * e.g. from account.properties) - invoices with no propertyId fold into
  * "No property".
@@ -71,6 +73,7 @@ export function incomeByCustomer(invoices: StatsInvoice[]): RankedRow[] {
 export function incomeByProperty(invoices: StatsInvoice[], properties: Map<string, string>): RankedRow[] {
   const totals = new Map<string, number>();
   for (const inv of invoices) {
+    if (inv.status === 'CANCELED') continue;
     const name = (inv.propertyId && properties.get(inv.propertyId)) || 'No property';
     totals.set(name, (totals.get(name) || 0) + inv.amountCents);
   }

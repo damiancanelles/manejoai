@@ -9,7 +9,7 @@ export default function RankedTable({ rows, emptyLabel }: { rows: RankedRow[]; e
   }
   const max = Math.max(...rows.map((r) => r.cents), 1);
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
       <table className="w-full text-sm">
         <tbody>
           {rows.map((r) => (

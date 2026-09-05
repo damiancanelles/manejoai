@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import Pagination from '../components/Pagination';
+import { PAGE_SIZE, paginate } from '../lib/paginate';
 
 interface Quote {
   id: string;
@@ -22,6 +24,7 @@ export default function Quotes() {
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,6 +34,7 @@ export default function Quotes() {
 
   useEffect(() => {
     setLoading(true);
+    setPage(1);
     const params = new URLSearchParams();
     if (status !== 'ALL') params.set('status', status);
     if (debouncedSearch) params.set('search', debouncedSearch);
@@ -39,6 +43,8 @@ export default function Quotes() {
       .then(setQuotes)
       .finally(() => setLoading(false));
   }, [status, debouncedSearch]);
+
+  const pageQuotes = paginate(quotes, page);
 
   return (
     <div>
@@ -50,7 +56,7 @@ export default function Quotes() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {statuses.map((s) => (
             <button
               key={s}
@@ -68,48 +74,51 @@ export default function Quotes() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search quote #, customer, property, notes..."
-          className="ml-auto w-72 rounded border border-slate-300 px-3 py-1.5 text-sm"
+          className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>
 
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-left text-slate-500">
-              <tr>
-                <th className="px-4 py-2">Quote</th>
-                <th className="px-4 py-2">Customer</th>
-                <th className="px-4 py-2">Amount</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Issued</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotes.map((q) => (
-                <tr key={q.id} className="border-t border-slate-100">
-                  <td className="px-4 py-2">
-                    <Link to={`/quotes/${q.id}`} className="text-blue-600 hover:underline">
-                      {q.quoteNumber}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2">{q.account.name}</td>
-                  <td className="px-4 py-2">{money(q.amountCents)}</td>
-                  <td className="px-4 py-2">{q.status}</td>
-                  <td className="px-4 py-2">{new Date(q.issueDate).toLocaleDateString()}</td>
-                </tr>
-              ))}
-              {quotes.length === 0 && (
+        <>
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
-                  <td colSpan={5} className="px-4 py-4 text-slate-400">
-                    No quotes match these filters.
-                  </td>
+                  <th className="px-4 py-2">Quote</th>
+                  <th className="px-4 py-2">Customer</th>
+                  <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Issued</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pageQuotes.map((q) => (
+                  <tr key={q.id} className="border-t border-slate-100">
+                    <td className="px-4 py-2">
+                      <Link to={`/quotes/${q.id}`} className="text-blue-600 hover:underline">
+                        {q.quoteNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2">{q.account.name}</td>
+                    <td className="px-4 py-2">{money(q.amountCents)}</td>
+                    <td className="px-4 py-2">{q.status}</td>
+                    <td className="px-4 py-2">{new Date(q.issueDate).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {quotes.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-4 text-slate-400">
+                      No quotes match these filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={page} totalItems={quotes.length} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
     </div>
   );

@@ -151,8 +151,8 @@ export default function QuoteNew() {
               + Add item
             </button>
           </div>
-          <div className="overflow-hidden rounded border border-slate-200">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded border border-slate-200">
+            <table className="w-full min-w-[36rem] text-sm">
               <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
                   <th className="px-2 py-1.5">Description</th>

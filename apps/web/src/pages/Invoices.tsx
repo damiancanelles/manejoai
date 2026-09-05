@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import Pagination from '../components/Pagination';
+import { PAGE_SIZE, paginate } from '../lib/paginate';
 
 interface Invoice {
   id: string;
@@ -34,6 +36,7 @@ export default function Invoices() {
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<SendDraftsResult | null>(null);
@@ -66,12 +69,16 @@ export default function Invoices() {
     load();
     setSelected(new Set());
     setShowPaymentForm(false);
+    setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, debouncedSearch]);
 
   const draftCount = invoices.filter((i) => i.status === 'DRAFT').length;
-  const payable = invoices.filter((i) => !UNPAYABLE.has(i.status));
-  const allPayableSelected = payable.length > 0 && payable.every((i) => selected.has(i.id));
+  const pageInvoices = paginate(invoices, page);
+  // "Select all" toggles just the page in view - selections themselves
+  // persist across pages so a multi-page pick still works for payments.
+  const payablePage = pageInvoices.filter((i) => !UNPAYABLE.has(i.status));
+  const allPayablePageSelected = payablePage.length > 0 && payablePage.every((i) => selected.has(i.id));
 
   const selectedInvoices = invoices.filter((i) => selected.has(i.id));
   const selectedAccountIds = new Set(selectedInvoices.map((i) => i.accountId));
@@ -79,7 +86,12 @@ export default function Invoices() {
   const mixedAccounts = selectedAccountIds.size > 1;
 
   function toggleAll() {
-    setSelected(allPayableSelected ? new Set() : new Set(payable.map((i) => i.id)));
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allPayablePageSelected) payablePage.forEach((i) => next.delete(i.id));
+      else payablePage.forEach((i) => next.add(i.id));
+      return next;
+    });
   }
 
   function toggleOne(id: string) {
@@ -133,9 +145,9 @@ export default function Invoices() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Invoices</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={sendAllDrafts}
             disabled={sending}
@@ -181,7 +193,7 @@ export default function Invoices() {
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {statuses.map((s) => (
             <button
               key={s}
@@ -200,12 +212,12 @@ export default function Invoices() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search invoice #, customer, property, notes..."
-          className="ml-auto w-72 rounded border border-slate-300 px-3 py-1.5 text-sm"
+          className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>
 
       {selected.size > 0 && (
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
           <span>
             {selected.size} invoice{selected.size === 1 ? '' : 's'} selected — {money(selectedTotal)}
             {mixedAccounts && (
@@ -238,7 +250,7 @@ export default function Invoices() {
             </p>
             <p className="text-slate-500">Recording for {selectedInvoices[0]?.account.name}</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <label className="block">
               Payment date
               <input
@@ -277,52 +289,60 @@ export default function Invoices() {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-left text-slate-500">
-              <tr>
-                <th className="w-8 px-4 py-2">
-                  <input type="checkbox" checked={allPayableSelected} onChange={toggleAll} disabled={payable.length === 0} />
-                </th>
-                <th className="px-4 py-2">Invoice</th>
-                <th className="px-4 py-2">Customer</th>
-                <th className="px-4 py-2">Amount</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Due date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="border-t border-slate-100">
-                  <td className="px-4 py-2">
+        <>
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-100 text-left text-slate-500">
+                <tr>
+                  <th className="w-8 px-4 py-2">
                     <input
                       type="checkbox"
-                      checked={selected.has(inv.id)}
-                      onChange={() => toggleOne(inv.id)}
-                      disabled={UNPAYABLE.has(inv.status)}
+                      checked={allPayablePageSelected}
+                      onChange={toggleAll}
+                      disabled={payablePage.length === 0}
                     />
-                  </td>
-                  <td className="px-4 py-2">
-                    <Link to={`/invoices/${inv.id}`} className="text-blue-600 hover:underline">
-                      {inv.invoiceNumber}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2">{inv.account.name}</td>
-                  <td className="px-4 py-2">{money(inv.amountCents)}</td>
-                  <td className="px-4 py-2">{inv.status}</td>
-                  <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                  </th>
+                  <th className="px-4 py-2">Invoice</th>
+                  <th className="px-4 py-2">Customer</th>
+                  <th className="px-4 py-2">Amount</th>
+                  <th className="px-4 py-2">Status</th>
+                  <th className="px-4 py-2">Due date</th>
                 </tr>
-              ))}
-              {invoices.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-4 text-slate-400">
-                    No invoices match these filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pageInvoices.map((inv) => (
+                  <tr key={inv.id} className="border-t border-slate-100">
+                    <td className="px-4 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(inv.id)}
+                        onChange={() => toggleOne(inv.id)}
+                        disabled={UNPAYABLE.has(inv.status)}
+                      />
+                    </td>
+                    <td className="px-4 py-2">
+                      <Link to={`/invoices/${inv.id}`} className="text-blue-600 hover:underline">
+                        {inv.invoiceNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2">{inv.account.name}</td>
+                    <td className="px-4 py-2">{money(inv.amountCents)}</td>
+                    <td className="px-4 py-2">{inv.status}</td>
+                    <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+                {invoices.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-4 text-slate-400">
+                      No invoices match these filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={page} totalItems={invoices.length} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
     </div>
   );

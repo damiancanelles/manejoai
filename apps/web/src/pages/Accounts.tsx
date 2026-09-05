@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import Pagination from '../components/Pagination';
+import { PAGE_SIZE, paginate } from '../lib/paginate';
 
 interface Account {
   id: string;
@@ -16,6 +18,7 @@ export default function Accounts() {
   const [type, setType] = useState('ALL');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState('');
@@ -37,8 +40,10 @@ export default function Accounts() {
   }
 
   useEffect(load, [debouncedSearch]);
+  useEffect(() => setPage(1), [type, debouncedSearch]);
 
   const visibleAccounts = type === 'ALL' ? accounts : accounts.filter((a) => a.type === type);
+  const pageAccounts = paginate(visibleAccounts, page);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -61,14 +66,14 @@ export default function Accounts() {
       </div>
 
       {showForm && (
-        <form onSubmit={onSubmit} className="mb-6 flex items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+        <form onSubmit={onSubmit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
           <label className="text-sm">
             Name
             <input
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 block w-64 rounded border border-slate-300 px-3 py-2"
+              className="mt-1 block w-full rounded border border-slate-300 px-3 py-2 sm:w-64"
             />
           </label>
           <label className="text-sm">
@@ -89,7 +94,7 @@ export default function Accounts() {
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {types.map((t) => (
             <button
               key={t}
@@ -107,44 +112,47 @@ export default function Accounts() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search customer or property name..."
-          className="ml-auto w-72 rounded border border-slate-300 px-3 py-1.5 text-sm"
+          className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>
 
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-100 text-left text-slate-500">
-              <tr>
-                <th className="px-4 py-2">Name</th>
-                <th className="px-4 py-2">Type</th>
-                <th className="px-4 py-2">Properties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleAccounts.map((a) => (
-                <tr key={a.id} className="border-t border-slate-100">
-                  <td className="px-4 py-2">
-                    <Link to={`/accounts/${a.id}`} className="text-blue-600 hover:underline">
-                      {a.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2">{a.type === 'MULTIFAMILY' ? 'Multifamily' : 'Individual'}</td>
-                  <td className="px-4 py-2">{a.properties.length}</td>
-                </tr>
-              ))}
-              {visibleAccounts.length === 0 && (
+        <>
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
-                  <td colSpan={3} className="px-4 py-4 text-slate-400">
-                    No customers match these filters.
-                  </td>
+                  <th className="px-4 py-2">Name</th>
+                  <th className="px-4 py-2">Type</th>
+                  <th className="px-4 py-2">Properties</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {pageAccounts.map((a) => (
+                  <tr key={a.id} className="border-t border-slate-100">
+                    <td className="px-4 py-2">
+                      <Link to={`/accounts/${a.id}`} className="text-blue-600 hover:underline">
+                        {a.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2">{a.type === 'MULTIFAMILY' ? 'Multifamily' : 'Individual'}</td>
+                    <td className="px-4 py-2">{a.properties.length}</td>
+                  </tr>
+                ))}
+                {visibleAccounts.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-4 text-slate-400">
+                      No customers match these filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <Pagination page={page} totalItems={visibleAccounts.length} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
     </div>
   );

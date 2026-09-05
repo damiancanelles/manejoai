@@ -109,7 +109,7 @@ export default function JobDetail() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{job.title}</h1>
           {job.description && <p className="mt-1 text-slate-600">{job.description}</p>}
@@ -209,7 +209,7 @@ export default function JobDetail() {
         </form>
       )}
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-slate-500">Status:</span>
         {['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED'].map((s) => (
           <button
@@ -232,7 +232,7 @@ export default function JobDetail() {
             <input type="file" accept="image/*" className="hidden" onChange={onFileChange} disabled={uploading} />
           </label>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {job.photos.map((p) => (
             <a key={p.id} href={p.url} target="_blank" rel="noreferrer">
               <img src={p.url} alt={p.caption || ''} className="h-32 w-full rounded border border-slate-200 object-cover" />

@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -6,44 +7,75 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-200'
   }`;
 
+const links = [
+  { to: '/', end: true, label: 'Dashboard' },
+  { to: '/accounts', label: 'Customers' },
+  { to: '/jobs', label: 'Jobs' },
+  { to: '/job-reports', label: 'Job Reports' },
+  { to: '/quotes', label: 'Quotes' },
+  { to: '/invoices', label: 'Invoices' },
+  { to: '/reports', label: 'Reports' },
+];
+
 export default function Layout() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const [navOpen, setNavOpen] = useState(false);
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => setNavOpen(false), [location.pathname]);
+
+  const navContent = (
+    <>
+      <div className="mb-6 text-lg font-bold">manejoai</div>
+      <nav className="space-y-1">
+        {links.map((l) => (
+          <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
+            {l.label}
+          </NavLink>
+        ))}
+      </nav>
+      <div className="mt-8 border-t border-slate-200 pt-4 text-sm text-slate-500">
+        <div>{user?.name}</div>
+        <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-slate-700">
+          Log out
+        </button>
+      </div>
+    </>
+  );
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-56 shrink-0 border-r border-slate-200 bg-white p-4">
-        <div className="mb-6 text-lg font-bold">manejoai</div>
-        <nav className="space-y-1">
-          <NavLink to="/" end className={linkClass}>
-            Dashboard
-          </NavLink>
-          <NavLink to="/accounts" className={linkClass}>
-            Customers
-          </NavLink>
-          <NavLink to="/jobs" className={linkClass}>
-            Jobs
-          </NavLink>
-          <NavLink to="/job-reports" className={linkClass}>
-            Job Reports
-          </NavLink>
-          <NavLink to="/quotes" className={linkClass}>
-            Quotes
-          </NavLink>
-          <NavLink to="/invoices" className={linkClass}>
-            Invoices
-          </NavLink>
-          <NavLink to="/reports" className={linkClass}>
-            Reports
-          </NavLink>
-        </nav>
-        <div className="mt-8 border-t border-slate-200 pt-4 text-sm text-slate-500">
-          <div>{user?.name}</div>
-          <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-slate-700">
-            Log out
-          </button>
+    <div className="min-h-screen md:flex">
+      {/* Mobile top bar - hidden on md+ where the sidebar is always visible */}
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white p-4 md:hidden">
+        <span className="text-lg font-bold">manejoai</span>
+        <button
+          onClick={() => setNavOpen(true)}
+          aria-label="Open menu"
+          className="rounded p-2 text-slate-600 hover:bg-slate-100"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile drawer + backdrop */}
+      {navOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setNavOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-64 overflow-y-auto bg-white p-4 shadow-xl">
+            {navContent}
+          </aside>
         </div>
+      )}
+
+      {/* Persistent desktop sidebar */}
+      <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white p-4 md:block">
+        {navContent}
       </aside>
-      <main className="flex-1 p-6">
+
+      <main className="flex-1 overflow-x-hidden p-4 md:p-6">
         <Outlet />
       </main>
     </div>

@@ -173,7 +173,7 @@ export default function AccountDetail() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-start justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{account.name}</h1>
           <p className="text-sm text-slate-500">
@@ -218,7 +218,7 @@ export default function AccountDetail() {
 
       {/* Financials */}
       <section>
-        <div className="mb-3 grid grid-cols-2 gap-4">
+        <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <StatTile label="Paid (all time)" value={money(paidTotal)} tone="green" />
           <StatTile label="Overdue" value={money(overdueTotal)} tone="red" />
         </div>
@@ -243,7 +243,7 @@ export default function AccountDetail() {
           </button>
         </div>
         {showPropertyForm && (
-          <form onSubmit={addProperty} className="mb-3 grid grid-cols-5 gap-2 rounded border border-slate-200 bg-white p-3 text-sm">
+          <form onSubmit={addProperty} className="mb-3 grid grid-cols-1 gap-2 rounded border border-slate-200 bg-white p-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
             <input name="name" placeholder="Property name" required className="rounded border border-slate-300 px-2 py-1" />
             <input name="addressLine1" placeholder="Address" required className="rounded border border-slate-300 px-2 py-1" />
             <input name="city" placeholder="City" required className="rounded border border-slate-300 px-2 py-1" />
@@ -276,7 +276,7 @@ export default function AccountDetail() {
         </div>
         {showContactForm && (
           <form onSubmit={addContact} className="mb-3 space-y-2 rounded border border-slate-200 bg-white p-3 text-sm">
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <select name="role" className="rounded border border-slate-300 px-2 py-1">
                 <option value="OWNER">Owner</option>
                 <option value="SALES">Sales</option>
@@ -336,9 +336,9 @@ export default function AccountDetail() {
           </button>
         </div>
         {showJobForm && (
-          <form onSubmit={addJob} className="mb-3 flex gap-2 rounded border border-slate-200 bg-white p-3 text-sm">
-            <input name="title" placeholder="Job title" required className="flex-1 rounded border border-slate-300 px-2 py-1" />
-            <input name="description" placeholder="Description (optional)" className="flex-1 rounded border border-slate-300 px-2 py-1" />
+          <form onSubmit={addJob} className="mb-3 flex flex-wrap gap-2 rounded border border-slate-200 bg-white p-3 text-sm">
+            <input name="title" placeholder="Job title" required className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1" />
+            <input name="description" placeholder="Description (optional)" className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1" />
             <button type="submit" className="rounded bg-slate-900 px-3 py-1 text-white">
               Add
             </button>
@@ -404,7 +404,7 @@ export default function AccountDetail() {
         <h2 className="mb-2 text-lg font-semibold">Payments</h2>
         <ul className="space-y-1 text-sm">
           {account.payments.map((p) => (
-            <li key={p.id} className="flex items-center justify-between rounded border border-slate-200 bg-white px-3 py-2">
+            <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white px-3 py-2">
               <span>
                 <span className="font-medium">{money(p.amountCents)}</span> on {new Date(p.paidAt).toLocaleDateString()} —{' '}
                 {p.invoices.map((i, idx) => (

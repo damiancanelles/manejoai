@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import Pagination from '../components/Pagination';
+import { PAGE_SIZE, paginate } from '../lib/paginate';
 
 interface Account {
   id: string;
@@ -31,6 +33,7 @@ export default function IncomingReports() {
   const [status, setStatus] = useState('PENDING');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,6 +58,9 @@ export default function IncomingReports() {
   }
 
   useEffect(load, [status, debouncedSearch]);
+  useEffect(() => setPage(1), [status, debouncedSearch]);
+
+  const pageReports = paginate(reports, page);
 
   return (
     <div className="max-w-3xl">
@@ -64,7 +70,7 @@ export default function IncomingReports() {
       </p>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {statuses.map((s) => (
             <button
               key={s}
@@ -82,7 +88,7 @@ export default function IncomingReports() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search sender, message, property..."
-          className="ml-auto w-72 rounded border border-slate-300 px-3 py-1.5 text-sm"
+          className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>
 
@@ -94,7 +100,7 @@ export default function IncomingReports() {
       )}
 
       <div className="space-y-4">
-        {reports.map((r) => (
+        {pageReports.map((r) => (
           <ReportCard
             key={r.id}
             report={r}
@@ -103,6 +109,7 @@ export default function IncomingReports() {
           />
         ))}
       </div>
+      <Pagination page={page} totalItems={reports.length} pageSize={PAGE_SIZE} onChange={setPage} />
     </div>
   );
 }
@@ -182,7 +189,7 @@ function ReportCard({
       )}
 
       {report.photoUrls.length > 0 && (
-        <div className="mb-3 grid grid-cols-4 gap-2">
+        <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {report.photoUrls.map((url) => (
             <a key={url} href={url} target="_blank" rel="noreferrer">
               <img src={url} alt="" className="h-24 w-full rounded border border-slate-200 object-cover" />
@@ -221,7 +228,7 @@ function ReportCard({
           {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="block text-sm">
                 Customer
                 <select
@@ -278,7 +285,7 @@ function ReportCard({
             </label>
           </div>
 
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={convert}

@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { downloadCsv } from '../lib/csv';
 import { downloadInvoicesPdf } from '../lib/invoicePdf';
+import Pagination from '../components/Pagination';
+import { PAGE_SIZE, paginate } from '../lib/paginate';
 
 interface Account {
   id: string;
@@ -95,6 +97,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   // Debounce the free-text search so we're not firing a request per keystroke.
@@ -105,6 +108,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
 
   useEffect(() => {
     setLoading(true);
+    setPage(1);
     const params = new URLSearchParams();
     if (accountId) params.set('accountId', accountId);
     if (status !== 'ALL') params.set('status', status);
@@ -116,6 +120,8 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
       .then(setJobs)
       .finally(() => setLoading(false));
   }, [accountId, status, dateFrom, dateTo, debouncedSearch]);
+
+  const pageJobs = paginate(jobs, page);
 
   function exportCsv() {
     downloadCsv(
@@ -203,7 +209,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
 
       <p className="mb-2 text-sm text-slate-500">{loading ? 'Loading...' : `${jobs.length} job(s)`}</p>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left text-slate-500">
             <tr>
@@ -215,7 +221,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
             </tr>
           </thead>
           <tbody>
-            {jobs.map((j) => (
+            {pageJobs.map((j) => (
               <tr key={j.id} className="border-t border-slate-100">
                 <td className="px-4 py-2">
                   <Link to={`/jobs/${j.id}`} className="text-blue-600 hover:underline">
@@ -238,6 +244,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} totalItems={jobs.length} pageSize={PAGE_SIZE} onChange={setPage} />
     </div>
   );
 }
@@ -254,6 +261,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<SendReportResult | null>(null);
@@ -270,6 +278,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
 
   useEffect(() => {
     setLoading(true);
+    setPage(1);
     const params = filterParams();
     params.set('full', 'true');
     api
@@ -280,6 +289,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
   }, [accountId, status, dateFrom, dateTo]);
 
   const totalCents = invoices.reduce((sum, inv) => sum + inv.amountCents, 0);
+  const pageInvoices = paginate(invoices, page);
 
   function exportPdf() {
     downloadInvoicesPdf(invoices);
@@ -401,7 +411,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
         {loading ? 'Loading...' : `${invoices.length} invoice(s) — ${money(totalCents)} total`}
       </p>
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left text-slate-500">
             <tr>
@@ -414,7 +424,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((inv) => (
+            {pageInvoices.map((inv) => (
               <tr key={inv.id} className="border-t border-slate-100">
                 <td className="px-4 py-2">
                   <Link to={`/invoices/${inv.id}`} className="text-blue-600 hover:underline">
@@ -438,6 +448,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
           </tbody>
         </table>
       </div>
+      <Pagination page={page} totalItems={invoices.length} pageSize={PAGE_SIZE} onChange={setPage} />
     </div>
   );
 }

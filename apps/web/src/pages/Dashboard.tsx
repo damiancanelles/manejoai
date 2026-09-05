@@ -41,7 +41,7 @@ export default function Dashboard() {
     <div>
       <h1 className="mb-6 text-2xl font-bold">Dashboard</h1>
 
-      <div className="mb-8 grid grid-cols-3 gap-4">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile label="Overdue" value={String(overdue.length)} sub={`${money(overdueTotal)} outstanding`} tone="red" />
         <StatTile label="Sent, not yet due" value={String(sent.length)} tone="amber" />
         <StatTile label="Paid (all time)" value={money(paidTotal)} tone="green" />
@@ -60,7 +60,7 @@ export default function Dashboard() {
       </section>
 
       <h2 className="mb-3 text-lg font-semibold">Overdue invoices</h2>
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left text-slate-500">
             <tr>

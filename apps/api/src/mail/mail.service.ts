@@ -48,6 +48,11 @@ export class MailService {
   private async sendViaResend(input: SendEmailInput): Promise<void> {
     const apiKey = this.config.get<string>('RESEND_API_KEY');
     const from = this.config.get<string>('MAIL_FROM');
+    // Optional - lets replies land in an inbox you already check (e.g. the
+    // Gmail address customers are used to) even though `from` has to be an
+    // address on a domain we actually control (see MAIL_FROM's own comment -
+    // no provider can legitimately send "as" someone else's Gmail address).
+    const replyTo = this.config.get<string>('MAIL_REPLY_TO');
     if (!apiKey) {
       this.logger.warn('MAIL_DRIVER=resend but RESEND_API_KEY is not set - falling back to console log');
       this.logger.log(`[console-mail] To: ${input.to} | Subject: ${input.subject}\n${input.html}`);
@@ -65,6 +70,7 @@ export class MailService {
         to: input.to,
         subject: input.subject,
         html: input.html,
+        ...(replyTo ? { reply_to: replyTo } : {}),
         // Resend wants attachment content as base64 (https://resend.com/docs/api-reference/emails/send-email)
         attachments: input.attachments?.map((a) => ({
           filename: a.filename,

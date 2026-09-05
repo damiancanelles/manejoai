@@ -17,12 +17,6 @@ function niceMax(dollars: number): number {
   return step * magnitude;
 }
 
-function shortLabel(key: string) {
-  const [y, m] = key.split('-').map(Number);
-  const d = new Date(y, m - 1, 1);
-  return `${d.toLocaleDateString('en-US', { month: 'short' })} '${String(y).slice(2)}`;
-}
-
 export default function MonthlyIncomeChart({ data }: { data: MonthBucket[] }) {
   const [hover, setHover] = useState<{ index: number; x: number; y: number } | null>(null);
 
@@ -100,7 +94,7 @@ export default function MonthlyIncomeChart({ data }: { data: MonthBucket[] }) {
                 onBlur={() => setHover(null)}
               />
               <text x={marginLeft + i * barSlot + barSlot / 2} y={height - 8} textAnchor="middle" fontSize={10} fill={MUTED_TEXT}>
-                {shortLabel(d.key)}
+                {d.label}
               </text>
             </g>
           );

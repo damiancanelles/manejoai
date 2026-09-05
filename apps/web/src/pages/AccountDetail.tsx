@@ -4,7 +4,16 @@ import { api } from '../api/client';
 import StatTile from '../components/StatTile';
 import MonthlyIncomeChart from '../components/MonthlyIncomeChart';
 import RankedTable from '../components/RankedTable';
-import { sumByStatus, monthlyIncome, incomeByProperty, paidByProperty, overdueByProperty, money } from '../lib/invoiceStats';
+import YearSwitcher from '../components/YearSwitcher';
+import {
+  sumByStatus,
+  monthlyIncome,
+  incomeByProperty,
+  paidByProperty,
+  overdueByProperty,
+  yearsWithInvoices,
+  money,
+} from '../lib/invoiceStats';
 
 interface Property {
   id: string;
@@ -81,6 +90,8 @@ export default function AccountDetail() {
   const [sendingReminder, setSendingReminder] = useState(false);
   const [reminderResult, setReminderResult] = useState<ReminderResult | null>(null);
   const [reminderError, setReminderError] = useState<string | null>(null);
+  const [year, setYear] = useState<number | null>(null);
+  const [yearInitialized, setYearInitialized] = useState(false);
 
   function load() {
     if (!id) return;
@@ -88,6 +99,16 @@ export default function AccountDetail() {
   }
 
   useEffect(load, [id]);
+
+  // Default to the most recent year with data, but only once - later
+  // reloads (after adding a job/contact/etc) shouldn't reset the switcher
+  // if the user already picked a year.
+  useEffect(() => {
+    if (yearInitialized || !account) return;
+    const years = yearsWithInvoices(account.invoices);
+    if (years.length > 0) setYear(years[0]);
+    setYearInitialized(true);
+  }, [account, yearInitialized]);
 
   if (!account) return <p>Loading...</p>;
 
@@ -165,13 +186,15 @@ export default function AccountDetail() {
     load();
   }
 
-  const paidTotal = sumByStatus(account.invoices, 'PAID');
-  const overdueTotal = sumByStatus(account.invoices, 'OVERDUE');
-  const monthly = monthlyIncome(account.invoices);
+  const years = yearsWithInvoices(account.invoices);
+  const yearLabel = year != null ? `${year}` : 'all time';
+  const paidTotal = sumByStatus(account.invoices, 'PAID', year);
+  const overdueTotal = sumByStatus(account.invoices, 'OVERDUE', year);
+  const monthly = monthlyIncome(account.invoices, year);
   const propertyNames = new Map(account.properties.map((p) => [p.id, p.name]));
-  const byProperty = incomeByProperty(account.invoices, propertyNames);
-  const paidByProp = paidByProperty(account.invoices, propertyNames);
-  const overdueByProp = overdueByProperty(account.invoices, propertyNames);
+  const byProperty = incomeByProperty(account.invoices, propertyNames, year);
+  const paidByProp = paidByProperty(account.invoices, propertyNames, year);
+  const overdueByProp = overdueByProperty(account.invoices, propertyNames, year);
 
   return (
     <div className="space-y-8">
@@ -220,9 +243,12 @@ export default function AccountDetail() {
 
       {/* Financials */}
       <section>
+        <div className="mb-3 flex justify-end">
+          <YearSwitcher years={years} selected={year} onChange={setYear} />
+        </div>
         <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <StatTile label="Paid (all time)" value={money(paidTotal)} tone="green" />
-          <StatTile label="Overdue" value={money(overdueTotal)} tone="red" />
+          <StatTile label={`Paid (${yearLabel})`} value={money(paidTotal)} tone="green" />
+          <StatTile label={`Overdue (${yearLabel})`} value={money(overdueTotal)} tone="red" />
         </div>
         <h2 className="mb-2 text-lg font-semibold">Gross income by month</h2>
         <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

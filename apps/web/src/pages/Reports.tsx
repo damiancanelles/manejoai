@@ -73,13 +73,13 @@ export default function Reports() {
       <div className="mb-4 flex gap-2">
         <button
           onClick={() => setTab('jobs')}
-          className={`rounded px-3 py-1 text-sm ${tab === 'jobs' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+          className={`rounded px-3 py-1 text-sm transition-colors ${tab === 'jobs' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
           Jobs
         </button>
         <button
           onClick={() => setTab('invoices')}
-          className={`rounded px-3 py-1 text-sm ${tab === 'invoices' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'}`}
+          className={`rounded px-3 py-1 text-sm transition-colors ${tab === 'invoices' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
           Invoices
         </button>
@@ -141,7 +141,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white shadow-sm p-4 text-sm">
         <label className="block">
           Customer
           <select
@@ -202,7 +202,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
         <button
           onClick={exportCsv}
           disabled={jobs.length === 0}
-          className="rounded bg-slate-900 px-4 py-1.5 text-white disabled:opacity-40"
+          className="rounded bg-indigo-600 px-4 py-1.5 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-40"
         >
           Export CSV
         </button>
@@ -210,7 +210,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
 
       <p className="mb-2 text-sm text-slate-500">{loading ? 'Loading...' : `${jobs.length} job(s)`}</p>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left text-slate-500">
             <tr>
@@ -225,7 +225,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
             {pageJobs.map((j) => (
               <tr key={j.id} className="border-t border-slate-100">
                 <td className="px-4 py-2">
-                  <Link to={`/jobs/${j.id}`} className="text-blue-600 hover:underline">
+                  <Link to={`/jobs/${j.id}`} className="text-indigo-600 hover:underline">
                     {j.title}
                   </Link>
                 </td>
@@ -324,7 +324,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
+      <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white shadow-sm p-4 text-sm">
         <label className="block">
           Customer
           <select
@@ -401,7 +401,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
         <button
           onClick={sendToCustomers}
           disabled={invoices.length === 0 || sending}
-          className="rounded bg-slate-900 px-4 py-1.5 text-white disabled:opacity-40"
+          className="rounded bg-indigo-600 px-4 py-1.5 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-40"
         >
           {sending ? 'Sending...' : 'Send invoices to customers'}
         </button>
@@ -435,7 +435,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
         {loading ? 'Loading...' : `${invoices.length} invoice(s) — ${money(totalCents)} total`}
       </p>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left text-slate-500">
             <tr>
@@ -451,7 +451,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
             {pageInvoices.map((inv) => (
               <tr key={inv.id} className="border-t border-slate-100">
                 <td className="px-4 py-2">
-                  <Link to={`/invoices/${inv.id}`} className="text-blue-600 hover:underline">
+                  <Link to={`/invoices/${inv.id}`} className="text-indigo-600 hover:underline">
                     {inv.invoiceNumber}
                   </Link>
                 </td>

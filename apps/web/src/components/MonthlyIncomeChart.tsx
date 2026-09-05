@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { money, type MonthBucket } from '../lib/invoiceStats';
 
-// Single hue (sequential default, blue) - one series, so no legend: the
-// section heading above the chart already says what's plotted.
-const BAR_COLOR = '#2a78d6';
+// Single hue (sequential default, matching the app's brand indigo) - one
+// series, so no legend: the section heading above the chart already says
+// what's plotted.
+const BAR_COLOR = '#4f46e5';
 const GRID_COLOR = '#e1e0d9';
 const AXIS_COLOR = '#c3c2b7';
 const MUTED_TEXT = '#898781';

@@ -225,7 +225,7 @@ export default function AccountDetail() {
           <StatTile label="Overdue" value={money(overdueTotal)} tone="red" />
         </div>
         <h2 className="mb-2 text-lg font-semibold">Gross income by month</h2>
-        <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <MonthlyIncomeChart data={monthly} />
         </div>
         {account.properties.length > 0 && (
@@ -246,19 +246,19 @@ export default function AccountDetail() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Properties</h2>
-          <button onClick={() => setShowPropertyForm((v) => !v)} className="text-sm text-blue-600">
+          <button onClick={() => setShowPropertyForm((v) => !v)} className="text-sm text-indigo-600">
             {showPropertyForm ? 'Cancel' : '+ Add property'}
           </button>
         </div>
         {showPropertyForm && (
-          <form onSubmit={addProperty} className="mb-3 grid grid-cols-1 gap-2 rounded border border-slate-200 bg-white p-3 text-sm sm:grid-cols-2 lg:grid-cols-5">
+          <form onSubmit={addProperty} className="mb-3 grid grid-cols-1 gap-2 rounded border border-slate-200 bg-white p-3 shadow-sm text-sm sm:grid-cols-2 lg:grid-cols-5">
             <input name="name" placeholder="Property name" required className="rounded border border-slate-300 px-2 py-1" />
             <input name="addressLine1" placeholder="Address" required className="rounded border border-slate-300 px-2 py-1" />
             <input name="city" placeholder="City" required className="rounded border border-slate-300 px-2 py-1" />
             <input name="state" placeholder="State" required className="rounded border border-slate-300 px-2 py-1" />
             <div className="flex gap-1">
               <input name="zip" placeholder="ZIP" required className="w-full rounded border border-slate-300 px-2 py-1" />
-              <button type="submit" className="rounded bg-slate-900 px-3 text-white">
+              <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 text-white">
                 Add
               </button>
             </div>
@@ -266,7 +266,7 @@ export default function AccountDetail() {
         )}
         <ul className="space-y-1 text-sm">
           {account.properties.map((p) => (
-            <li key={p.id} className="rounded border border-slate-200 bg-white px-3 py-2">
+            <li key={p.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <span className="font-medium">{p.name}</span> — {p.addressLine1}, {p.city}, {p.state} {p.zip}
             </li>
           ))}
@@ -278,12 +278,12 @@ export default function AccountDetail() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Contacts</h2>
-          <button onClick={() => setShowContactForm((v) => !v)} className="text-sm text-blue-600">
+          <button onClick={() => setShowContactForm((v) => !v)} className="text-sm text-indigo-600">
             {showContactForm ? 'Cancel' : '+ Add contact'}
           </button>
         </div>
         {showContactForm && (
-          <form onSubmit={addContact} className="mb-3 space-y-2 rounded border border-slate-200 bg-white p-3 text-sm">
+          <form onSubmit={addContact} className="mb-3 space-y-2 rounded border border-slate-200 bg-white p-3 shadow-sm text-sm">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <select name="role" className="rounded border border-slate-300 px-2 py-1">
                 <option value="OWNER">Owner</option>
@@ -314,14 +314,14 @@ export default function AccountDetail() {
             <label className="inline-flex items-center gap-1">
               <input type="checkbox" name="receivesReminders" /> Gets payment reminders
             </label>
-            <button type="submit" className="ml-4 rounded bg-slate-900 px-3 py-1 text-white">
+            <button type="submit" className="ml-4 rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
               Add
             </button>
           </form>
         )}
         <ul className="space-y-1 text-sm">
           {account.contacts.map((c) => (
-            <li key={c.id} className="rounded border border-slate-200 bg-white px-3 py-2">
+            <li key={c.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <span className="font-medium">{c.name}</span> ({c.role}) — {c.email || 'no email'}
               {c.property ? (
                 <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">{c.property.name}</span>
@@ -339,23 +339,23 @@ export default function AccountDetail() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Jobs</h2>
-          <button onClick={() => setShowJobForm((v) => !v)} className="text-sm text-blue-600">
+          <button onClick={() => setShowJobForm((v) => !v)} className="text-sm text-indigo-600">
             {showJobForm ? 'Cancel' : '+ Log job'}
           </button>
         </div>
         {showJobForm && (
-          <form onSubmit={addJob} className="mb-3 flex flex-wrap gap-2 rounded border border-slate-200 bg-white p-3 text-sm">
+          <form onSubmit={addJob} className="mb-3 flex flex-wrap gap-2 rounded border border-slate-200 bg-white p-3 shadow-sm text-sm">
             <input name="title" placeholder="Job title" required className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1" />
             <input name="description" placeholder="Description (optional)" className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1" />
-            <button type="submit" className="rounded bg-slate-900 px-3 py-1 text-white">
+            <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
               Add
             </button>
           </form>
         )}
         <ul className="space-y-1 text-sm">
           {account.jobs.map((j) => (
-            <li key={j.id} className="rounded border border-slate-200 bg-white px-3 py-2">
-              <Link to={`/jobs/${j.id}`} className="font-medium text-blue-600 hover:underline">
+            <li key={j.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
+              <Link to={`/jobs/${j.id}`} className="font-medium text-indigo-600 hover:underline">
                 {j.title}
               </Link>{' '}
               — {j.status} — {new Date(j.createdAt).toLocaleDateString()}
@@ -369,14 +369,14 @@ export default function AccountDetail() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Quotes</h2>
-          <Link to={`/quotes/new?accountId=${id}`} className="text-sm text-blue-600">
+          <Link to={`/quotes/new?accountId=${id}`} className="text-sm text-indigo-600">
             + New quote
           </Link>
         </div>
         <ul className="space-y-1 text-sm">
           {account.quotes.map((q) => (
-            <li key={q.id} className="rounded border border-slate-200 bg-white px-3 py-2">
-              <Link to={`/quotes/${q.id}`} className="font-medium text-blue-600 hover:underline">
+            <li key={q.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
+              <Link to={`/quotes/${q.id}`} className="font-medium text-indigo-600 hover:underline">
                 {q.quoteNumber}
               </Link>{' '}
               — {money(q.amountCents)} — {q.status} — issued {new Date(q.issueDate).toLocaleDateString()}
@@ -390,14 +390,14 @@ export default function AccountDetail() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Invoices</h2>
-          <Link to={`/invoices/new?accountId=${id}`} className="text-sm text-blue-600">
+          <Link to={`/invoices/new?accountId=${id}`} className="text-sm text-indigo-600">
             + New invoice
           </Link>
         </div>
         <ul className="space-y-1 text-sm">
           {account.invoices.map((inv) => (
-            <li key={inv.id} className="rounded border border-slate-200 bg-white px-3 py-2">
-              <Link to={`/invoices/${inv.id}`} className="font-medium text-blue-600 hover:underline">
+            <li key={inv.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
+              <Link to={`/invoices/${inv.id}`} className="font-medium text-indigo-600 hover:underline">
                 {inv.invoiceNumber}
               </Link>{' '}
               — {money(inv.amountCents)} — {inv.status} — due {new Date(inv.dueDate).toLocaleDateString()}
@@ -412,12 +412,12 @@ export default function AccountDetail() {
         <h2 className="mb-2 text-lg font-semibold">Payments</h2>
         <ul className="space-y-1 text-sm">
           {account.payments.map((p) => (
-            <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white px-3 py-2">
+            <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <span>
                 <span className="font-medium">{money(p.amountCents)}</span> on {new Date(p.paidAt).toLocaleDateString()} —{' '}
                 {p.invoices.map((i, idx) => (
                   <span key={i.id}>
-                    <Link to={`/invoices/${i.id}`} className="text-blue-600 hover:underline">
+                    <Link to={`/invoices/${i.id}`} className="text-indigo-600 hover:underline">
                       {i.invoiceNumber}
                     </Link>
                     {idx < p.invoices.length - 1 ? ', ' : ''}

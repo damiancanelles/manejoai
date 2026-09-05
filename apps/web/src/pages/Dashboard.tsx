@@ -48,7 +48,7 @@ export default function Dashboard() {
 
       <section className="mb-8">
         <h2 className="mb-3 text-lg font-semibold">Gross income by month</h2>
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <MonthlyIncomeChart data={monthly} />
         </div>
       </section>

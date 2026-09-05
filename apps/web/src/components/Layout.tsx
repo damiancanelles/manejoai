@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LogoMark from './LogoMark';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `block rounded px-3 py-2 text-sm font-medium ${
-    isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-200'
+  `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+    isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
   }`;
 
 const links = [
@@ -27,7 +28,10 @@ export default function Layout() {
 
   const navContent = (
     <>
-      <div className="mb-6 text-lg font-bold">manejoai</div>
+      <div className="mb-6 flex items-center gap-2">
+        <LogoMark size={32} />
+        <span className="text-lg font-bold tracking-tight text-slate-900">manejoai</span>
+      </div>
       <nav className="space-y-1">
         {links.map((l) => (
           <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
@@ -37,7 +41,7 @@ export default function Layout() {
       </nav>
       <div className="mt-8 border-t border-slate-200 pt-4 text-sm text-slate-500">
         <div>{user?.name}</div>
-        <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-slate-700">
+        <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-indigo-600">
           Log out
         </button>
       </div>
@@ -47,8 +51,11 @@ export default function Layout() {
   return (
     <div className="min-h-screen md:flex">
       {/* Mobile top bar - hidden on md+ where the sidebar is always visible */}
-      <div className="flex items-center justify-between border-b border-slate-200 bg-white p-4 md:hidden">
-        <span className="text-lg font-bold">manejoai</span>
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white p-4 shadow-sm md:hidden">
+        <div className="flex items-center gap-2">
+          <LogoMark size={28} />
+          <span className="text-lg font-bold tracking-tight text-slate-900">manejoai</span>
+        </div>
         <button
           onClick={() => setNavOpen(true)}
           aria-label="Open menu"
@@ -71,7 +78,7 @@ export default function Layout() {
       )}
 
       {/* Persistent desktop sidebar */}
-      <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white p-4 md:block">
+      <aside className="hidden w-56 shrink-0 border-r border-slate-200 bg-white p-4 shadow-sm md:block">
         {navContent}
       </aside>
 

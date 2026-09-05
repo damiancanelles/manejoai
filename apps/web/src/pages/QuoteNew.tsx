@@ -98,7 +98,7 @@ export default function QuoteNew() {
     <div className="max-w-2xl">
       <h1 className="mb-6 text-2xl font-bold">New quote</h1>
       {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
-      <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label className="block text-sm">
           Customer
           <select
@@ -147,7 +147,7 @@ export default function QuoteNew() {
         <div className="text-sm">
           <div className="mb-1 flex items-center justify-between">
             <span>Items</span>
-            <button type="button" onClick={addRow} className="text-blue-600">
+            <button type="button" onClick={addRow} className="text-indigo-600">
               + Add item
             </button>
           </div>
@@ -233,7 +233,10 @@ export default function QuoteNew() {
           <textarea name="notes" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
         </label>
 
-        <button type="submit" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
+        <button
+          type="submit"
+          className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
+        >
           Create quote
         </button>
       </form>

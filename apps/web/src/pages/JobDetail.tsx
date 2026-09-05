@@ -114,7 +114,7 @@ export default function JobDetail() {
           <h1 className="text-2xl font-bold">{job.title}</h1>
           {job.description && <p className="mt-1 text-slate-600">{job.description}</p>}
           <p className="mt-2 text-sm text-slate-500">
-            <Link to={`/accounts/${job.account.id}`} className="text-blue-600 hover:underline">
+            <Link to={`/accounts/${job.account.id}`} className="text-indigo-600 hover:underline">
               {job.account.name}
             </Link>
             {job.property && <> — {job.property.name}</>}
@@ -130,7 +130,7 @@ export default function JobDetail() {
       </div>
 
       {editing && (
-        <form onSubmit={onSaveEdit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+        <form onSubmit={onSaveEdit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
           <label className="block text-sm">
@@ -202,7 +202,7 @@ export default function JobDetail() {
           <button
             type="submit"
             disabled={formAccountId !== job.accountId && job.invoices.length > 0}
-            className="rounded bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+            className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-4 py-2 text-sm text-white disabled:opacity-50"
           >
             Save changes
           </button>
@@ -216,7 +216,7 @@ export default function JobDetail() {
             key={s}
             onClick={() => updateStatus(s)}
             className={`rounded px-2 py-1 text-xs ${
-              job.status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              job.status === s ? 'bg-indigo-600 hover:bg-indigo-700 transition-colors text-white' : 'bg-slate-100 text-slate-600'
             }`}
           >
             {s}
@@ -227,7 +227,7 @@ export default function JobDetail() {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Photos</h2>
-          <label className="cursor-pointer text-sm text-blue-600">
+          <label className="cursor-pointer text-sm text-indigo-600">
             {uploading ? 'Uploading...' : '+ Add photo'}
             <input type="file" accept="image/*" className="hidden" onChange={onFileChange} disabled={uploading} />
           </label>

@@ -50,7 +50,10 @@ export default function Quotes() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quotes</h1>
-        <Link to="/quotes/new" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
+        <Link
+          to="/quotes/new"
+          className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
+        >
           New quote
         </Link>
       </div>
@@ -61,8 +64,8 @@ export default function Quotes() {
             <button
               key={s}
               onClick={() => setStatus(s)}
-              className={`rounded px-3 py-1 text-sm ${
-                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              className={`rounded px-3 py-1 text-sm transition-colors ${
+                status === s ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {s}
@@ -82,7 +85,7 @@ export default function Quotes() {
         <p>Loading...</p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
@@ -97,7 +100,7 @@ export default function Quotes() {
                 {pageQuotes.map((q) => (
                   <tr key={q.id} className="border-t border-slate-100">
                     <td className="px-4 py-2">
-                      <Link to={`/quotes/${q.id}`} className="text-blue-600 hover:underline">
+                      <Link to={`/quotes/${q.id}`} className="text-indigo-600 hover:underline">
                         {q.quoteNumber}
                       </Link>
                     </td>

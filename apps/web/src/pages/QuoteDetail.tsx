@@ -124,7 +124,7 @@ export default function QuoteDetail() {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{quote.quoteNumber}</h1>
-          <Link to={`/accounts/${quote.account.id}`} className="text-sm text-blue-600 hover:underline">
+          <Link to={`/accounts/${quote.account.id}`} className="text-sm text-indigo-600 hover:underline">
             {quote.account.name}
           </Link>
           {quote.property && <span className="text-sm text-slate-500"> — {quote.property.name}</span>}
@@ -150,7 +150,7 @@ export default function QuoteDetail() {
         </div>
       )}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
         <div className="mb-2 flex justify-between">
           <span className="text-slate-500">Issued</span>
           <span>{new Date(quote.issueDate).toLocaleDateString()}</span>
@@ -168,13 +168,13 @@ export default function QuoteDetail() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Items</h2>
           {!locked && (
-            <button onClick={() => setShowAddItem((v) => !v)} className="text-sm text-blue-600">
+            <button onClick={() => setShowAddItem((v) => !v)} className="text-sm text-indigo-600">
               {showAddItem ? 'Cancel' : '+ Add item'}
             </button>
           )}
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[36rem] text-sm">
             <thead className="bg-slate-100 text-left text-slate-500">
               <tr>
@@ -215,7 +215,7 @@ export default function QuoteDetail() {
                           required
                           className="w-24 rounded border border-slate-300 px-2 py-1"
                         />
-                        <button type="submit" className="rounded bg-slate-900 px-3 py-1 text-white">
+                        <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
                           Save
                         </button>
                         <button
@@ -281,7 +281,7 @@ export default function QuoteDetail() {
                         required
                         className="w-24 rounded border border-slate-300 px-2 py-1"
                       />
-                      <button type="submit" className="rounded bg-slate-900 px-3 py-1 text-white">
+                      <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
                         Add
                       </button>
                     </form>

@@ -59,14 +59,14 @@ export default function Accounts() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="rounded bg-slate-900 px-4 py-2 text-sm text-white"
+          className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
         >
           {showForm ? 'Cancel' : 'New customer'}
         </button>
       </div>
 
       {showForm && (
-        <form onSubmit={onSubmit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+        <form onSubmit={onSubmit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white shadow-sm p-4">
           <label className="text-sm">
             Name
             <input
@@ -87,7 +87,10 @@ export default function Accounts() {
               <option value="MULTIFAMILY">Multifamily / property owner</option>
             </select>
           </label>
-          <button type="submit" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
+          <button
+            type="submit"
+            className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
+          >
             Create
           </button>
         </form>
@@ -99,8 +102,8 @@ export default function Accounts() {
             <button
               key={t}
               onClick={() => setType(t)}
-              className={`rounded px-3 py-1 text-sm ${
-                type === t ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              className={`rounded px-3 py-1 text-sm transition-colors ${
+                type === t ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {t === 'ALL' ? 'ALL' : t === 'MULTIFAMILY' ? 'Multifamily' : 'Individual'}
@@ -120,7 +123,7 @@ export default function Accounts() {
         <p>Loading...</p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
@@ -133,7 +136,7 @@ export default function Accounts() {
                 {pageAccounts.map((a) => (
                   <tr key={a.id} className="border-t border-slate-100">
                     <td className="px-4 py-2">
-                      <Link to={`/accounts/${a.id}`} className="text-blue-600 hover:underline">
+                      <Link to={`/accounts/${a.id}`} className="text-indigo-600 hover:underline">
                         {a.name}
                       </Link>
                     </td>

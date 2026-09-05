@@ -17,7 +17,7 @@ export default function StatTile({
 }) {
   const t = TONES[tone];
   return (
-    <div className={`rounded-lg border ${t.border} ${t.bg} p-4`}>
+    <div className={`rounded-lg border ${t.border} ${t.bg} p-4 shadow-sm`}>
       <div className={`text-sm ${t.label}`}>{label}</div>
       <div className={`text-2xl font-bold ${t.value}`}>{value}</div>
       {sub && <div className={`text-sm ${t.label}`}>{sub}</div>}

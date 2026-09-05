@@ -51,7 +51,7 @@ export default function JobNew() {
     <div className="max-w-lg">
       <h1 className="mb-6 text-2xl font-bold">Log job</h1>
       {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
-      <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label className="block text-sm">
           Customer
           <select
@@ -107,7 +107,10 @@ export default function JobNew() {
           />
         </label>
 
-        <button type="submit" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
+        <button
+          type="submit"
+          className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
+        >
           Log job
         </button>
       </form>

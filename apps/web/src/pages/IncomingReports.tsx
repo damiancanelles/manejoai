@@ -75,8 +75,8 @@ export default function IncomingReports() {
             <button
               key={s}
               onClick={() => setStatus(s)}
-              className={`rounded px-3 py-1 text-sm ${
-                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              className={`rounded px-3 py-1 text-sm transition-colors ${
+                status === s ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {s}
@@ -167,7 +167,7 @@ function ReportCard({
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between text-sm text-slate-500">
         <span>{report.senderName ?? 'Unknown sender'} · Telegram</span>
         <div className="flex items-center gap-2">
@@ -218,7 +218,7 @@ function ReportCard({
             )}
           </span>
           {report.status === 'CONVERTED' && report.jobId && (
-            <Link to={`/jobs/${report.jobId}`} className="text-blue-600 hover:underline">
+            <Link to={`/jobs/${report.jobId}`} className="text-indigo-600 hover:underline">
               View job
             </Link>
           )}
@@ -290,7 +290,7 @@ function ReportCard({
               type="button"
               onClick={convert}
               disabled={saving}
-              className="rounded bg-slate-900 px-4 py-2 text-sm text-white disabled:opacity-50"
+              className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
             >
               Create job
             </button>
@@ -303,7 +303,7 @@ function ReportCard({
               Dismiss
             </button>
             {accountId && (
-              <Link to={`/accounts/${accountId}`} className="ml-auto text-xs text-blue-600">
+              <Link to={`/accounts/${accountId}`} className="ml-auto text-xs text-indigo-600">
                 View customer
               </Link>
             )}

@@ -44,7 +44,9 @@ export default function Pagination({ page, totalItems, pageSize, onChange }: Pag
               key={p}
               onClick={() => onChange(p)}
               className={`min-w-[2rem] rounded px-2 py-1 ${
-                p === page ? 'bg-slate-900 text-white' : 'border border-slate-300 hover:bg-slate-100'
+                p === page
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'border border-slate-300 transition-colors hover:bg-slate-100'
               }`}
             >
               {p}

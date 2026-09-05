@@ -155,7 +155,10 @@ export default function Invoices() {
           >
             {sending ? 'Sending...' : 'Send all drafts'}
           </button>
-          <Link to="/invoices/new" className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
+          <Link
+            to="/invoices/new"
+            className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
+          >
             New invoice
           </Link>
         </div>
@@ -198,8 +201,8 @@ export default function Invoices() {
             <button
               key={s}
               onClick={() => setStatus(s)}
-              className={`rounded px-3 py-1 text-sm ${
-                status === s ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+              className={`rounded px-3 py-1 text-sm transition-colors ${
+                status === s ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {s}
@@ -233,7 +236,7 @@ export default function Invoices() {
             <button
               onClick={() => setShowPaymentForm((v) => !v)}
               disabled={mixedAccounts}
-              className="rounded bg-slate-900 px-3 py-1 text-white disabled:opacity-40"
+              className="rounded bg-indigo-600 px-3 py-1 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-40"
             >
               Record payment
             </button>
@@ -242,7 +245,7 @@ export default function Invoices() {
       )}
 
       {showPaymentForm && !mixedAccounts && (
-        <form onSubmit={recordPayment} className="mb-4 space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
+        <form onSubmit={recordPayment} className="mb-4 space-y-3 rounded-lg border border-slate-200 bg-white shadow-sm p-4 text-sm">
           {paymentError && <div className="rounded bg-red-50 p-2 text-red-700">{paymentError}</div>}
           <div>
             <p className="mb-1 font-medium">
@@ -275,7 +278,7 @@ export default function Invoices() {
             <button
               type="submit"
               disabled={recordingPayment}
-              className="rounded bg-slate-900 px-4 py-1.5 text-white disabled:opacity-50"
+              className="rounded bg-indigo-600 px-4 py-1.5 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
             >
               {recordingPayment ? 'Recording...' : 'Record payment'}
             </button>
@@ -290,7 +293,7 @@ export default function Invoices() {
         <p>Loading...</p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
@@ -321,7 +324,7 @@ export default function Invoices() {
                       />
                     </td>
                     <td className="px-4 py-2">
-                      <Link to={`/invoices/${inv.id}`} className="text-blue-600 hover:underline">
+                      <Link to={`/invoices/${inv.id}`} className="text-indigo-600 hover:underline">
                         {inv.invoiceNumber}
                       </Link>
                     </td>

@@ -9,7 +9,7 @@ export default function RankedTable({ rows, emptyLabel }: { rows: RankedRow[]; e
   }
   const max = Math.max(...rows.map((r) => r.cents), 1);
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
       <table className="w-full text-sm">
         <tbody>
           {rows.map((r) => (
@@ -18,7 +18,7 @@ export default function RankedTable({ rows, emptyLabel }: { rows: RankedRow[]; e
               <td className="w-40 px-4 py-2">
                 <div className="h-1.5 rounded-full bg-slate-100">
                   <div
-                    className="h-1.5 rounded-full bg-[#2a78d6]"
+                    className="h-1.5 rounded-full bg-indigo-600"
                     style={{ width: `${Math.max((r.cents / max) * 100, r.cents > 0 ? 2 : 0)}%` }}
                   />
                 </div>

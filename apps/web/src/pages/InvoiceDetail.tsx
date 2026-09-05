@@ -116,7 +116,7 @@ export default function InvoiceDetail() {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{invoice.invoiceNumber}</h1>
-          <Link to={`/accounts/${invoice.account.id}`} className="text-sm text-blue-600 hover:underline">
+          <Link to={`/accounts/${invoice.account.id}`} className="text-sm text-indigo-600 hover:underline">
             {invoice.account.name}
           </Link>
           {invoice.property && <span className="text-sm text-slate-500"> — {invoice.property.name}</span>}
@@ -134,7 +134,7 @@ export default function InvoiceDetail() {
 
       {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
         <div className="mb-2 flex justify-between">
           <span className="text-slate-500">Issued</span>
           <span>{new Date(invoice.issueDate).toLocaleDateString()}</span>
@@ -156,13 +156,13 @@ export default function InvoiceDetail() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Items</h2>
           {!locked && (
-            <button onClick={() => setShowAddItem((v) => !v)} className="text-sm text-blue-600">
+            <button onClick={() => setShowAddItem((v) => !v)} className="text-sm text-indigo-600">
               {showAddItem ? 'Cancel' : '+ Add item'}
             </button>
           )}
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[36rem] text-sm">
             <thead className="bg-slate-100 text-left text-slate-500">
               <tr>
@@ -203,7 +203,7 @@ export default function InvoiceDetail() {
                           required
                           className="w-24 rounded border border-slate-300 px-2 py-1"
                         />
-                        <button type="submit" className="rounded bg-slate-900 px-3 py-1 text-white">
+                        <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
                           Save
                         </button>
                         <button
@@ -269,7 +269,7 @@ export default function InvoiceDetail() {
                         required
                         className="w-24 rounded border border-slate-300 px-2 py-1"
                       />
-                      <button type="submit" className="rounded bg-slate-900 px-3 py-1 text-white">
+                      <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
                         Add
                       </button>
                     </form>
@@ -292,7 +292,7 @@ export default function InvoiceDetail() {
 
       <div className="flex flex-wrap gap-2">
         {invoice.status === 'DRAFT' && (
-          <button onClick={() => action('mark-sent')} className="rounded bg-slate-900 px-4 py-2 text-sm text-white">
+          <button onClick={() => action('mark-sent')} className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-4 py-2 text-sm text-white">
             Mark as sent
           </button>
         )}
@@ -312,7 +312,7 @@ export default function InvoiceDetail() {
         <h2 className="mb-2 text-lg font-semibold">Reminder history</h2>
         <ul className="space-y-1 text-sm">
           {invoice.reminders.map((r) => (
-            <li key={r.id} className="rounded border border-slate-200 bg-white px-3 py-2">
+            <li key={r.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
               Sent to {r.toEmail} on {new Date(r.sentAt).toLocaleString()}
             </li>
           ))}

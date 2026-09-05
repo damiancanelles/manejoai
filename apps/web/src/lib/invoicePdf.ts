@@ -35,8 +35,59 @@ function formatDate(iso: string) {
 }
 
 const PAGE_WIDTH = 612; // US Letter, points
+const PAGE_HEIGHT = 792;
 const MARGIN = 40;
 const RIGHT_EDGE = PAGE_WIDTH - MARGIN;
+
+/** "Payment methods accepted" footer, matching the paper invoices' wording. */
+function renderPaymentFooter(doc: jsPDF, startY: number) {
+  let y = startY;
+  if (y + 140 > PAGE_HEIGHT - MARGIN) {
+    doc.addPage();
+    y = 50;
+  }
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
+  doc.text('Payment methods accepted', MARGIN, y);
+  y += 18;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  doc.text('The payment method you use matters when reporting fraud or resolving issues with a purchase.', MARGIN, y);
+  y += 14;
+
+  const boxTop = y;
+  const boxHeight = 78;
+  doc.setFillColor(245, 245, 245);
+  doc.rect(MARGIN, boxTop, RIGHT_EDGE - MARGIN, boxHeight, 'F');
+
+  const centerX = (MARGIN + RIGHT_EDGE) / 2;
+  let boxY = boxTop + 22;
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('Mail a check to', centerX, boxY, { align: 'center' });
+  boxY += 14;
+  doc.setFont('helvetica', 'normal');
+  doc.text(COMPANY.name, centerX, boxY, { align: 'center' });
+  boxY += 12;
+  doc.text(COMPANY.addressLine1, centerX, boxY, { align: 'center' });
+  boxY += 12;
+  doc.text(COMPANY.addressLine2, centerX, boxY, { align: 'center' });
+
+  y = boxTop + boxHeight + 16;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100);
+  const disclaimer =
+    "You can try to stop payment on a check if there's a problem with your payment. Once a check is deposited, it's very unlikely that you'll get your money back.";
+  const lines = doc.splitTextToSize(disclaimer, RIGHT_EDGE - MARGIN - 100) as string[];
+  lines.forEach((line, i) => doc.text(line, centerX, y + i * 10, { align: 'center' }));
+  doc.setTextColor(0, 0, 0);
+}
 
 /** Draws one invoice onto the current page of an already-open jsPDF doc. */
 function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
@@ -167,6 +218,8 @@ function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
   doc.setFont('helvetica', 'bold');
   doc.text('Total', labelX, finalY);
   doc.text(money(subtotalCents), RIGHT_EDGE, finalY, { align: 'right' });
+
+  renderPaymentFooter(doc, finalY + 40);
 }
 
 export function downloadInvoicePdf(invoice: InvoicePdfData) {

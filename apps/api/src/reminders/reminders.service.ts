@@ -5,9 +5,14 @@ import { ContactRole, InvoiceStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { COMPANY } from '../config/company';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+function daysBetween(now: number, date: Date) {
+  return Math.floor((now - date.getTime()) / 86_400_000);
 }
 
 /**
@@ -138,40 +143,83 @@ export class RemindersService {
 
       const totalCents = group.reduce((sum, i) => sum + i.amountCents, 0);
       const recipientLabel = first.property ? first.property.name : first.account.name;
-      const rows = group
-        .map((i) => {
-          const daysPastDue = Math.floor((now - i.dueDate.getTime()) / 86_400_000);
-          return `
+
+      // Invoices in this group can carry different due dates (a property
+      // with several jobs invoiced over time) - break the list into one
+      // sub-table per due date, oldest first, each with its own subtotal and
+      // "days overdue" instead of one flat undifferentiated table.
+      const byDueDate = new Map<string, typeof group>();
+      for (const inv of group) {
+        const key = inv.dueDate.toISOString().slice(0, 10);
+        const bucket = byDueDate.get(key);
+        if (bucket) bucket.push(inv);
+        else byDueDate.set(key, [inv]);
+      }
+      const sortedDueDateKeys = [...byDueDate.keys()].sort();
+      const oldestDaysPastDue = daysBetween(now, group.reduce((a, b) => (a.dueDate < b.dueDate ? a : b)).dueDate);
+
+      const sections = sortedDueDateKeys
+        .map((key) => {
+          const invs = byDueDate.get(key)!;
+          const daysPastDue = daysBetween(now, invs[0].dueDate);
+          const subtotalCents = invs.reduce((sum, i) => sum + i.amountCents, 0);
+          const rows = invs
+            .map(
+              (i) => `
         <tr>
           <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${i.invoiceNumber}</td>
           <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;text-align:right;">${money(i.amountCents)}</td>
-          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${i.dueDate.toDateString()}</td>
-          <td style="padding:4px 8px;border-bottom:1px solid #e5e7eb;">${daysPastDue} day${daysPastDue === 1 ? '' : 's'}</td>
-        </tr>`;
-        })
-        .join('');
-
-      const subject = `Payment reminder: ${group.length} overdue invoice${group.length === 1 ? '' : 's'} for ${recipientLabel}`;
-      const html = `
-        <p>Hi,</p>
-        <p>${group.length === 1 ? 'This invoice has' : `These ${group.length} invoices have`} not yet
-        been paid:</p>
-        <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px;">
+        </tr>`,
+            )
+            .join('');
+          return `
+        <p style="margin:16px 0 4px;font-family:sans-serif;font-size:14px;font-weight:600;">
+          Due ${invs[0].dueDate.toDateString()} — ${daysPastDue} day${daysPastDue === 1 ? '' : 's'} overdue
+        </p>
+        <table style="border-collapse:collapse;font-family:sans-serif;font-size:14px;width:100%;max-width:420px;">
           <thead>
             <tr>
               <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Invoice</th>
               <th style="text-align:right;padding:4px 8px;border-bottom:2px solid #1f2937;">Amount</th>
-              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Due date</th>
-              <th style="text-align:left;padding:4px 8px;border-bottom:2px solid #1f2937;">Past due</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
-        </table>
-        <p style="margin-top:12px;"><strong>Total overdue: ${money(totalCents)}</strong></p>
-        <p>Please remit payment at your earliest convenience. Reply to this email with any questions.</p>
-      `;
+          <tfoot>
+            <tr>
+              <td style="padding:4px 8px;font-weight:600;">Subtotal</td>
+              <td style="padding:4px 8px;text-align:right;font-weight:600;">${money(subtotalCents)}</td>
+            </tr>
+          </tfoot>
+        </table>`;
+        })
+        .join('');
+
+      const propertyLine = first.property
+        ? `<strong>${first.account.name}</strong> — ${first.property.name}`
+        : `<strong>${first.account.name}</strong>`;
+
+      const subject = `Payment reminder: ${group.length} overdue invoice${group.length === 1 ? '' : 's'} for ${recipientLabel}`;
 
       for (const contact of recipients) {
+        const html = `
+        <p style="font-family:sans-serif;font-size:14px;">Hi ${contact.name},</p>
+        <p style="font-family:sans-serif;font-size:14px;">
+          This is a reminder that the following invoice${group.length === 1 ? ' is' : 's are'} still outstanding
+          for ${propertyLine}:
+        </p>
+        ${sections}
+        <p style="margin-top:16px;font-family:sans-serif;font-size:15px;">
+          <strong>Total overdue: ${money(totalCents)}</strong>
+          ${sortedDueDateKeys.length > 1 ? `<br/><span style="font-size:13px;color:#6b7280;">(oldest invoice ${oldestDaysPastDue} days past due)</span>` : ''}
+        </p>
+        <p style="font-family:sans-serif;font-size:14px;">
+          Please remit payment at your earliest convenience - mail a check to ${COMPANY.name}, ${COMPANY.addressLine1},
+          ${COMPANY.addressLine2}, or reply to this email with any questions.
+        </p>
+        <p style="font-family:sans-serif;font-size:14px;">
+          Thank you for your business.<br/>${COMPANY.name}
+        </p>
+      `;
         await this.mail.send({ to: contact.email!, subject, html });
         // One log row per invoice per recipient - keeps each invoice's own
         // "reminder history" (shown on the invoice detail page) accurate,

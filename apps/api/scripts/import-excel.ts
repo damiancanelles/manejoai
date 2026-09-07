@@ -115,7 +115,7 @@ async function main() {
       continue;
     }
 
-    const existingInvoice = await prisma.invoice.findUnique({ where: { invoiceNumber } });
+    const existingInvoice = await prisma.invoice.findFirst({ where: { invoiceNumber, businessId: BUSINESS_ID } });
     if (existingInvoice) {
       console.warn(`Row ${i + 2}: invoice ${invoiceNumber} already imported - skipping`);
       skipped++;
@@ -135,6 +135,7 @@ async function main() {
     await prisma.invoice.create({
       data: {
         accountId: account.id,
+        businessId: BUSINESS_ID,
         invoiceNumber,
         amountCents,
         issueDate,

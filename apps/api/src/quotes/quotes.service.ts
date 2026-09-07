@@ -17,14 +17,14 @@ export class QuotesService {
   }
 
   // Kept in sync with InvoicesService.nextInvoiceNumber - see the comment
-  // there for why this isn't just a row count.
-  private async nextInvoiceNumber(): Promise<string> {
+  // there for why this isn't just a row count, and why it's per business.
+  private async nextInvoiceNumber(businessId: string): Promise<string> {
     const result = await this.prisma.$queryRaw<{ max: number | null }[]>`
       SELECT MAX(CAST("invoiceNumber" AS INTEGER)) as max
       FROM "Invoice"
-      WHERE "invoiceNumber" ~ '^1[0-9]{4}$'
+      WHERE "invoiceNumber" ~ '^1[0-9]{4}$' AND "businessId" = ${businessId}
     `;
-    const max = result[0]?.max ?? 10999;
+    const max = result[0]?.max ?? 10000;
     return String(max + 1);
   }
 
@@ -161,7 +161,7 @@ export class QuotesService {
       throw new BadRequestException("Can't approve a quote with no items.");
     }
 
-    const invoiceNumber = await this.nextInvoiceNumber();
+    const invoiceNumber = await this.nextInvoiceNumber(businessId);
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30);
 
@@ -169,6 +169,7 @@ export class QuotesService {
       const invoice = await tx.invoice.create({
         data: {
           accountId: quote.accountId,
+          businessId,
           propertyId: quote.propertyId,
           jobId: quote.jobId,
           amountCents: quote.amountCents,

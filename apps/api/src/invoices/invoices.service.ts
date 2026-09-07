@@ -23,19 +23,21 @@ export class InvoicesService {
     private mail: MailService,
   ) {}
 
-  // Plain 5-digit numbers (no "INV-" prefix), continuing the sequence the
-  // imported Excel history already uses (10001, 10002, ... 10899, ...) so a
-  // newly created invoice reads like the next one in the same book instead
-  // of a different numbering system. A handful of one-off imported invoices
-  // sit in a 20000s band from a different historical batch - that's not the
-  // active sequence, so it's excluded rather than continued.
-  private async nextInvoiceNumber(): Promise<string> {
+  // Plain 5-digit numbers (no "INV-" prefix), independent per business -
+  // continuing the imported Excel history's sequence (10001, 10002, ...
+  // 10899, ...) for the original business, but starting a fresh business at
+  // 10001 rather than wherever some other tenant's numbering left off
+  // (invoiceNumber is now unique per business, not globally - see the
+  // @@unique on Invoice). A handful of one-off imported invoices sit in a
+  // 20000s band from a different historical batch - that's not the active
+  // sequence, so it's excluded rather than continued.
+  private async nextInvoiceNumber(businessId: string): Promise<string> {
     const result = await this.prisma.$queryRaw<{ max: number | null }[]>`
       SELECT MAX(CAST("invoiceNumber" AS INTEGER)) as max
       FROM "Invoice"
-      WHERE "invoiceNumber" ~ '^1[0-9]{4}$'
+      WHERE "invoiceNumber" ~ '^1[0-9]{4}$' AND "businessId" = ${businessId}
     `;
-    const max = result[0]?.max ?? 10999;
+    const max = result[0]?.max ?? 10000;
     return String(max + 1);
   }
 
@@ -64,11 +66,12 @@ export class InvoicesService {
 
   async create(dto: CreateInvoiceDto, createdById: string, businessId: string) {
     await this.assertOwnsAccount(dto.accountId, businessId);
-    const invoiceNumber = await this.nextInvoiceNumber();
+    const invoiceNumber = await this.nextInvoiceNumber(businessId);
     const amountCents = dto.items.reduce((sum, item) => sum + lineTotal(item), 0);
     return this.prisma.invoice.create({
       data: {
         accountId: dto.accountId,
+        businessId,
         propertyId: dto.propertyId,
         jobId: dto.jobId,
         amountCents,

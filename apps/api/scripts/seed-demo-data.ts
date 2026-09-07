@@ -77,6 +77,7 @@ async function main() {
     await prisma.invoice.create({
       data: {
         accountId,
+        businessId,
         propertyId: propertyId ?? undefined,
         invoiceNumber: nextInvoiceNumber(),
         amountCents: amountOf(rows),

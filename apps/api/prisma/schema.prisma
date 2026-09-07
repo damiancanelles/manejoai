@@ -32,6 +32,7 @@ model Business {
 
   users    User[]
   accounts Account[]
+  invoices Invoice[]
 }
 
 // ---------- Staff / auth ----------
@@ -260,12 +261,21 @@ model Invoice {
   id         String    @id @default(cuid())
   accountId  String
   account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  // Denormalized copy of account.businessId, set once at creation and never
+  // changed after (an invoice's account never moves to a different
+  // business) - needed so invoiceNumber can be unique per business instead
+  // of one shared global sequence. Every other business-scoped table stays
+  // scoped transitively through accountId; this is the one exception,
+  // purely because Prisma/Postgres composite unique constraints need real
+  // columns on the same table.
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   propertyId String?
   property   Property? @relation(fields: [propertyId], references: [id])
   jobId      String?
   job        Job?      @relation(fields: [jobId], references: [id])
 
-  invoiceNumber String   @unique // e.g. "INV-1042"
+  invoiceNumber String // e.g. "10042" - unique within a business, not globally (see @@unique below)
   // Always the sum of this invoice's items (quantity * unitPriceCents),
   // recomputed server-side whenever an item is added/changed/removed - never
   // set directly. Kept as a real column so listing/sorting by amount doesn't
@@ -297,6 +307,7 @@ model Invoice {
   items     InvoiceItem[]
   quote     Quote? @relation("QuoteToInvoice")
 
+  @@unique([businessId, invoiceNumber])
   @@index([status])
   @@index([dueDate])
 }

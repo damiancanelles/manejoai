@@ -138,7 +138,13 @@ export class InvoicesService {
   }
 
   async update(id: string, dto: UpdateInvoiceDto) {
-    await this.findOne(id);
+    const invoice = await this.findOne(id);
+    // The title is customer-facing on a sent/paid invoice - editable only
+    // while still a DRAFT, unlike dueDate/status which change at other
+    // points in the invoice's life.
+    if (dto.title !== undefined && invoice.status !== InvoiceStatus.DRAFT) {
+      throw new BadRequestException("Can't change the title once an invoice has been sent.");
+    }
     return this.prisma.invoice.update({
       where: { id },
       data: {

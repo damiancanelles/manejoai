@@ -46,6 +46,7 @@ export default function InvoiceDetail() {
   const [error, setError] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
 
   function load() {
     if (!id) return;
@@ -92,6 +93,20 @@ export default function InvoiceDetail() {
         unitPriceCents: Math.round(Number(form.get('unitPrice') || 0) * 100),
       });
       setEditingItemId(null);
+      load();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
+
+  async function saveTitle(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!id) return;
+    setError(null);
+    const form = new FormData(e.currentTarget);
+    try {
+      await api.patch(`/invoices/${id}`, { title: form.get('title') });
+      setEditingTitle(false);
       load();
     } catch (err: any) {
       setError(err.message);
@@ -149,9 +164,38 @@ export default function InvoiceDetail() {
             <span>{invoice.job.title}</span>
           </div>
         )}
-        <div className="mt-2 flex justify-between border-t border-slate-100 pt-2">
-          <span className="text-slate-500">Title</span>
-          <span className="text-right">{invoice.title}</span>
+        <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+          <span className="shrink-0 text-slate-500">Title</span>
+          {editingTitle ? (
+            <form onSubmit={saveTitle} className="flex flex-1 items-center gap-2">
+              <input
+                name="title"
+                defaultValue={invoice.title}
+                required
+                autoFocus
+                className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1"
+              />
+              <button type="submit" className="shrink-0 text-indigo-600 hover:underline">
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditingTitle(false)}
+                className="shrink-0 text-slate-500 hover:underline"
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <span className="text-right">
+              {invoice.title}
+              {invoice.status === 'DRAFT' && (
+                <button onClick={() => setEditingTitle(true)} className="ml-2 text-indigo-600 hover:underline">
+                  Edit
+                </button>
+              )}
+            </span>
+          )}
         </div>
       </div>
 

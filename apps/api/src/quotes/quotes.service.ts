@@ -16,9 +16,16 @@ export class QuotesService {
     return `QUO-${1001 + count}`;
   }
 
+  // Kept in sync with InvoicesService.nextInvoiceNumber - see the comment
+  // there for why this isn't just a row count.
   private async nextInvoiceNumber(): Promise<string> {
-    const count = await this.prisma.invoice.count();
-    return `INV-${1001 + count}`;
+    const result = await this.prisma.$queryRaw<{ max: number | null }[]>`
+      SELECT MAX(CAST("invoiceNumber" AS INTEGER)) as max
+      FROM "Invoice"
+      WHERE "invoiceNumber" ~ '^1[0-9]{4}$'
+    `;
+    const max = result[0]?.max ?? 10999;
+    return String(max + 1);
   }
 
   /** Recomputes and persists amountCents from this quote's current items. */

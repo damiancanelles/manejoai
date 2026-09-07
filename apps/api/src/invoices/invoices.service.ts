@@ -24,11 +24,20 @@ export class InvoicesService {
     private mail: MailService,
   ) {}
 
+  // Plain 5-digit numbers (no "INV-" prefix), continuing the sequence the
+  // imported Excel history already uses (10001, 10002, ... 10899, ...) so a
+  // newly created invoice reads like the next one in the same book instead
+  // of a different numbering system. A handful of one-off imported invoices
+  // sit in a 20000s band from a different historical batch - that's not the
+  // active sequence, so it's excluded rather than continued.
   private async nextInvoiceNumber(): Promise<string> {
-    const count = await this.prisma.invoice.count();
-    // Starts at INV-1001 so numbers look reasonable next to whatever's already
-    // in the imported Excel history.
-    return `INV-${1001 + count}`;
+    const result = await this.prisma.$queryRaw<{ max: number | null }[]>`
+      SELECT MAX(CAST("invoiceNumber" AS INTEGER)) as max
+      FROM "Invoice"
+      WHERE "invoiceNumber" ~ '^1[0-9]{4}$'
+    `;
+    const max = result[0]?.max ?? 10999;
+    return String(max + 1);
   }
 
   /** Recomputes and persists amountCents from this invoice's current items. */

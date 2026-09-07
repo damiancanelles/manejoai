@@ -9,7 +9,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 const links = [
-  { to: '/', end: true, label: 'Dashboard' },
+  { to: '/dashboard', end: true, label: 'Dashboard' },
   { to: '/accounts', label: 'Customers' },
   { to: '/jobs', label: 'Jobs' },
   { to: '/job-reports', label: 'Job Reports' },

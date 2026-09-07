@@ -246,7 +246,10 @@ model Invoice {
   issueDate     DateTime @default(now())
   dueDate       DateTime
   status        InvoiceStatus @default(DRAFT)
-  notes         String?
+  // What the customer sees as this invoice's title, e.g. "Unit 731L Resurface
+  // 1 vanity bathroom sink" - required on create (the DTO enforces this;
+  // every historical/imported invoice already has one, hence NOT NULL here).
+  title         String
 
   paidAt     DateTime?
   canceledAt DateTime?

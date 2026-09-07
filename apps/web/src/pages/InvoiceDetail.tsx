@@ -21,7 +21,7 @@ interface Invoice {
   status: string;
   issueDate: string;
   dueDate: string;
-  notes?: string;
+  title: string;
   account: { id: string; name: string };
   property?: {
     name: string;
@@ -149,7 +149,10 @@ export default function InvoiceDetail() {
             <span>{invoice.job.title}</span>
           </div>
         )}
-        {invoice.notes && <p className="mt-2 border-t border-slate-100 pt-2 text-slate-600">{invoice.notes}</p>}
+        <div className="mt-2 flex justify-between border-t border-slate-100 pt-2">
+          <span className="text-slate-500">Title</span>
+          <span className="text-right">{invoice.title}</span>
+        </div>
       </div>
 
       <section>

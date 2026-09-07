@@ -13,6 +13,10 @@
  *   Amount                 -> plain number, e.g. 450 or 450.00
  *   Date                    -> issue date
  *   Status                  -> Paid / Overdue / Canceled / Awaiting Payment
+ *   Title / Notes / Description (optional) -> the invoice's title. Falls
+ *                            back to "{account} - Invoice {number}" when the
+ *                            sheet has no such column, since every invoice
+ *                            needs one.
  *
  * Assumptions worth checking after import:
  *  - There's no "due date" column in the old tracker, so due date is set to
@@ -97,6 +101,9 @@ async function main() {
     const amountCents = parseAmountCents(findColumn(row, ['amount']));
     const issueDate = parseDate(findColumn(row, ['date', 'issue date']));
     const status = normalizeStatus(String(findColumn(row, ['status']) ?? ''));
+    const title =
+      String(findColumn(row, ['title', 'invoice title', 'notes', 'description']) ?? '').trim() ||
+      `${accountName} - Invoice ${invoiceNumber}`;
 
     if (!accountName || !invoiceNumber || amountCents === null || !issueDate) {
       console.warn(`Row ${i + 2}: missing required data (account/invoice number/amount/date) - skipping`);
@@ -129,6 +136,7 @@ async function main() {
         issueDate,
         dueDate,
         status,
+        title,
         paidAt: status === InvoiceStatus.PAID ? issueDate : undefined,
         canceledAt: status === InvoiceStatus.CANCELED ? issueDate : undefined,
         createdById: importUser.id,

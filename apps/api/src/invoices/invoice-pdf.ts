@@ -17,7 +17,7 @@ interface InvoicePdfData {
   amountCents: number;
   issueDate: Date;
   dueDate: Date;
-  notes?: string | null;
+  title: string;
   account: { name: string };
   property?: {
     name: string;
@@ -146,7 +146,9 @@ function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
     doc.text(line, col2X, valueY + i * 12, { maxWidth: 170 });
   });
 
-  const titleLine = invoice.job?.title || invoice.notes || '';
+  // Prefer the linked job's title, if any, over the invoice's own - falling
+  // back to it since title is now always present.
+  const titleLine = invoice.job?.title || invoice.title;
   doc.text(titleLine, col3X, valueY, { maxWidth: 150 });
 
   y = valueY + (customerLines.length - 1) * 12 + 26;
@@ -167,7 +169,7 @@ function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
           money(item.unitPriceCents),
           money(item.quantity * item.unitPriceCents),
         ])
-      : [[invoice.notes || 'Services rendered', '1.00000', money(invoice.amountCents), money(invoice.amountCents)]];
+      : [[invoice.title, '1.00000', money(invoice.amountCents), money(invoice.amountCents)]];
 
   autoTable(doc, {
     startY: y,

@@ -32,7 +32,7 @@ interface Invoice {
   status: string;
   issueDate: string;
   dueDate: string;
-  notes?: string;
+  title: string;
   account: { name: string };
   property?: {
     name: string;

@@ -218,7 +218,7 @@ export default function Invoices() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search invoice #, customer, property, notes..."
+          placeholder="Search invoice #, customer, property, title..."
           className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>

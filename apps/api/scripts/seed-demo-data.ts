@@ -82,6 +82,7 @@ async function main() {
         issueDate: daysAgo(plan.issueDaysAgo),
         dueDate: daysAgo(plan.dueDaysAgo),
         status: plan.status,
+        title: rows.map((r) => r.description).join(', '),
         paidAt: plan.paidDaysAgo !== undefined ? daysAgo(plan.paidDaysAgo) : undefined,
         canceledAt: plan.canceledDaysAgo !== undefined ? daysAgo(plan.canceledDaysAgo) : undefined,
         createdById: adminId,

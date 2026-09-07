@@ -141,7 +141,10 @@ export class QuotesService {
    * 30 days from approval, same as a normally-created invoice.
    */
   async approve(id: string, approvedById: string) {
-    const quote = await this.prisma.quote.findUnique({ where: { id }, include: { items: true } });
+    const quote = await this.prisma.quote.findUnique({
+      where: { id },
+      include: { items: true, job: true, property: true, account: true },
+    });
     if (!quote) throw new NotFoundException('Quote not found');
     if (quote.status === QuoteStatus.APPROVED) {
       throw new BadRequestException('This quote is already approved.');
@@ -162,7 +165,11 @@ export class QuotesService {
           jobId: quote.jobId,
           amountCents: quote.amountCents,
           dueDate,
-          notes: quote.notes,
+          // Invoice.title is required; the quote's own notes (freeform,
+          // optional) usually already describes the work, but fall back to
+          // the linked job/property/account name so this can't fail on a
+          // quote that was created without notes.
+          title: quote.notes || quote.job?.title || quote.property?.name || quote.account.name,
           invoiceNumber,
           status: InvoiceStatus.DRAFT,
           createdById: approvedById,

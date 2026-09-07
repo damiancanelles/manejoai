@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   Min,
@@ -69,9 +70,11 @@ export class CreateInvoiceDto {
   @IsDateString()
   dueDate!: string;
 
-  @IsOptional()
+  // What the customer sees as this invoice's title (e.g. "Unit 731L
+  // Resurface 1 vanity bathroom sink") - required, not a freeform note.
   @IsString()
-  notes?: string;
+  @IsNotEmpty()
+  title!: string;
 }
 
 export class UpdateInvoiceDto {
@@ -81,7 +84,8 @@ export class UpdateInvoiceDto {
 
   @IsOptional()
   @IsString()
-  notes?: string;
+  @IsNotEmpty()
+  title?: string;
 
   @IsOptional()
   @IsEnum(InvoiceStatus)

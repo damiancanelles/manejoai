@@ -98,7 +98,7 @@ export default function InvoiceNew() {
         jobId: (form.get('jobId') as string) || undefined,
         items: parsedItems,
         dueDate: new Date(form.get('dueDate') as string).toISOString(),
-        notes: (form.get('notes') as string) || undefined,
+        title: form.get('title') as string,
       });
       navigate(`/invoices/${invoice.id}`);
     } catch (err: any) {
@@ -252,8 +252,14 @@ export default function InvoiceNew() {
         </label>
 
         <label className="block text-sm">
-          Notes (optional)
-          <textarea name="notes" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
+          Invoice title
+          <input
+            name="title"
+            type="text"
+            required
+            placeholder="e.g. Unit 731L Resurface 1 vanity bathroom sink"
+            className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+          />
         </label>
 
         <button

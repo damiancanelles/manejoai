@@ -12,7 +12,7 @@ interface InvoicePdfData {
   amountCents: number;
   issueDate: string;
   dueDate: string;
-  notes?: string;
+  title: string;
   account: { name: string };
   property?: {
     name: string;
@@ -143,9 +143,10 @@ function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
     doc.text(line, col2X, valueY + i * 12, { maxWidth: 170 });
   });
 
-  // Prefer the linked job's title (e.g. "Unit 731 Full Paint") over notes -
-  // repeating the account/property name here would just duplicate Customer.
-  const titleLine = invoice.job?.title || invoice.notes || '';
+  // Prefer the linked job's title (e.g. "Unit 731 Full Paint") over the
+  // invoice's own - repeating the account/property name here would just
+  // duplicate Customer.
+  const titleLine = invoice.job?.title || invoice.title;
   doc.text(titleLine, col3X, valueY, { maxWidth: 150 });
 
   y = valueY + (customerLines.length - 1) * 12 + 26;
@@ -168,7 +169,7 @@ function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
           money(item.unitPriceCents),
           money(item.quantity * item.unitPriceCents),
         ])
-      : [[invoice.notes || 'Services rendered', '1.00000', money(invoice.amountCents), money(invoice.amountCents)]];
+      : [[invoice.title, '1.00000', money(invoice.amountCents), money(invoice.amountCents)]];
 
   autoTable(doc, {
     startY: y,

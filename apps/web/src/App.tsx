@@ -18,7 +18,7 @@ import InvoiceDetail from './pages/InvoiceDetail';
 import InvoiceNew from './pages/InvoiceNew';
 import Reports from './pages/Reports';
 import IncomingReports from './pages/IncomingReports';
-import ChangePassword from './pages/ChangePassword';
+import Settings from './pages/Settings';
 import { isLoggedIn } from './context/AuthContext';
 
 // "/" is the public marketing page for a signed-out visitor - a logged-in
@@ -49,7 +49,7 @@ export default function App() {
           <Route path="/invoices/:id" element={<InvoiceDetail />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/job-reports" element={<IncomingReports />} />
-          <Route path="/change-password" element={<ChangePassword />} />
+          <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
     </Routes>

@@ -7,6 +7,7 @@ import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { BusinessesModule } from './businesses/businesses.module';
 import { AccountsModule } from './accounts/accounts.module';
 import { PropertiesModule } from './properties/properties.module';
 import { ContactsModule } from './contacts/contacts.module';
@@ -34,6 +35,7 @@ import { IncomingReportsModule } from './incoming-reports/incoming-reports.modul
     MailModule,
     AuthModule,
     UsersModule,
+    BusinessesModule,
     AccountsModule,
     PropertiesModule,
     ContactsModule,

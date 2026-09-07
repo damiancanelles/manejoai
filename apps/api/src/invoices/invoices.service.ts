@@ -1,9 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ContactRole, InvoiceStatus } from '@prisma/client';
+import { Business, ContactRole, InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { generateInvoicePdf } from './invoice-pdf';
-import { COMPANY } from '../config/company';
 import { CreateInvoiceDto, InvoiceItemInputDto, UpdateInvoiceDto } from './dto';
 
 // Once an invoice is settled, its items (and therefore its amount) are locked.
@@ -48,16 +47,23 @@ export class InvoicesService {
     return amountCents;
   }
 
-  private async assertEditable(invoiceId: string) {
-    const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
-    if (!invoice) throw new NotFoundException('Invoice not found');
+  /** Confirms accountId is one of this business's accounts before letting anything reference it. */
+  private async assertOwnsAccount(accountId: string, businessId: string) {
+    const account = await this.prisma.account.findUnique({ where: { id: accountId } });
+    if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
+  }
+
+  private async assertEditable(invoiceId: string, businessId: string) {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId }, include: { account: true } });
+    if (!invoice || invoice.account.businessId !== businessId) throw new NotFoundException('Invoice not found');
     if (LOCKED_STATUSES.includes(invoice.status)) {
       throw new BadRequestException(`Can't change items on a ${invoice.status.toLowerCase()} invoice.`);
     }
     return invoice;
   }
 
-  async create(dto: CreateInvoiceDto, createdById: string) {
+  async create(dto: CreateInvoiceDto, createdById: string, businessId: string) {
+    await this.assertOwnsAccount(dto.accountId, businessId);
     const invoiceNumber = await this.nextInvoiceNumber();
     const amountCents = dto.items.reduce((sum, item) => sum + lineTotal(item), 0);
     return this.prisma.invoice.create({
@@ -78,20 +84,24 @@ export class InvoicesService {
     });
   }
 
-  findAll(filters: {
-    status?: InvoiceStatus;
-    accountId?: string;
-    propertyId?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    search?: string;
-    // Include items + job (report exports need these to render a PDF/CSV
-    // without an extra round trip per invoice) - skipped by default since
-    // the plain list views (Invoices page, Dashboard) don't need them.
-    full?: boolean;
-  }) {
+  findAll(
+    filters: {
+      status?: InvoiceStatus;
+      accountId?: string;
+      propertyId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      search?: string;
+      // Include items + job (report exports need these to render a PDF/CSV
+      // without an extra round trip per invoice) - skipped by default since
+      // the plain list views (Invoices page, Dashboard) don't need them.
+      full?: boolean;
+    },
+    businessId: string,
+  ) {
     return this.prisma.invoice.findMany({
       where: {
+        account: { businessId },
         status: filters.status,
         accountId: filters.accountId,
         propertyId: filters.propertyId,
@@ -121,7 +131,7 @@ export class InvoicesService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, businessId: string) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id },
       include: {
@@ -133,12 +143,12 @@ export class InvoicesService {
         payment: { include: { invoices: true } },
       },
     });
-    if (!invoice) throw new NotFoundException('Invoice not found');
+    if (!invoice || invoice.account.businessId !== businessId) throw new NotFoundException('Invoice not found');
     return invoice;
   }
 
-  async update(id: string, dto: UpdateInvoiceDto) {
-    const invoice = await this.findOne(id);
+  async update(id: string, dto: UpdateInvoiceDto, businessId: string) {
+    const invoice = await this.findOne(id, businessId);
     // The title is customer-facing on a sent/paid invoice - editable only
     // while still a DRAFT, unlike dueDate/status which change at other
     // points in the invoice's life.
@@ -154,24 +164,24 @@ export class InvoicesService {
     });
   }
 
-  async addItem(invoiceId: string, dto: InvoiceItemInputDto) {
-    await this.assertEditable(invoiceId);
+  async addItem(invoiceId: string, dto: InvoiceItemInputDto, businessId: string) {
+    await this.assertEditable(invoiceId, businessId);
     await this.prisma.invoiceItem.create({ data: { invoiceId, ...dto } });
     await this.recomputeAmount(invoiceId);
-    return this.findOne(invoiceId);
+    return this.findOne(invoiceId, businessId);
   }
 
-  async updateItem(invoiceId: string, itemId: string, dto: Partial<InvoiceItemInputDto>) {
-    await this.assertEditable(invoiceId);
+  async updateItem(invoiceId: string, itemId: string, dto: Partial<InvoiceItemInputDto>, businessId: string) {
+    await this.assertEditable(invoiceId, businessId);
     const item = await this.prisma.invoiceItem.findUnique({ where: { id: itemId } });
     if (!item || item.invoiceId !== invoiceId) throw new NotFoundException('Invoice item not found');
     await this.prisma.invoiceItem.update({ where: { id: itemId }, data: dto });
     await this.recomputeAmount(invoiceId);
-    return this.findOne(invoiceId);
+    return this.findOne(invoiceId, businessId);
   }
 
-  async removeItem(invoiceId: string, itemId: string) {
-    await this.assertEditable(invoiceId);
+  async removeItem(invoiceId: string, itemId: string, businessId: string) {
+    await this.assertEditable(invoiceId, businessId);
     const item = await this.prisma.invoiceItem.findUnique({ where: { id: itemId } });
     if (!item || item.invoiceId !== invoiceId) throw new NotFoundException('Invoice item not found');
     const remaining = await this.prisma.invoiceItem.count({ where: { invoiceId } });
@@ -180,24 +190,24 @@ export class InvoicesService {
     }
     await this.prisma.invoiceItem.delete({ where: { id: itemId } });
     await this.recomputeAmount(invoiceId);
-    return this.findOne(invoiceId);
+    return this.findOne(invoiceId, businessId);
   }
 
-  async markSent(id: string) {
-    await this.findOne(id);
+  async markSent(id: string, businessId: string) {
+    await this.findOne(id, businessId);
     return this.prisma.invoice.update({ where: { id }, data: { status: InvoiceStatus.SENT } });
   }
 
-  async cancel(id: string) {
-    await this.findOne(id);
+  async cancel(id: string, businessId: string) {
+    await this.findOne(id, businessId);
     return this.prisma.invoice.update({
       where: { id },
       data: { status: InvoiceStatus.CANCELED, canceledAt: new Date() },
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, businessId: string) {
+    await this.findOne(id, businessId);
     await this.prisma.invoice.delete({ where: { id } });
     return { ok: true };
   }
@@ -209,9 +219,10 @@ export class InvoicesService {
    * relation), so each group goes to its own recipient(s) as one email with
    * each of that group's draft invoices attached as its own separate PDF.
    */
-  async sendAllDrafts() {
+  async sendAllDrafts(businessId: string) {
+    const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
     const drafts = await this.prisma.invoice.findMany({
-      where: { status: InvoiceStatus.DRAFT },
+      where: { status: InvoiceStatus.DRAFT, account: { businessId } },
       include: { account: { include: { contacts: true } }, property: true, job: true, items: true },
       orderBy: [{ accountId: 'asc' }, { propertyId: 'asc' }],
     });
@@ -257,17 +268,20 @@ export class InvoicesService {
       // file each invoice individually.
       const attachments = group.map((invoice) => ({
         filename: `Invoice-${invoice.invoiceNumber}.pdf`,
-        content: generateInvoicePdf({
-          invoiceNumber: invoice.invoiceNumber,
-          amountCents: invoice.amountCents,
-          issueDate: invoice.issueDate,
-          dueDate: invoice.dueDate,
-          title: invoice.title,
-          account: invoice.account,
-          property: invoice.property,
-          job: invoice.job,
-          items: invoice.items,
-        }),
+        content: generateInvoicePdf(
+          {
+            invoiceNumber: invoice.invoiceNumber,
+            amountCents: invoice.amountCents,
+            issueDate: invoice.issueDate,
+            dueDate: invoice.dueDate,
+            title: invoice.title,
+            account: invoice.account,
+            property: invoice.property,
+            job: invoice.job,
+            items: invoice.items,
+          },
+          business,
+        ),
         contentType: 'application/pdf',
       }));
 
@@ -275,8 +289,8 @@ export class InvoicesService {
       const total = money(totalCents);
       const subject =
         group.length === 1
-          ? `Invoice ${invoiceNumbers[0]} from ${COMPANY.name}`
-          : `${group.length} invoices from ${COMPANY.name}`;
+          ? `Invoice ${invoiceNumbers[0]} from ${business.name}`
+          : `${group.length} invoices from ${business.name}`;
 
       // Invoices in one send can carry different due dates - break the list
       // into one sub-table per due date, oldest first, each with its own
@@ -340,7 +354,7 @@ export class InvoicesService {
           Each invoice is attached as its own PDF. Reply to this email with any questions.
         </p>
         <p style="font-family:sans-serif;font-size:14px;">
-          Thank you for your business.<br/>${COMPANY.name}
+          Thank you for your business.<br/>${business.name}
         </p>
       `;
         await this.mail.send({ to: contact.email!, subject, html, attachments });
@@ -366,14 +380,19 @@ export class InvoicesService {
    * Each email's body summarizes what's attached (count, total, and total
    * overdue) and every invoice is attached as its own separate PDF.
    */
-  async sendInvoicesReport(filters: {
-    status?: InvoiceStatus;
-    accountId?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }) {
+  async sendInvoicesReport(
+    filters: {
+      status?: InvoiceStatus;
+      accountId?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+    businessId: string,
+  ) {
+    const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
     const invoices = await this.prisma.invoice.findMany({
       where: {
+        account: { businessId },
         status: filters.status,
         accountId: filters.accountId,
         issueDate:
@@ -444,21 +463,24 @@ export class InvoicesService {
       const propertyLine = first.property
         ? `<strong>${first.account.name}</strong> — ${first.property.name}`
         : `<strong>${first.account.name}</strong>`;
-      const subject = `Invoice summary${overdue.length > 0 ? ' - payment overdue' : ''} from ${COMPANY.name}`;
+      const subject = `Invoice summary${overdue.length > 0 ? ' - payment overdue' : ''} from ${business.name}`;
 
       const attachments = group.map((invoice) => ({
         filename: `Invoice-${invoice.invoiceNumber}.pdf`,
-        content: generateInvoicePdf({
-          invoiceNumber: invoice.invoiceNumber,
-          amountCents: invoice.amountCents,
-          issueDate: invoice.issueDate,
-          dueDate: invoice.dueDate,
-          title: invoice.title,
-          account: invoice.account,
-          property: invoice.property,
-          job: invoice.job,
-          items: invoice.items,
-        }),
+        content: generateInvoicePdf(
+          {
+            invoiceNumber: invoice.invoiceNumber,
+            amountCents: invoice.amountCents,
+            issueDate: invoice.issueDate,
+            dueDate: invoice.dueDate,
+            title: invoice.title,
+            account: invoice.account,
+            property: invoice.property,
+            job: invoice.job,
+            items: invoice.items,
+          },
+          business,
+        ),
         contentType: 'application/pdf',
       }));
 
@@ -490,7 +512,7 @@ export class InvoicesService {
           Each invoice is attached as its own PDF. Reply to this email with any questions.
         </p>
         <p style="font-family:sans-serif;font-size:14px;">
-          Thank you for your business.<br/>${COMPANY.name}
+          Thank you for your business.<br/>${business.name}
         </p>
       `;
         await this.mail.send({ to: contact.email!, subject, html, attachments });

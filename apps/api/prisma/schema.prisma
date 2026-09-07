@@ -14,15 +14,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------- Tenancy ----------
+
+// One tenant of the app - its own name/address/phone (replaces what used to
+// be the single hardcoded COMPANY config), its own users, and its own
+// customers. Everything else (Job/Invoice/Quote/Payment/Property/Contact)
+// belongs to a business transitively through Account.businessId - there's
+// no need to duplicate the FK onto every table underneath it.
+model Business {
+  id           String   @id @default(cuid())
+  name         String
+  addressLine1 String
+  addressLine2 String?
+  phone        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users    User[]
+  accounts Account[]
+}
+
 // ---------- Staff / auth ----------
 
 enum StaffRole {
-  ADMIN // full access, e.g. Damian
+  ADMIN // full access - e.g. the user who registered the business
   STAFF // office/admin staff: create invoices, log jobs, manage accounts
 }
 
 model User {
   id           String    @id @default(cuid())
+  businessId   String
+  business     Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   email        String    @unique
   passwordHash String
   name         String
@@ -35,6 +57,8 @@ model User {
   quotesCreated   Quote[]   @relation("QuoteCreatedBy")
   paymentsCreated Payment[] @relation("PaymentCreatedBy")
   reportsReviewed IncomingReport[] @relation("ReportReviewedBy")
+
+  @@index([businessId])
 }
 
 // ---------- Customers ----------
@@ -45,12 +69,14 @@ enum AccountType {
 }
 
 model Account {
-  id        String      @id @default(cuid())
-  name      String // e.g. "Sunset Ridge Management LLC" or "Jane Smith"
-  type      AccountType
-  notes     String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id         String      @id @default(cuid())
+  businessId String
+  business   Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name       String // e.g. "Sunset Ridge Management LLC" or "Jane Smith"
+  type       AccountType
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 
   properties Property[]
   contacts   Contact[]
@@ -58,6 +84,8 @@ model Account {
   invoices   Invoice[]
   quotes     Quote[]
   payments   Payment[]
+
+  @@index([businessId])
 }
 
 // A physical property belonging to an account. For an INDIVIDUAL account this

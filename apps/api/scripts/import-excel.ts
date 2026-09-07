@@ -33,6 +33,10 @@ import * as XLSX from 'xlsx';
 
 const prisma = new PrismaClient();
 const DEFAULT_TERMS_DAYS = Number(process.env.IMPORT_DEFAULT_TERMS_DAYS ?? 14);
+// Every Account is now scoped to a Business - defaults to the original
+// single-tenant business created by the migration/seed. Override with
+// IMPORT_BUSINESS_ID to import into a different registered business.
+const BUSINESS_ID = process.env.IMPORT_BUSINESS_ID ?? 'default-business';
 
 function normalizeStatus(raw: string | undefined): InvoiceStatus {
   const s = (raw ?? '').trim().toLowerCase();
@@ -118,10 +122,10 @@ async function main() {
       continue;
     }
 
-    let account = await prisma.account.findFirst({ where: { name: accountName } });
+    let account = await prisma.account.findFirst({ where: { name: accountName, businessId: BUSINESS_ID } });
     if (!account) {
       account = await prisma.account.create({
-        data: { name: accountName, type: AccountType.INDIVIDUAL },
+        data: { name: accountName, type: AccountType.INDIVIDUAL, businessId: BUSINESS_ID },
       });
     }
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { downloadCsv } from '../lib/csv';
 import { downloadInvoicesPdf } from '../lib/invoicePdf';
+import { useAuth } from '../context/AuthContext';
 import Pagination from '../components/Pagination';
 import { PAGE_SIZE, paginate } from '../lib/paginate';
 
@@ -257,6 +258,7 @@ interface SendReportResult {
 }
 
 function InvoicesReport({ accounts }: { accounts: Account[] }) {
+  const { business } = useAuth();
   const [accountId, setAccountId] = useState('');
   const [propertyId, setPropertyId] = useState('');
   const [status, setStatus] = useState('PAID');
@@ -297,7 +299,8 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
   const pageInvoices = paginate(invoices, page);
 
   function exportPdf() {
-    downloadInvoicesPdf(invoices);
+    if (!business) return;
+    downloadInvoicesPdf(invoices, business);
   }
 
   async function sendToCustomers() {

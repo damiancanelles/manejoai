@@ -36,16 +36,23 @@ export class QuotesService {
     return amountCents;
   }
 
-  private async assertEditable(quoteId: string) {
-    const quote = await this.prisma.quote.findUnique({ where: { id: quoteId } });
-    if (!quote) throw new NotFoundException('Quote not found');
+  /** Confirms accountId is one of this business's accounts before letting anything reference it. */
+  private async assertOwnsAccount(accountId: string, businessId: string) {
+    const account = await this.prisma.account.findUnique({ where: { id: accountId } });
+    if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
+  }
+
+  private async assertEditable(quoteId: string, businessId: string) {
+    const quote = await this.prisma.quote.findUnique({ where: { id: quoteId }, include: { account: true } });
+    if (!quote || quote.account.businessId !== businessId) throw new NotFoundException('Quote not found');
     if (quote.status === QuoteStatus.APPROVED) {
       throw new BadRequestException("Can't change items on an approved quote.");
     }
     return quote;
   }
 
-  async create(dto: CreateQuoteDto, createdById: string) {
+  async create(dto: CreateQuoteDto, createdById: string, businessId: string) {
+    await this.assertOwnsAccount(dto.accountId, businessId);
     const quoteNumber = await this.nextQuoteNumber();
     const amountCents = dto.items.reduce((sum, item) => sum + lineTotal(item), 0);
     return this.prisma.quote.create({
@@ -65,9 +72,10 @@ export class QuotesService {
     });
   }
 
-  findAll(filters: { status?: QuoteStatus; accountId?: string; search?: string }) {
+  findAll(filters: { status?: QuoteStatus; accountId?: string; search?: string }, businessId: string) {
     return this.prisma.quote.findMany({
       where: {
+        account: { businessId },
         status: filters.status,
         accountId: filters.accountId,
         ...(filters.search
@@ -86,7 +94,7 @@ export class QuotesService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, businessId: string) {
     const quote = await this.prisma.quote.findUnique({
       where: { id },
       include: {
@@ -97,33 +105,33 @@ export class QuotesService {
         invoice: true,
       },
     });
-    if (!quote) throw new NotFoundException('Quote not found');
+    if (!quote || quote.account.businessId !== businessId) throw new NotFoundException('Quote not found');
     return quote;
   }
 
-  async update(id: string, dto: UpdateQuoteDto) {
-    await this.assertEditable(id);
+  async update(id: string, dto: UpdateQuoteDto, businessId: string) {
+    await this.assertEditable(id, businessId);
     return this.prisma.quote.update({ where: { id }, data: dto });
   }
 
-  async addItem(quoteId: string, dto: QuoteItemInputDto) {
-    await this.assertEditable(quoteId);
+  async addItem(quoteId: string, dto: QuoteItemInputDto, businessId: string) {
+    await this.assertEditable(quoteId, businessId);
     await this.prisma.quoteItem.create({ data: { quoteId, ...dto } });
     await this.recomputeAmount(quoteId);
-    return this.findOne(quoteId);
+    return this.findOne(quoteId, businessId);
   }
 
-  async updateItem(quoteId: string, itemId: string, dto: Partial<QuoteItemInputDto>) {
-    await this.assertEditable(quoteId);
+  async updateItem(quoteId: string, itemId: string, dto: Partial<QuoteItemInputDto>, businessId: string) {
+    await this.assertEditable(quoteId, businessId);
     const item = await this.prisma.quoteItem.findUnique({ where: { id: itemId } });
     if (!item || item.quoteId !== quoteId) throw new NotFoundException('Quote item not found');
     await this.prisma.quoteItem.update({ where: { id: itemId }, data: dto });
     await this.recomputeAmount(quoteId);
-    return this.findOne(quoteId);
+    return this.findOne(quoteId, businessId);
   }
 
-  async removeItem(quoteId: string, itemId: string) {
-    await this.assertEditable(quoteId);
+  async removeItem(quoteId: string, itemId: string, businessId: string) {
+    await this.assertEditable(quoteId, businessId);
     const item = await this.prisma.quoteItem.findUnique({ where: { id: itemId } });
     if (!item || item.quoteId !== quoteId) throw new NotFoundException('Quote item not found');
     const remaining = await this.prisma.quoteItem.count({ where: { quoteId } });
@@ -132,7 +140,7 @@ export class QuotesService {
     }
     await this.prisma.quoteItem.delete({ where: { id: itemId } });
     await this.recomputeAmount(quoteId);
-    return this.findOne(quoteId);
+    return this.findOne(quoteId, businessId);
   }
 
   /**
@@ -140,12 +148,12 @@ export class QuotesService {
    * same account/property/job and a copy of its items. Due date defaults to
    * 30 days from approval, same as a normally-created invoice.
    */
-  async approve(id: string, approvedById: string) {
+  async approve(id: string, approvedById: string, businessId: string) {
     const quote = await this.prisma.quote.findUnique({
       where: { id },
       include: { items: true, job: true, property: true, account: true },
     });
-    if (!quote) throw new NotFoundException('Quote not found');
+    if (!quote || quote.account.businessId !== businessId) throw new NotFoundException('Quote not found');
     if (quote.status === QuoteStatus.APPROVED) {
       throw new BadRequestException('This quote is already approved.');
     }
@@ -189,11 +197,11 @@ export class QuotesService {
       });
     });
 
-    return this.findOne(id);
+    return this.findOne(id, businessId);
   }
 
-  async remove(id: string) {
-    const quote = await this.findOne(id);
+  async remove(id: string, businessId: string) {
+    const quote = await this.findOne(id, businessId);
     if (quote.status === QuoteStatus.APPROVED) {
       throw new BadRequestException("Can't delete an approved quote - it's linked to a real invoice.");
     }

@@ -41,7 +41,12 @@ export class IncomingReportsService {
     return report;
   }
 
-  async convert(id: string, dto: ConvertReportDto, reviewedById: string) {
+  // Note: IncomingReport itself isn't business-scoped yet (Telegram intake
+  // is still a single global bot/integration - see the plan boundary noted
+  // when multi-tenancy was added). The Job it converts into is real
+  // business data though, so it still goes through JobsService's normal
+  // ownership check - dto.accountId must belong to the reviewer's business.
+  async convert(id: string, dto: ConvertReportDto, reviewedById: string, businessId: string) {
     const report = await this.findOne(id);
     if (report.status !== ReportStatus.PENDING) {
       throw new BadRequestException('This report was already reviewed');
@@ -50,6 +55,7 @@ export class IncomingReportsService {
     const job = await this.jobsService.create(
       { accountId: dto.accountId, propertyId: dto.propertyId, title: dto.title, description: dto.description },
       reviewedById,
+      businessId,
     );
 
     if (report.photoUrls.length > 0) {

@@ -5,7 +5,6 @@ import { ContactRole, InvoiceStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
-import { COMPANY } from '../config/company';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -67,10 +66,21 @@ export class RemindersService {
     return this.config.get<string>('REMINDERS_ENABLED') === 'true';
   }
 
-  /** SENT invoices whose due date has passed become OVERDUE. */
-  async flagOverdueInvoices(accountId?: string) {
+  /**
+   * SENT invoices whose due date has passed become OVERDUE. Pass businessId
+   * to scope this to one business (the manual "run" endpoint always does,
+   * so one tenant's staff can never flip another's invoices) - the daily
+   * cron leaves it undefined and sweeps every business at once, since this
+   * is a pure status transition with nothing business-specific in it.
+   */
+  async flagOverdueInvoices(accountId?: string, businessId?: string) {
     const result = await this.prisma.invoice.updateMany({
-      where: { status: InvoiceStatus.SENT, dueDate: { lt: new Date() }, accountId },
+      where: {
+        status: InvoiceStatus.SENT,
+        dueDate: { lt: new Date() },
+        accountId,
+        account: businessId ? { businessId } : undefined,
+      },
       data: { status: InvoiceStatus.OVERDUE },
     });
     if (result.count > 0) {
@@ -84,15 +94,18 @@ export class RemindersService {
    * that's cleared the grace period, sent to that property's contact.
    * Pass accountId to scope this to one customer - used by the "Send
    * payment reminder" button on the account page for an on-demand send
-   * outside the normal weekly schedule, same logic either way.
+   * outside the normal weekly schedule, same logic either way. Pass
+   * businessId to scope this to one business (the manual endpoint always
+   * does); the weekly cron leaves it undefined and sweeps every business at
+   * once, using each group's own account's business for the email content.
    */
-  async sendOverdueDigest(accountId?: string) {
+  async sendOverdueDigest(accountId?: string, businessId?: string) {
     const gracePeriodDays = Number(this.config.get('REMINDER_GRACE_PERIOD_DAYS', 14));
     const now = Date.now();
 
     const overdueInvoices = await this.prisma.invoice.findMany({
-      where: { status: InvoiceStatus.OVERDUE, accountId },
-      include: { account: { include: { contacts: true } }, property: true },
+      where: { status: InvoiceStatus.OVERDUE, accountId, account: businessId ? { businessId } : undefined },
+      include: { account: { include: { contacts: true, business: true } }, property: true },
     });
 
     // Only invoices that have actually cleared the grace period go in a
@@ -197,6 +210,8 @@ export class RemindersService {
       const propertyLine = first.property
         ? `<strong>${first.account.name}</strong> — ${first.property.name}`
         : `<strong>${first.account.name}</strong>`;
+      const business = first.account.business;
+      const businessAddress = [business.addressLine1, business.addressLine2].filter(Boolean).join(', ');
 
       const subject = `Payment reminder: ${group.length} overdue invoice${group.length === 1 ? '' : 's'} for ${recipientLabel}`;
 
@@ -213,11 +228,11 @@ export class RemindersService {
           ${sortedDueDateKeys.length > 1 ? `<br/><span style="font-size:13px;color:#6b7280;">(oldest invoice ${oldestDaysPastDue} days past due)</span>` : ''}
         </p>
         <p style="font-family:sans-serif;font-size:14px;">
-          Please remit payment at your earliest convenience - mail a check to ${COMPANY.name}, ${COMPANY.addressLine1},
-          ${COMPANY.addressLine2}, or reply to this email with any questions.
+          Please remit payment at your earliest convenience - mail a check to ${business.name}, ${businessAddress},
+          or reply to this email with any questions.
         </p>
         <p style="font-family:sans-serif;font-size:14px;">
-          Thank you for your business.<br/>${COMPANY.name}
+          Thank you for your business.<br/>${business.name}
         </p>
       `;
         await this.mail.send({ to: contact.email!, subject, html });

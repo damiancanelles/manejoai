@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { downloadInvoicePdf } from '../lib/invoicePdf';
+import { useAuth } from '../context/AuthContext';
 
 interface Reminder {
   id: string;
@@ -42,6 +43,7 @@ function money(cents: number) {
 
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
+  const { business } = useAuth();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -138,7 +140,7 @@ export default function InvoiceDetail() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => downloadInvoicePdf(invoice)}
+            onClick={() => business && downloadInvoicePdf(invoice, business)}
             className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
           >
             Download PDF

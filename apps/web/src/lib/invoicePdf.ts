@@ -1,6 +1,16 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { COMPANY } from '../config/company';
+
+// The invoice issuer's own info - printed in the header and the payment
+// footer. Comes from the logged-in user's Business (see useAuth().business)
+// rather than a hardcoded constant, since every business shows its own
+// name/address on its own invoices.
+export interface CompanyInfo {
+  name: string;
+  addressLine1: string;
+  addressLine2?: string | null;
+  phone?: string | null;
+}
 
 interface InvoiceItem {
   description: string;
@@ -40,7 +50,7 @@ const MARGIN = 40;
 const RIGHT_EDGE = PAGE_WIDTH - MARGIN;
 
 /** "Payment methods accepted" footer, matching the paper invoices' wording. */
-function renderPaymentFooter(doc: jsPDF, startY: number) {
+function renderPaymentFooter(doc: jsPDF, startY: number, company: CompanyInfo) {
   let y = startY;
   if (y + 140 > PAGE_HEIGHT - MARGIN) {
     doc.addPage();
@@ -72,11 +82,13 @@ function renderPaymentFooter(doc: jsPDF, startY: number) {
   doc.text('Mail a check to', centerX, boxY, { align: 'center' });
   boxY += 14;
   doc.setFont('helvetica', 'normal');
-  doc.text(COMPANY.name, centerX, boxY, { align: 'center' });
+  doc.text(company.name, centerX, boxY, { align: 'center' });
   boxY += 12;
-  doc.text(COMPANY.addressLine1, centerX, boxY, { align: 'center' });
-  boxY += 12;
-  doc.text(COMPANY.addressLine2, centerX, boxY, { align: 'center' });
+  doc.text(company.addressLine1, centerX, boxY, { align: 'center' });
+  if (company.addressLine2) {
+    boxY += 12;
+    doc.text(company.addressLine2, centerX, boxY, { align: 'center' });
+  }
 
   y = boxTop + boxHeight + 16;
   doc.setFont('helvetica', 'normal');
@@ -90,23 +102,27 @@ function renderPaymentFooter(doc: jsPDF, startY: number) {
 }
 
 /** Draws one invoice onto the current page of an already-open jsPDF doc. */
-function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
+function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData, company: CompanyInfo) {
   let y = 50;
 
   // Issuer block (top-left) + invoice number (top-right)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text(COMPANY.name, MARGIN, y);
+  doc.text(company.name, MARGIN, y);
   doc.text(`Invoice #${invoice.invoiceNumber}`, RIGHT_EDGE, y, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   y += 15;
-  doc.text(COMPANY.addressLine1, MARGIN, y);
-  y += 12;
-  doc.text(COMPANY.addressLine2, MARGIN, y);
-  y += 12;
-  doc.text(COMPANY.phone, MARGIN, y);
+  doc.text(company.addressLine1, MARGIN, y);
+  if (company.addressLine2) {
+    y += 12;
+    doc.text(company.addressLine2, MARGIN, y);
+  }
+  if (company.phone) {
+    y += 12;
+    doc.text(company.phone, MARGIN, y);
+  }
 
   y += 18;
   doc.setDrawColor(220);
@@ -220,7 +236,7 @@ function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
   doc.text('Total', labelX, finalY);
   doc.text(money(subtotalCents), RIGHT_EDGE, finalY, { align: 'right' });
 
-  renderPaymentFooter(doc, finalY + 40);
+  renderPaymentFooter(doc, finalY + 40, company);
 }
 
 /**
@@ -239,13 +255,13 @@ function downloadFilename(invoice: InvoicePdfData): string {
   return `${safeLabel} - Invoice ${invoice.invoiceNumber}.pdf`;
 }
 
-export function downloadInvoicePdf(invoice: InvoicePdfData) {
+export function downloadInvoicePdf(invoice: InvoicePdfData, company: CompanyInfo) {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
-  renderInvoicePage(doc, invoice);
+  renderInvoicePage(doc, invoice, company);
   doc.save(downloadFilename(invoice));
 }
 
 /** Downloads every given invoice as its own separate PDF file (not merged into one). */
-export function downloadInvoicesPdf(invoices: InvoicePdfData[]) {
-  invoices.forEach((invoice) => downloadInvoicePdf(invoice));
+export function downloadInvoicesPdf(invoices: InvoicePdfData[], company: CompanyInfo) {
+  invoices.forEach((invoice) => downloadInvoicePdf(invoice, company));
 }

@@ -20,6 +20,18 @@ async function main() {
       passwordHash,
       name: 'Admin',
       role: StaffRole.ADMIN,
+      business: {
+        connectOrCreate: {
+          where: { id: 'default-business' },
+          create: {
+            id: 'default-business',
+            name: process.env.COMPANY_NAME || 'SCG SERVICES LLC',
+            addressLine1: process.env.COMPANY_ADDRESS_LINE1 || '131 Hillcrest Dr SW',
+            addressLine2: process.env.COMPANY_ADDRESS_LINE2 || 'Austell, GA 30168-6737',
+            phone: process.env.COMPANY_PHONE || '404-507-4044',
+          },
+        },
+      },
     },
   });
 

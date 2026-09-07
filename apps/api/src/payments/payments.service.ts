@@ -16,8 +16,10 @@ export class PaymentsService {
    * batch "record payment" flow and by the single-invoice "mark as paid"
    * button, so every paid invoice has exactly one consistent trail.
    */
-  async record(dto: RecordPaymentDto, createdById: string) {
-    const invoices = await this.prisma.invoice.findMany({ where: { id: { in: dto.invoiceIds } } });
+  async record(dto: RecordPaymentDto, createdById: string, businessId: string) {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { id: { in: dto.invoiceIds }, account: { businessId } },
+    });
 
     const foundIds = new Set(invoices.map((i) => i.id));
     const missing = dto.invoiceIds.filter((id) => !foundIds.has(id));
@@ -58,23 +60,23 @@ export class PaymentsService {
       return created;
     });
 
-    return this.findOne(payment.id);
+    return this.findOne(payment.id, businessId);
   }
 
-  findAll(filters: { accountId?: string }) {
+  findAll(filters: { accountId?: string }, businessId: string) {
     return this.prisma.payment.findMany({
-      where: { accountId: filters.accountId },
+      where: { accountId: filters.accountId, account: { businessId } },
       orderBy: { paidAt: 'desc' },
       include: { account: true, invoices: true },
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, businessId: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { id },
       include: { account: true, invoices: true },
     });
-    if (!payment) throw new NotFoundException('Payment not found');
+    if (!payment || payment.account.businessId !== businessId) throw new NotFoundException('Payment not found');
     return payment;
   }
 
@@ -84,8 +86,8 @@ export class PaymentsService {
    * Payment record itself is deleted - there's nothing worth keeping once
    * it's void.
    */
-  async remove(id: string) {
-    const payment = await this.findOne(id);
+  async remove(id: string, businessId: string) {
+    const payment = await this.findOne(id, businessId);
     const now = new Date();
 
     await this.prisma.$transaction(async (tx) => {

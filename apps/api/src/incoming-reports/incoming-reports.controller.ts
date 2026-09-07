@@ -24,9 +24,9 @@ export class IncomingReportsController {
   convert(
     @Param('id') id: string,
     @Body() dto: ConvertReportDto,
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { userId: string; businessId: string },
   ) {
-    return this.incomingReportsService.convert(id, dto, user.userId);
+    return this.incomingReportsService.convert(id, dto, user.userId, user.businessId);
   }
 
   @Post(':id/dismiss')

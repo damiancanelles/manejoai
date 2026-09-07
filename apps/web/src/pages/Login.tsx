@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth, isLoggedIn } from '../context/AuthContext';
 import LogoMark from '../components/LogoMark';
 
@@ -62,6 +62,13 @@ export default function Login() {
         >
           {submitting ? 'Signing in...' : 'Sign in'}
         </button>
+
+        <p className="mt-4 text-center text-sm text-slate-500">
+          New here?{' '}
+          <Link to="/register" className="text-indigo-600 hover:underline">
+            Create an account
+          </Link>
+        </p>
       </form>
     </div>
   );

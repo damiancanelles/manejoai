@@ -11,7 +11,14 @@ export class JobsService {
     private storage: StorageService,
   ) {}
 
-  create(dto: CreateJobDto, createdById: string) {
+  /** Confirms accountId is one of this business's accounts before letting anything reference it. */
+  private async assertOwnsAccount(accountId: string, businessId: string) {
+    const account = await this.prisma.account.findUnique({ where: { id: accountId } });
+    if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
+  }
+
+  async create(dto: CreateJobDto, createdById: string, businessId: string) {
+    await this.assertOwnsAccount(dto.accountId, businessId);
     return this.prisma.job.create({
       data: {
         ...dto,
@@ -21,15 +28,19 @@ export class JobsService {
     });
   }
 
-  findAll(filters: {
-    status?: JobStatus;
-    accountId?: string;
-    search?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }) {
+  findAll(
+    filters: {
+      status?: JobStatus;
+      accountId?: string;
+      search?: string;
+      dateFrom?: string;
+      dateTo?: string;
+    },
+    businessId: string,
+  ) {
     return this.prisma.job.findMany({
       where: {
+        account: { businessId },
         status: filters.status,
         accountId: filters.accountId,
         createdAt:
@@ -56,23 +67,26 @@ export class JobsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, businessId: string) {
     const job = await this.prisma.job.findUnique({
       where: { id },
       include: { account: true, photos: true, invoices: true, property: true },
     });
-    if (!job) throw new NotFoundException('Job not found');
+    if (!job || job.account.businessId !== businessId) throw new NotFoundException('Job not found');
     return job;
   }
 
-  async update(id: string, dto: UpdateJobDto) {
-    const existing = await this.findOne(id);
+  async update(id: string, dto: UpdateJobDto, businessId: string) {
+    const existing = await this.findOne(id, businessId);
 
     const changingAccount = dto.accountId !== undefined && dto.accountId !== existing.accountId;
     if (changingAccount && existing.invoices.length > 0) {
       throw new BadRequestException(
         'This job has invoices attached, so it cannot be reassigned to a different customer.',
       );
+    }
+    if (changingAccount) {
+      await this.assertOwnsAccount(dto.accountId!, businessId);
     }
 
     // A property belongs to one account - if the job just moved to a new
@@ -97,14 +111,14 @@ export class JobsService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, businessId: string) {
+    await this.findOne(id, businessId);
     await this.prisma.job.delete({ where: { id } });
     return { ok: true };
   }
 
-  async addPhoto(jobId: string, file: Express.Multer.File, caption?: string) {
-    await this.findOne(jobId);
+  async addPhoto(jobId: string, file: Express.Multer.File, businessId: string, caption?: string) {
+    await this.findOne(jobId, businessId);
     const url = await this.storage.saveJobPhoto(jobId, file);
     return this.prisma.jobPhoto.create({ data: { jobId, url, caption } });
   }

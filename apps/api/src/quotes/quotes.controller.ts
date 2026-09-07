@@ -5,38 +5,41 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { QuotesService } from './quotes.service';
 import { CreateQuoteDto, QuoteItemInputDto, UpdateQuoteDto, UpdateQuoteItemDto } from './dto';
 
+type AuthedUser = { userId: string; businessId: string };
+
 @UseGuards(JwtAuthGuard)
 @Controller('quotes')
 export class QuotesController {
   constructor(private quotesService: QuotesService) {}
 
   @Post()
-  create(@Body() dto: CreateQuoteDto, @CurrentUser() user: { userId: string }) {
-    return this.quotesService.create(dto, user.userId);
+  create(@Body() dto: CreateQuoteDto, @CurrentUser() user: AuthedUser) {
+    return this.quotesService.create(dto, user.userId, user.businessId);
   }
 
   @Get()
   findAll(
-    @Query('status') status?: QuoteStatus,
-    @Query('accountId') accountId?: string,
-    @Query('search') search?: string,
+    @Query('status') status: QuoteStatus | undefined,
+    @Query('accountId') accountId: string | undefined,
+    @Query('search') search: string | undefined,
+    @CurrentUser() user: AuthedUser,
   ) {
-    return this.quotesService.findAll({ status, accountId, search });
+    return this.quotesService.findAll({ status, accountId, search }, user.businessId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.quotesService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthedUser) {
+    return this.quotesService.findOne(id, user.businessId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateQuoteDto) {
-    return this.quotesService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateQuoteDto, @CurrentUser() user: AuthedUser) {
+    return this.quotesService.update(id, dto, user.businessId);
   }
 
   @Post(':id/items')
-  addItem(@Param('id') id: string, @Body() dto: QuoteItemInputDto) {
-    return this.quotesService.addItem(id, dto);
+  addItem(@Param('id') id: string, @Body() dto: QuoteItemInputDto, @CurrentUser() user: AuthedUser) {
+    return this.quotesService.addItem(id, dto, user.businessId);
   }
 
   @Patch(':id/items/:itemId')
@@ -44,22 +47,23 @@ export class QuotesController {
     @Param('id') id: string,
     @Param('itemId') itemId: string,
     @Body() dto: UpdateQuoteItemDto,
+    @CurrentUser() user: AuthedUser,
   ) {
-    return this.quotesService.updateItem(id, itemId, dto);
+    return this.quotesService.updateItem(id, itemId, dto, user.businessId);
   }
 
   @Delete(':id/items/:itemId')
-  removeItem(@Param('id') id: string, @Param('itemId') itemId: string) {
-    return this.quotesService.removeItem(id, itemId);
+  removeItem(@Param('id') id: string, @Param('itemId') itemId: string, @CurrentUser() user: AuthedUser) {
+    return this.quotesService.removeItem(id, itemId, user.businessId);
   }
 
   @Post(':id/approve')
-  approve(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
-    return this.quotesService.approve(id, user.userId);
+  approve(@Param('id') id: string, @CurrentUser() user: AuthedUser) {
+    return this.quotesService.approve(id, user.userId, user.businessId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.quotesService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: AuthedUser) {
+    return this.quotesService.remove(id, user.businessId);
   }
 }

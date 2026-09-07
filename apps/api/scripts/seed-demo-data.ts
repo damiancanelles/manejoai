@@ -67,6 +67,7 @@ async function main() {
     return;
   }
   const adminId = admin.id;
+  const businessId = admin.businessId;
 
   let invoiceCount = await prisma.invoice.count();
   const nextInvoiceNumber = () => `INV-${1001 + invoiceCount++}`;
@@ -93,7 +94,7 @@ async function main() {
 
   // ---------- Demo: Sunrise Villas Management (MULTIFAMILY) ----------
   const sunrise = await prisma.account.create({
-    data: { name: 'Demo: Sunrise Villas Management', type: AccountType.MULTIFAMILY },
+    data: { name: 'Demo: Sunrise Villas Management', type: AccountType.MULTIFAMILY, businessId },
   });
   const sunriseProp = await prisma.property.create({
     data: {
@@ -134,7 +135,7 @@ async function main() {
 
   // ---------- Demo: Marcus Webb (INDIVIDUAL) ----------
   const marcus = await prisma.account.create({
-    data: { name: 'Demo: Marcus Webb', type: AccountType.INDIVIDUAL },
+    data: { name: 'Demo: Marcus Webb', type: AccountType.INDIVIDUAL, businessId },
   });
   await prisma.contact.create({
     data: {
@@ -159,7 +160,7 @@ async function main() {
 
   // ---------- Demo: Coastal Property Group (MULTIFAMILY, 2 properties) ----------
   const coastal = await prisma.account.create({
-    data: { name: 'Demo: Coastal Property Group', type: AccountType.MULTIFAMILY },
+    data: { name: 'Demo: Coastal Property Group', type: AccountType.MULTIFAMILY, businessId },
   });
   const coastalA = await prisma.property.create({
     data: {
@@ -231,7 +232,7 @@ async function main() {
 
   // ---------- Demo: Harbor View HOA (MULTIFAMILY) ----------
   const harbor = await prisma.account.create({
-    data: { name: 'Demo: Harbor View HOA', type: AccountType.MULTIFAMILY },
+    data: { name: 'Demo: Harbor View HOA', type: AccountType.MULTIFAMILY, businessId },
   });
   const harborProp = await prisma.property.create({
     data: {

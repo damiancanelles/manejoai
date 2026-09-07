@@ -6,6 +6,12 @@ import { CreateContactDto, UpdateContactDto } from './dto';
 export class ContactsService {
   constructor(private prisma: PrismaService) {}
 
+  /** Confirms accountId is one of this business's accounts before letting anything reference it. */
+  private async assertOwnsAccount(accountId: string, businessId: string) {
+    const account = await this.prisma.account.findUnique({ where: { id: accountId } });
+    if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
+  }
+
   private async assertPropertyBelongsToAccount(propertyId: string, accountId: string) {
     const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
     if (!property || property.accountId !== accountId) {
@@ -13,14 +19,16 @@ export class ContactsService {
     }
   }
 
-  async create(dto: CreateContactDto) {
+  async create(dto: CreateContactDto, businessId: string) {
+    await this.assertOwnsAccount(dto.accountId, businessId);
     if (dto.propertyId) {
       await this.assertPropertyBelongsToAccount(dto.propertyId, dto.accountId);
     }
     return this.prisma.contact.create({ data: dto });
   }
 
-  findForAccount(accountId: string) {
+  async findForAccount(accountId: string, businessId: string) {
+    await this.assertOwnsAccount(accountId, businessId);
     return this.prisma.contact.findMany({
       where: { accountId },
       orderBy: { role: 'asc' },
@@ -28,22 +36,25 @@ export class ContactsService {
     });
   }
 
-  async findOne(id: string) {
-    const contact = await this.prisma.contact.findUnique({ where: { id }, include: { property: true } });
-    if (!contact) throw new NotFoundException('Contact not found');
+  async findOne(id: string, businessId: string) {
+    const contact = await this.prisma.contact.findUnique({
+      where: { id },
+      include: { property: true, account: true },
+    });
+    if (!contact || contact.account.businessId !== businessId) throw new NotFoundException('Contact not found');
     return contact;
   }
 
-  async update(id: string, dto: UpdateContactDto) {
-    const existing = await this.findOne(id);
+  async update(id: string, dto: UpdateContactDto, businessId: string) {
+    const existing = await this.findOne(id, businessId);
     if (dto.propertyId) {
       await this.assertPropertyBelongsToAccount(dto.propertyId, existing.accountId);
     }
     return this.prisma.contact.update({ where: { id }, data: dto });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, businessId: string) {
+    await this.findOne(id, businessId);
     await this.prisma.contact.delete({ where: { id } });
     return { ok: true };
   }

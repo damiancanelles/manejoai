@@ -10,22 +10,22 @@ export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
 
   @Post()
-  record(@Body() dto: RecordPaymentDto, @CurrentUser() user: { userId: string }) {
-    return this.paymentsService.record(dto, user.userId);
+  record(@Body() dto: RecordPaymentDto, @CurrentUser() user: { userId: string; businessId: string }) {
+    return this.paymentsService.record(dto, user.userId, user.businessId);
   }
 
   @Get()
-  findAll(@Query('accountId') accountId?: string) {
-    return this.paymentsService.findAll({ accountId });
+  findAll(@Query('accountId') accountId: string | undefined, @CurrentUser() user: { businessId: string }) {
+    return this.paymentsService.findAll({ accountId }, user.businessId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.paymentsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user: { businessId: string }) {
+    return this.paymentsService.findOne(id, user.businessId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.paymentsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: { businessId: string }) {
+    return this.paymentsService.remove(id, user.businessId);
   }
 }

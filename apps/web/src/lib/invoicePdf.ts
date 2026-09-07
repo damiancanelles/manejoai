@@ -222,10 +222,26 @@ function renderInvoicePage(doc: jsPDF, invoice: InvoicePdfData) {
   renderPaymentFooter(doc, finalY + 40);
 }
 
+/**
+ * Matches the naming the old manual system used - e.g. "7195 Hannover Pkwy N,
+ * Stockbridge, GA 30281 - Invoice 10899.pdf" - so downloaded files sort/search
+ * by property the same way the historical ones do, instead of a bare invoice
+ * number. Falls back to the account name for invoices with no property.
+ */
+function downloadFilename(invoice: InvoicePdfData): string {
+  const label = invoice.property
+    ? `${invoice.property.addressLine1}, ${invoice.property.city}, ${invoice.property.state} ${invoice.property.zip}`
+    : invoice.account.name;
+  // Strip characters that aren't safe in a filename (addresses shouldn't
+  // have these, but stay defensive).
+  const safeLabel = label.replace(/[\\/:*?"<>|]/g, '');
+  return `${safeLabel} - Invoice ${invoice.invoiceNumber}.pdf`;
+}
+
 export function downloadInvoicePdf(invoice: InvoicePdfData) {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   renderInvoicePage(doc, invoice);
-  doc.save(`Invoice-${invoice.invoiceNumber}.pdf`);
+  doc.save(downloadFilename(invoice));
 }
 
 /** Downloads every given invoice as its own separate PDF file (not merged into one). */

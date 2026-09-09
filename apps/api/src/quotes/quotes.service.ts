@@ -11,8 +11,8 @@ function lineTotal(item: { quantity: number; unitPriceCents: number }) {
 export class QuotesService {
   constructor(private prisma: PrismaService) {}
 
-  private async nextQuoteNumber(): Promise<string> {
-    const count = await this.prisma.quote.count();
+  private async nextQuoteNumber(businessId: string): Promise<string> {
+    const count = await this.prisma.quote.count({ where: { businessId } });
     return `QUO-${1001 + count}`;
   }
 
@@ -42,6 +42,25 @@ export class QuotesService {
     if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
   }
 
+  // A property/job belongs to one account each, checked here on top of
+  // assertOwnsAccount - otherwise a caller could pass their own accountId
+  // but someone else's propertyId/jobId and have it silently wired onto the
+  // quote (and, on approval, onto the resulting invoice - including its
+  // customer-facing title, which falls back to the job/property name).
+  private async assertPropertyBelongsToAccount(propertyId: string, accountId: string) {
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property || property.accountId !== accountId) {
+      throw new BadRequestException('That property does not belong to this quote\'s account.');
+    }
+  }
+
+  private async assertJobBelongsToAccount(jobId: string, accountId: string) {
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || job.accountId !== accountId) {
+      throw new BadRequestException('That job does not belong to this quote\'s account.');
+    }
+  }
+
   private async assertEditable(quoteId: string, businessId: string) {
     const quote = await this.prisma.quote.findUnique({ where: { id: quoteId }, include: { account: true } });
     if (!quote || quote.account.businessId !== businessId) throw new NotFoundException('Quote not found');
@@ -53,11 +72,18 @@ export class QuotesService {
 
   async create(dto: CreateQuoteDto, createdById: string, businessId: string) {
     await this.assertOwnsAccount(dto.accountId, businessId);
-    const quoteNumber = await this.nextQuoteNumber();
+    if (dto.propertyId) {
+      await this.assertPropertyBelongsToAccount(dto.propertyId, dto.accountId);
+    }
+    if (dto.jobId) {
+      await this.assertJobBelongsToAccount(dto.jobId, dto.accountId);
+    }
+    const quoteNumber = await this.nextQuoteNumber(businessId);
     const amountCents = dto.items.reduce((sum, item) => sum + lineTotal(item), 0);
     return this.prisma.quote.create({
       data: {
         accountId: dto.accountId,
+        businessId,
         propertyId: dto.propertyId,
         jobId: dto.jobId,
         amountCents,

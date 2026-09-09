@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { ContactRole, InvoiceStatus } from '@prisma/client';
@@ -69,6 +69,19 @@ export class RemindersService {
   }
 
   /**
+   * Confirms accountId (when given) actually belongs to businessId (when
+   * given) - the manual "run" endpoint always passes both. Without this, an
+   * accountId from another business just silently matched nothing in the
+   * where clauses below instead of failing loudly like every other
+   * endpoint does for a foreign id.
+   */
+  private async assertOwnsAccount(accountId?: string, businessId?: string) {
+    if (!accountId || !businessId) return;
+    const account = await this.prisma.account.findUnique({ where: { id: accountId } });
+    if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
+  }
+
+  /**
    * SENT invoices whose due date has passed become OVERDUE. Pass businessId
    * to scope this to one business (the manual "run" endpoint always does,
    * so one tenant's staff can never flip another's invoices) - the daily
@@ -76,6 +89,7 @@ export class RemindersService {
    * is a pure status transition with nothing business-specific in it.
    */
   async flagOverdueInvoices(accountId?: string, businessId?: string) {
+    await this.assertOwnsAccount(accountId, businessId);
     const result = await this.prisma.invoice.updateMany({
       where: {
         status: InvoiceStatus.SENT,
@@ -102,6 +116,7 @@ export class RemindersService {
    * once, using each group's own account's business for the email content.
    */
   async sendOverdueDigest(accountId?: string, businessId?: string) {
+    await this.assertOwnsAccount(accountId, businessId);
     const gracePeriodDays = Number(this.config.get('REMINDER_GRACE_PERIOD_DAYS', 14));
     const now = Date.now();
 

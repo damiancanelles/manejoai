@@ -68,6 +68,7 @@ model Business {
   users           User[]
   accounts        Account[]
   invoices        Invoice[]
+  quotes          Quote[]
   incomingReports IncomingReport[]
 }
 
@@ -247,12 +248,17 @@ model Quote {
   id         String    @id @default(cuid())
   accountId  String
   account    Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  // Denormalized copy of account.businessId, same reason as Invoice.businessId:
+  // quoteNumber is unique per business, not globally, and a composite unique
+  // constraint needs a real column on this table.
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
   propertyId String?
   property   Property? @relation(fields: [propertyId], references: [id])
   jobId      String?
   job        Job?      @relation(fields: [jobId], references: [id])
 
-  quoteNumber String      @unique // e.g. "QUO-1001"
+  quoteNumber String // e.g. "QUO-1001" - unique within a business, not globally (see @@unique below)
   // Always the sum of this quote's items - same rule as Invoice.amountCents.
   amountCents Int
   issueDate   DateTime    @default(now())
@@ -271,6 +277,8 @@ model Quote {
   updatedAt DateTime @updatedAt
 
   items QuoteItem[]
+
+  @@unique([businessId, quoteNumber])
 }
 
 // One line item on a quote - identical shape to InvoiceItem, copied over

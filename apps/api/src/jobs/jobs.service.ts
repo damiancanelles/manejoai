@@ -17,8 +17,21 @@ export class JobsService {
     if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
   }
 
+  // A property belongs to one account, checked here on top of
+  // assertOwnsAccount - otherwise a caller could pass their own accountId
+  // but someone else's propertyId and have it silently wired onto the job.
+  private async assertPropertyBelongsToAccount(propertyId: string, accountId: string) {
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property || property.accountId !== accountId) {
+      throw new BadRequestException('That property does not belong to this job\'s account.');
+    }
+  }
+
   async create(dto: CreateJobDto, createdById: string, businessId: string) {
     await this.assertOwnsAccount(dto.accountId, businessId);
+    if (dto.propertyId) {
+      await this.assertPropertyBelongsToAccount(dto.propertyId, dto.accountId);
+    }
     return this.prisma.job.create({
       data: {
         ...dto,
@@ -94,6 +107,10 @@ export class JobsService {
     // carry over a property that belongs to the old customer.
     const propertyId =
       dto.propertyId !== undefined ? dto.propertyId : changingAccount ? null : undefined;
+    if (propertyId) {
+      const effectiveAccountId = changingAccount ? dto.accountId! : existing.accountId;
+      await this.assertPropertyBelongsToAccount(propertyId, effectiveAccountId);
+    }
 
     return this.prisma.job.update({
       where: { id },

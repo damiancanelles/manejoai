@@ -55,6 +55,24 @@ export class InvoicesService {
     if (!account || account.businessId !== businessId) throw new NotFoundException('Account not found');
   }
 
+  // A property/job belongs to one account each, checked here on top of
+  // assertOwnsAccount - otherwise a caller could pass their own accountId
+  // but someone else's propertyId/jobId and have it silently wired onto the
+  // invoice (and disclosed to whoever it's later emailed to).
+  private async assertPropertyBelongsToAccount(propertyId: string, accountId: string) {
+    const property = await this.prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property || property.accountId !== accountId) {
+      throw new BadRequestException('That property does not belong to this invoice\'s account.');
+    }
+  }
+
+  private async assertJobBelongsToAccount(jobId: string, accountId: string) {
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job || job.accountId !== accountId) {
+      throw new BadRequestException('That job does not belong to this invoice\'s account.');
+    }
+  }
+
   private async assertEditable(invoiceId: string, businessId: string) {
     const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId }, include: { account: true } });
     if (!invoice || invoice.account.businessId !== businessId) throw new NotFoundException('Invoice not found');
@@ -66,6 +84,12 @@ export class InvoicesService {
 
   async create(dto: CreateInvoiceDto, createdById: string, businessId: string) {
     await this.assertOwnsAccount(dto.accountId, businessId);
+    if (dto.propertyId) {
+      await this.assertPropertyBelongsToAccount(dto.propertyId, dto.accountId);
+    }
+    if (dto.jobId) {
+      await this.assertJobBelongsToAccount(dto.jobId, dto.accountId);
+    }
     const invoiceNumber = await this.nextInvoiceNumber(businessId);
     const amountCents = dto.items.reduce((sum, item) => sum + lineTotal(item), 0);
     return this.prisma.invoice.create({

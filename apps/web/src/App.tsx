@@ -19,12 +19,15 @@ import InvoiceNew from './pages/InvoiceNew';
 import Reports from './pages/Reports';
 import IncomingReports from './pages/IncomingReports';
 import Settings from './pages/Settings';
-import { isLoggedIn } from './context/AuthContext';
+import PlatformDashboard from './pages/PlatformDashboard';
+import { isLoggedIn, isSuperAdmin } from './context/AuthContext';
 
 // "/" is the public marketing page for a signed-out visitor - a logged-in
-// user lands on the real app (Dashboard, now at /dashboard) instead.
+// user lands on the real app instead: a super-admin at the platform-wide
+// dashboard, everyone else at their own business's Dashboard.
 function Home() {
-  return isLoggedIn() ? <Navigate to="/dashboard" replace /> : <Landing />;
+  if (!isLoggedIn()) return <Landing />;
+  return <Navigate to={isSuperAdmin() ? '/platform' : '/dashboard'} replace />;
 }
 
 export default function App() {
@@ -34,6 +37,10 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route element={<ProtectedRoute />}>
+        {/* No sidebar/Layout here - a super-admin has no business of their
+            own to navigate (Jobs/Invoices/etc are meaningless for them),
+            just this one page. */}
+        <Route path="/platform" element={<PlatformDashboard />} />
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/accounts" element={<Accounts />} />

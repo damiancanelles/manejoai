@@ -1,11 +1,11 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { api, getToken, setToken } from '../api/client';
 
-interface AuthUser {
+export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'STAFF';
+  role: 'ADMIN' | 'STAFF' | 'SUPERADMIN';
 }
 
 export interface Business {
@@ -34,8 +34,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   business: Business | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
+  register: (input: RegisterInput) => Promise<AuthUser>;
   logout: () => void;
   // Syncs a freshly-saved Business (e.g. from the Settings page's own PATCH
   // call) into context + localStorage, so invoice PDFs/emails pick up the
@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('manejoai_user', JSON.stringify(res.user));
     setUser(res.user);
     setBusiness(res.business);
+    return res.user;
   }
 
   async function login(email: string, password: string) {
@@ -72,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email,
       password,
     });
-    storeSession(res);
+    return storeSession(res);
   }
 
   // Auto-logs in on success, same as login() - no separate sign-in step
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       '/auth/register',
       input,
     );
-    storeSession(res);
+    return storeSession(res);
   }
 
   function logout() {
@@ -108,4 +109,10 @@ export function useAuth() {
 
 export function isLoggedIn() {
   return !!getToken();
+}
+
+// Read directly from storage (not the React context) so route-level checks
+// in App.tsx can use it outside a component, same as isLoggedIn().
+export function isSuperAdmin() {
+  return readStored<AuthUser>('manejoai_user')?.role === 'SUPERADMIN';
 }

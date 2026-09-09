@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth, isLoggedIn } from '../context/AuthContext';
+import { useAuth, isLoggedIn, isSuperAdmin } from '../context/AuthContext';
 import LogoMark from '../components/LogoMark';
 
 const inputClass =
@@ -21,7 +21,7 @@ export default function Register() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (isLoggedIn()) return <Navigate to="/dashboard" replace />;
+  if (isLoggedIn()) return <Navigate to={isSuperAdmin() ? '/platform' : '/dashboard'} replace />;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

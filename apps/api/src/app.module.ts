@@ -20,6 +20,7 @@ import { MailModule } from './mail/mail.module';
 import { StorageModule } from './storage/storage.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { IncomingReportsModule } from './incoming-reports/incoming-reports.module';
+import { PlatformModule } from './platform/platform.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { IncomingReportsModule } from './incoming-reports/incoming-reports.modul
     RemindersModule,
     TelegramModule,
     IncomingReportsModule,
+    PlatformModule,
   ],
 })
 export class AppModule {}

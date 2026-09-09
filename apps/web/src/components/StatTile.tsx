@@ -2,6 +2,7 @@ const TONES = {
   red: { border: 'border-red-200', bg: 'bg-red-50', label: 'text-red-700', value: 'text-red-800' },
   amber: { border: 'border-amber-200', bg: 'bg-amber-50', label: 'text-amber-700', value: 'text-amber-800' },
   green: { border: 'border-green-200', bg: 'bg-green-50', label: 'text-green-700', value: 'text-green-800' },
+  indigo: { border: 'border-indigo-200', bg: 'bg-indigo-50', label: 'text-indigo-700', value: 'text-indigo-800' },
 } as const;
 
 export default function StatTile({

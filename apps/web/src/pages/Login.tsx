@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth, isLoggedIn } from '../context/AuthContext';
+import { useAuth, isLoggedIn, isSuperAdmin } from '../context/AuthContext';
 import LogoMark from '../components/LogoMark';
 
 export default function Login() {
@@ -11,15 +11,15 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (isLoggedIn()) return <Navigate to="/dashboard" replace />;
+  if (isLoggedIn()) return <Navigate to={isSuperAdmin() ? '/platform' : '/dashboard'} replace />;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const user = await login(email, password);
+      navigate(user.role === 'SUPERADMIN' ? '/platform' : '/dashboard');
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {

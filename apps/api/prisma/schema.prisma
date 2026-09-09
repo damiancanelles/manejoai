@@ -76,6 +76,12 @@ model Business {
 enum StaffRole {
   ADMIN // full access - e.g. the user who registered the business
   STAFF // office/admin staff: create invoices, log jobs, manage accounts
+  // Platform-level, not tenant-level - sees aggregate stats/activity across
+  // every business (see platform/), not any one business's own data. Still
+  // belongs to a Business row (a User always does), but that's just a home
+  // for the account, not a real tenant - see the "Manejoai Platform"
+  // business created for this in scripts/create-superadmin.ts.
+  SUPERADMIN
 }
 
 model User {

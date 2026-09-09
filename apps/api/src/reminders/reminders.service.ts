@@ -40,8 +40,10 @@ export class RemindersService {
 
   // Flagging runs daily so the app's own displayed statuses (Dashboard,
   // Reports, the invoice itself) stay accurate day-to-day, independent of
-  // how often we actually email about it.
-  @Cron('0 8 * * *') // every day at 8am server time
+  // how often we actually email about it. Explicit timeZone since the
+  // Heroku dyno itself has no TZ set (defaults to UTC) - "8am" should mean
+  // 8am for the business, not 8am UTC / 4am Atlanta.
+  @Cron('0 8 * * *', { timeZone: 'America/New_York' })
   async runDailyFlagging() {
     if (!this.remindersEnabled()) return;
     await this.flagOverdueInvoices();
@@ -50,7 +52,7 @@ export class RemindersService {
   // The actual reminder emails go out once a week. Change the cron
   // expression to move the day/time, or trigger manually via
   // POST /api/reminders/run while testing.
-  @Cron('0 8 * * 1') // every Monday at 8am server time
+  @Cron('0 9 * * 1', { timeZone: 'America/New_York' }) // every Monday at 9am Eastern
   async runWeeklyDigest() {
     if (!this.remindersEnabled()) return;
     await this.sendOverdueDigest();

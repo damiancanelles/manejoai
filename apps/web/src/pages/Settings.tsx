@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth, Business } from '../context/AuthContext';
 
@@ -140,6 +140,183 @@ function BusinessInfoSection() {
   );
 }
 
+interface TelegramStatus {
+  hasToken: boolean;
+  botUsername: string | null;
+  groupTitle: string | null;
+  groupLinked: boolean;
+  confirmedAt: string | null;
+}
+
+/**
+ * Self-service Telegram job-report intake, one bot per business (see
+ * TelegramSetupService on the backend). A business pastes in their own bot
+ * token; everything else (webhook registration, linking the group) happens
+ * automatically or is confirmed by hand, since Telegram gives no API to
+ * verify privacy mode or group membership from our side.
+ */
+function TelegramSection() {
+  const [status, setStatus] = useState<TelegramStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [botToken, setBotToken] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  function load() {
+    api
+      .get<TelegramStatus>('/telegram/me/status')
+      .then(setStatus)
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(load, []);
+
+  async function onSaveToken(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+    setSaving(true);
+    try {
+      const updated = await api.patch<TelegramStatus>('/telegram/me/token', { botToken });
+      setStatus(updated);
+      setBotToken('');
+      setSuccess(`Connected to @${updated.botUsername}. Now finish the steps below.`);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onConfirm() {
+    setError(null);
+    setSuccess(null);
+    setConfirming(true);
+    try {
+      const updated = await api.post<TelegramStatus>('/telegram/me/confirm');
+      setStatus(updated);
+      setSuccess('Marked as set up.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  async function onDisconnect() {
+    if (!confirm('Disconnect this bot? Job reports will stop coming in until you connect a new one.')) return;
+    setError(null);
+    setSuccess(null);
+    setDisconnecting(true);
+    try {
+      const updated = await api.delete<TelegramStatus>('/telegram/me/token');
+      setStatus(updated);
+      setSuccess('Disconnected.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  return (
+    <section className="max-w-lg">
+      <h2 className="mb-2 text-lg font-semibold">Job reports (Telegram)</h2>
+      <p className="mb-4 text-sm text-slate-500">
+        Let your crew text job photos/updates into a Telegram group and have them show up as Job Reports here,
+        ready to turn into real jobs.
+      </p>
+
+      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
+        {success && <div className="rounded bg-green-50 p-2 text-sm text-green-800">{success}</div>}
+
+        {!loading && status && (
+          <div className="grid grid-cols-1 gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:grid-cols-3">
+            <div>
+              <span className="text-slate-500">Bot</span>
+              <div className="font-medium text-slate-700">{status.hasToken ? `@${status.botUsername}` : 'Not connected'}</div>
+            </div>
+            <div>
+              <span className="text-slate-500">Group</span>
+              <div className="font-medium text-slate-700">{status.groupLinked ? status.groupTitle || 'Linked' : 'Waiting for a message'}</div>
+            </div>
+            <div>
+              <span className="text-slate-500">Setup</span>
+              <div className="font-medium text-slate-700">
+                {status.confirmedAt ? `Confirmed ${new Date(status.confirmedAt).toLocaleDateString()}` : 'Not confirmed'}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-600">
+          <li>
+            Message <span className="font-medium text-slate-800">@BotFather</span> on Telegram and send{' '}
+            <code className="rounded bg-slate-100 px-1 py-0.5">/newbot</code> to create a bot (skip this if you
+            already have one) - it'll give you a token that looks like{' '}
+            <code className="rounded bg-slate-100 px-1 py-0.5">123456:ABC-your-token</code>.
+          </li>
+          <li>Paste that token below and click Save.</li>
+          <li>
+            Back in @BotFather, send <code className="rounded bg-slate-100 px-1 py-0.5">/setprivacy</code>, pick
+            your bot, and choose <span className="font-medium text-slate-800">Disable</span> - otherwise it can
+            only see messages that directly @mention it, not ordinary chatter.
+          </li>
+          <li>Add your bot to the Telegram group your crew reports jobs in, like any other member.</li>
+          <li>Send any message in that group - the "Group" status above will pick it up automatically.</li>
+          <li>Once all of that's done, click "I've completed these steps" below.</li>
+        </ol>
+
+        <form onSubmit={onSaveToken} className="flex flex-wrap items-end gap-2">
+          <label className="block flex-1 text-sm">
+            Bot token
+            <input
+              type="password"
+              placeholder={status?.hasToken ? 'Enter a new token to replace the current one' : 'From @BotFather'}
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              required
+              className={inputClass}
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </form>
+
+        <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!status?.hasToken || confirming}
+            className="rounded bg-green-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-40"
+          >
+            {confirming ? 'Saving...' : "I've completed these steps"}
+          </button>
+          {status?.hasToken && (
+            <button
+              type="button"
+              onClick={onDisconnect}
+              disabled={disconnecting}
+              className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-50"
+            >
+              {disconnecting ? 'Disconnecting...' : 'Disconnect'}
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ChangePasswordSection() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -238,6 +415,7 @@ export default function Settings() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Settings</h1>
       <BusinessInfoSection />
+      <TelegramSection />
       <ChangePasswordSection />
     </div>
   );

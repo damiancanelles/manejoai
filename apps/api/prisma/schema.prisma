@@ -38,12 +38,37 @@ model Business {
   // registering admin's own email, editable afterward in Settings since it
   // often isn't the same inbox as the login.
   replyToEmail String?
+
+  // ---- Telegram job-report intake, configured per business in Settings ----
+  // The bot token this business got from @BotFather - never sent back to the
+  // frontend once saved (see BusinessesController), only used server-side.
+  telegramBotToken String?
+  // Fetched once via Telegram's getMe when the token is saved - shown in
+  // Settings ("Bot: @your_bot") so a business can confirm it's the bot they
+  // think it is.
+  telegramBotUsername String?
+  // Generated when telegramBotToken is saved, echoed back by Telegram on
+  // every webhook call so TelegramWebhookGuard can verify it (see that
+  // file) - one secret per business now that each has its own bot/webhook,
+  // instead of the single TELEGRAM_WEBHOOK_SECRET env var this replaces.
+  telegramWebhookSecret String?
+  // Captured automatically from the first message this business's bot
+  // receives (see TelegramService) - not something the business enters
+  // directly, since Telegram group chat ids aren't user-facing.
+  telegramGroupChatId String?
+  telegramGroupTitle  String?
+  // Self-reported via the "I've completed these steps" button in Settings -
+  // Telegram gives no API to confirm privacy mode or group membership from
+  // our side, so this is the business's own word that they did it.
+  telegramConfirmedAt DateTime?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  users    User[]
-  accounts Account[]
-  invoices Invoice[]
+  users           User[]
+  accounts        Account[]
+  invoices        Invoice[]
+  incomingReports IncomingReport[]
 }
 
 // ---------- Staff / auth ----------
@@ -378,8 +403,10 @@ enum ReportStatus {
 // resolved accountId, and a chat message can't reliably provide one, so
 // this is where AI-parsed guesses live until a human confirms them.
 model IncomingReport {
-  id     String @id @default(cuid())
-  source String @default("telegram")
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  source     String   @default("telegram")
 
   senderName String? // Telegram display name - free text, no worker accounts yet
   rawText    String? // concatenated text from the message burst
@@ -404,6 +431,8 @@ model IncomingReport {
   reviewedAt   DateTime?
   reviewedById String?
   reviewedBy   User?     @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([businessId])
 }
 
 // One row per reminder email actually sent, so the scheduler never double-sends

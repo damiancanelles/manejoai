@@ -11,9 +11,10 @@ export class IncomingReportsService {
     private jobsService: JobsService,
   ) {}
 
-  findAll(status?: ReportStatus, search?: string) {
+  findAll(businessId: string, status?: ReportStatus, search?: string) {
     return this.prisma.incomingReport.findMany({
       where: {
+        businessId,
         status,
         ...(search
           ? {
@@ -32,22 +33,17 @@ export class IncomingReportsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, businessId: string) {
     const report = await this.prisma.incomingReport.findUnique({
       where: { id },
       include: { matchedProperty: { include: { account: true } } },
     });
-    if (!report) throw new NotFoundException('Report not found');
+    if (!report || report.businessId !== businessId) throw new NotFoundException('Report not found');
     return report;
   }
 
-  // Note: IncomingReport itself isn't business-scoped yet (Telegram intake
-  // is still a single global bot/integration - see the plan boundary noted
-  // when multi-tenancy was added). The Job it converts into is real
-  // business data though, so it still goes through JobsService's normal
-  // ownership check - dto.accountId must belong to the reviewer's business.
   async convert(id: string, dto: ConvertReportDto, reviewedById: string, businessId: string) {
-    const report = await this.findOne(id);
+    const report = await this.findOne(id, businessId);
     if (report.status !== ReportStatus.PENDING) {
       throw new BadRequestException('This report was already reviewed');
     }
@@ -72,8 +68,8 @@ export class IncomingReportsService {
     return job;
   }
 
-  async dismiss(id: string, reviewedById: string) {
-    const report = await this.findOne(id);
+  async dismiss(id: string, reviewedById: string, businessId: string) {
+    const report = await this.findOne(id, businessId);
     if (report.status !== ReportStatus.PENDING) {
       throw new BadRequestException('This report was already reviewed');
     }

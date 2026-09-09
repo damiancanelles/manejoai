@@ -12,8 +12,7 @@
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
     "seed:demo": "ts-node scripts/seed-demo-data.ts",
-    "import:excel": "ts-node scripts/import-excel.ts",
-    "telegram:set-webhook": "ts-node scripts/set-telegram-webhook.ts"
+    "import:excel": "ts-node scripts/import-excel.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.123.0",

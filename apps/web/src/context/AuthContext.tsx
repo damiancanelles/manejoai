@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, getToken, setToken } from '../api/client';
 
 export interface AuthUser {
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readStored('manejoai_user'));
   const [business, setBusinessState] = useState<Business | null>(() => readStored('manejoai_business'));
   const [loading] = useState(false);
+  const navigate = useNavigate();
 
   function setBusiness(next: Business) {
     localStorage.setItem('manejoai_business', JSON.stringify(next));
@@ -86,12 +88,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return storeSession(res);
   }
 
+  // Clears the session and sends the browser to /login - just clearing the
+  // token left whoever clicked "Log out" sitting on the same protected page
+  // (ProtectedRoute only re-checks on navigation, not on this state change).
   function logout() {
     setToken(null);
     localStorage.removeItem('manejoai_user');
     localStorage.removeItem('manejoai_business');
     setUser(null);
     setBusinessState(null);
+    navigate('/login', { replace: true });
   }
 
   return (

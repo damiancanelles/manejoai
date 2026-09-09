@@ -14,6 +14,10 @@ export interface Business {
   addressLine1: string;
   addressLine2: string | null;
   phone: string | null;
+  // The local part of this business's sending address, <emailSlug>@manejoai.cloud
+  // - not editable (see Settings), shown there for reference.
+  emailSlug: string;
+  replyToEmail: string | null;
 }
 
 interface RegisterInput {

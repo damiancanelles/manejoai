@@ -237,7 +237,7 @@ export class RemindersService {
           Thank you for your business.<br/>${business.name}
         </p>
       `;
-        await this.mail.send({ to: contact.email!, subject, html });
+        await this.mail.send({ to: contact.email!, subject, html, business });
         // One log row per invoice per recipient - keeps each invoice's own
         // "reminder history" (shown on the invoice detail page) accurate,
         // even though the email itself covered several invoices at once.

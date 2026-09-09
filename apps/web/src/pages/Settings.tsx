@@ -16,6 +16,7 @@ function BusinessInfoSection() {
   const [addressLine1, setAddressLine1] = useState(business?.addressLine1 ?? '');
   const [addressLine2, setAddressLine2] = useState(business?.addressLine2 ?? '');
   const [phone, setPhone] = useState(business?.phone ?? '');
+  const [replyToEmail, setReplyToEmail] = useState(business?.replyToEmail ?? '');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -31,6 +32,7 @@ function BusinessInfoSection() {
         addressLine1,
         addressLine2: addressLine2 || undefined,
         phone: phone || undefined,
+        replyToEmail: replyToEmail || undefined,
       });
       setBusiness(updated);
       setSuccess(true);
@@ -50,6 +52,16 @@ function BusinessInfoSection() {
       <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
         {success && <div className="rounded bg-green-50 p-2 text-sm text-green-800">Business info updated.</div>}
+
+        {business && (
+          <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+            <span className="text-slate-500">Sending address</span>
+            <div className="font-medium text-slate-700">{business.emailSlug}@manejoai.cloud</div>
+            <p className="mt-1 text-xs text-slate-400">
+              Every invoice and reminder email is sent from this address - fixed once your business is created.
+            </p>
+          </div>
+        )}
 
         <label className="block text-sm">
           Business name
@@ -96,6 +108,20 @@ function BusinessInfoSection() {
             value={phone}
             onChange={(e) => {
               setPhone(e.target.value);
+              setSuccess(false);
+            }}
+            className={inputClass}
+          />
+        </label>
+
+        <label className="block text-sm">
+          Reply-to email
+          <input
+            type="email"
+            placeholder="Where replies to invoices/reminders should land"
+            value={replyToEmail}
+            onChange={(e) => {
+              setReplyToEmail(e.target.value);
               setSuccess(false);
             }}
             className={inputClass}

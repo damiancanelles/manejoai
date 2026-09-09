@@ -27,6 +27,17 @@ model Business {
   addressLine1 String
   addressLine2 String?
   phone        String?
+  // The local part of this business's own sending address under the shared
+  // manejoai.cloud domain (e.g. "n2sky" -> n2sky@manejoai.cloud) - lets every
+  // business send invoices/reminders under its own recognizable address
+  // without needing to verify its own domain in Resend. Generated once at
+  // registration (see slugify() in auth.service.ts) and not editable after -
+  // changing it would change what a business's customers see as the sender.
+  emailSlug String @unique
+  // Where replies to this business's emails should land - defaults to the
+  // registering admin's own email, editable afterward in Settings since it
+  // often isn't the same inbox as the login.
+  replyToEmail String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

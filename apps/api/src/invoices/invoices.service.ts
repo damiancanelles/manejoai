@@ -360,7 +360,7 @@ export class InvoicesService {
           Thank you for your business.<br/>${business.name}
         </p>
       `;
-        await this.mail.send({ to: contact.email!, subject, html, attachments });
+        await this.mail.send({ to: contact.email!, subject, html, attachments, business });
         emailCount++;
       }
 
@@ -518,7 +518,7 @@ export class InvoicesService {
           Thank you for your business.<br/>${business.name}
         </p>
       `;
-        await this.mail.send({ to: contact.email!, subject, html, attachments });
+        await this.mail.send({ to: contact.email!, subject, html, attachments, business });
         emailCount++;
       }
       invoiceCount += group.length;

@@ -12,6 +12,14 @@ export interface SendEmailInput {
   subject: string;
   html: string;
   attachments?: EmailAttachment[];
+  // The business this email is on behalf of - drives who Resend says it's
+  // from (<emailSlug>@manejoai.cloud, display-named after the business) and
+  // where replies land (replyToEmail). Every business gets its own
+  // recognizable sending address this way without needing to verify its
+  // own domain in Resend. Omit only for a true system-level email with no
+  // single business behind it - falls back to the MAIL_FROM/MAIL_REPLY_TO
+  // env vars, which is all this app had before businesses existed.
+  business?: { name: string; emailSlug: string; replyToEmail?: string | null };
 }
 
 /**
@@ -35,6 +43,18 @@ export class MailService {
     this.driver = this.config.get<string>('MAIL_DRIVER', 'console');
   }
 
+  private resolveFrom(business?: SendEmailInput['business']): string {
+    if (business) {
+      const domain = this.config.get<string>('MAIL_SENDING_DOMAIN', 'manejoai.cloud');
+      return `${business.name} <${business.emailSlug}@${domain}>`;
+    }
+    return this.config.get<string>('MAIL_FROM') ?? '';
+  }
+
+  private resolveReplyTo(business?: SendEmailInput['business']): string | undefined {
+    return business?.replyToEmail || this.config.get<string>('MAIL_REPLY_TO');
+  }
+
   async send(rawInput: SendEmailInput): Promise<void> {
     // Optional - set on staging/test environments so a real send is always
     // visually distinguishable from a production one, even if it reuses the
@@ -48,20 +68,22 @@ export class MailService {
     const attachmentNote = input.attachments?.length
       ? ` | Attachments: ${input.attachments.map((a) => a.filename).join(', ')}`
       : '';
-    this.logger.log(`[console-mail] To: ${input.to} | Subject: ${input.subject}${attachmentNote}\n${input.html}`);
+    this.logger.log(
+      `[console-mail] From: ${this.resolveFrom(input.business)} | To: ${input.to} | Subject: ${input.subject}${attachmentNote}\n${input.html}`,
+    );
   }
 
   private async sendViaResend(input: SendEmailInput): Promise<void> {
     const apiKey = this.config.get<string>('RESEND_API_KEY');
-    const from = this.config.get<string>('MAIL_FROM');
-    // Optional - lets replies land in an inbox you already check (e.g. the
-    // Gmail address customers are used to) even though `from` has to be an
-    // address on a domain we actually control (see MAIL_FROM's own comment -
-    // no provider can legitimately send "as" someone else's Gmail address).
-    const replyTo = this.config.get<string>('MAIL_REPLY_TO');
+    const from = this.resolveFrom(input.business);
+    // Optional (or business.replyToEmail) - lets replies land in an inbox
+    // someone actually checks even though `from` has to be an address on a
+    // domain we actually control (see the comment on MAIL_SENDING_DOMAIN -
+    // no provider can legitimately send "as" someone else's address).
+    const replyTo = this.resolveReplyTo(input.business);
     if (!apiKey) {
       this.logger.warn('MAIL_DRIVER=resend but RESEND_API_KEY is not set - falling back to console log');
-      this.logger.log(`[console-mail] To: ${input.to} | Subject: ${input.subject}\n${input.html}`);
+      this.logger.log(`[console-mail] From: ${from} | To: ${input.to} | Subject: ${input.subject}\n${input.html}`);
       return;
     }
 

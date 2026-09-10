@@ -35,15 +35,16 @@ export default function Billing() {
 
   const business = cachedBusiness;
   const status = business?.subscriptionStatus ?? 'trialing';
+  const tier = business?.subscriptionTier ?? 'pro';
   const isActive = status === 'active';
   const isTrialing = status === 'trialing' && business?.trialEndsAt && daysLeft(business.trialEndsAt) > 0;
   const lapsed = !isActive && !isTrialing;
 
-  async function goToCheckout() {
+  async function goToCheckout(plan: 'basic' | 'pro') {
     setError(null);
     setSubmitting(true);
     try {
-      const { url } = await api.post<{ url: string }>('/billing/checkout');
+      const { url } = await api.post<{ url: string }>('/billing/checkout', { tier: plan });
       window.location.href = url;
     } catch (err: any) {
       setError(err.message);
@@ -93,9 +94,13 @@ export default function Billing() {
               {daysLeft(business.trialEndsAt)} day{daysLeft(business.trialEndsAt) === 1 ? '' : 's'} left in your free trial.
             </p>
           )}
-          {isActive && business?.currentPeriodEnd && (
-            <p className="mt-2 text-slate-600">Renews {new Date(business.currentPeriodEnd).toLocaleDateString()}.</p>
+          {isActive && (
+            <p className="mt-2 text-slate-600">
+              {tier === 'pro' ? 'Pro plan' : 'Basic plan'}
+              {business?.currentPeriodEnd && ` - renews ${new Date(business.currentPeriodEnd).toLocaleDateString()}`}.
+            </p>
           )}
+          {isTrialing && <p className="mt-1 text-slate-500">Your trial includes Pro (with the assistant).</p>}
           {lapsed && (
             <p className="mt-2 text-red-700">
               Your subscription isn't active - the rest of the app is locked until this is resolved.
@@ -104,13 +109,38 @@ export default function Billing() {
         </div>
 
         {lapsed || isTrialing ? (
-          <button
-            onClick={goToCheckout}
-            disabled={submitting}
-            className="w-full rounded bg-indigo-600 py-2 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {submitting ? 'Redirecting...' : 'Subscribe - $5/month'}
-          </button>
+          <div className="space-y-3">
+            <div className="rounded-lg border border-slate-200 p-4">
+              <div className="flex items-baseline justify-between">
+                <span className="font-semibold text-slate-900">Basic</span>
+                <span className="text-sm text-slate-600">$5/month</span>
+              </div>
+              <p className="mt-1 text-sm text-slate-500">Jobs, quotes, invoices, payment reminders, reports.</p>
+              <button
+                onClick={() => goToCheckout('basic')}
+                disabled={submitting}
+                className="mt-3 w-full rounded border border-indigo-600 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 disabled:opacity-50"
+              >
+                {submitting ? 'Redirecting...' : 'Choose Basic'}
+              </button>
+            </div>
+            <div className="rounded-lg border-2 border-indigo-600 p-4">
+              <div className="flex items-baseline justify-between">
+                <span className="font-semibold text-slate-900">Pro</span>
+                <span className="text-sm text-slate-600">$25/month</span>
+              </div>
+              <p className="mt-1 text-sm text-slate-500">
+                Everything in Basic, plus the AI assistant that answers questions about your business.
+              </p>
+              <button
+                onClick={() => goToCheckout('pro')}
+                disabled={submitting}
+                className="mt-3 w-full rounded bg-indigo-600 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {submitting ? 'Redirecting...' : 'Choose Pro'}
+              </button>
+            </div>
+          </div>
         ) : (
           <button
             onClick={goToPortal}

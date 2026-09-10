@@ -68,6 +68,12 @@ model Business {
   // an enum so a new Stripe status never needs a migration to handle. See
   // SubscriptionGuard for how this gates access.
   subscriptionStatus String @default("trialing")
+  // "basic" (the $5 plan) or "pro" (the $25 plan, which adds the AI
+  // assistant - see ProTierGuard). Default "pro" because a fresh business
+  // starts on the Pro trial; the webhook flips it to "basic" only if they
+  // actually subscribe to the Basic price. Also the grandfather value for
+  // businesses that predate the tier split.
+  subscriptionTier String @default("pro")
   // Set once at registration (now + TRIAL_PERIOD_DAYS) - independent of
   // Stripe, since no Customer/Subscription exists yet unless a business
   // subscribes early during the trial.

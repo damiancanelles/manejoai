@@ -22,6 +22,9 @@ export interface Business {
   // Mirrors Stripe's own status strings (trialing/active/past_due/canceled/...)
   // - see the Billing page and SubscriptionGuard on the backend.
   subscriptionStatus: string;
+  // "basic" ($5) or "pro" ($25, adds the AI assistant). See the Billing
+  // page and ProTierGuard on the backend.
+  subscriptionTier: string;
   trialEndsAt: string | null;
   currentPeriodEnd: string | null;
 }

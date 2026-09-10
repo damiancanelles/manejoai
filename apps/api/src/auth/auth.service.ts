@@ -23,6 +23,7 @@ interface AuthUser {
     emailSlug: string;
     replyToEmail: string | null;
     subscriptionStatus: string;
+    subscriptionTier: string;
     trialEndsAt: Date | null;
     currentPeriodEnd: Date | null;
   };

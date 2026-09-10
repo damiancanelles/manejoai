@@ -1,7 +1,8 @@
-import { BadRequestException, Controller, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { BillingService } from './billing.service';
+import { CheckoutDto } from './dto';
 
 @Controller()
 export class BillingController {
@@ -11,8 +12,8 @@ export class BillingController {
   // resubscribes, so it has to work even when their access is locked.
   @UseGuards(JwtAuthGuard)
   @Post('billing/checkout')
-  async checkout(@CurrentUser() user: { businessId: string }) {
-    const url = await this.billingService.createCheckoutSession(user.businessId);
+  async checkout(@Body() dto: CheckoutDto, @CurrentUser() user: { businessId: string }) {
+    const url = await this.billingService.createCheckoutSession(user.businessId, dto.tier);
     return { url };
   }
 

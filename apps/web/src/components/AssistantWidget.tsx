@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -13,6 +15,8 @@ interface ChatMessage {
  * component's state - not persisted, a refresh starts fresh.
  */
 export default function AssistantWidget() {
+  const { business } = useAuth();
+  const isPro = business?.subscriptionTier === 'pro';
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -55,43 +59,60 @@ export default function AssistantWidget() {
             </button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3 text-sm">
-            {messages.length === 0 && (
-              <p className="text-slate-400">
-                Ask things like "find invoices for unit 213" or "what jobs are still in progress?"
-              </p>
-            )}
-            {messages.map((m, i) => (
-              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 ${
-                    m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800'
-                  }`}
-                >
-                  {m.content}
-                </div>
+          {isPro ? (
+            <>
+              <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3 text-sm">
+                {messages.length === 0 && (
+                  <p className="text-slate-400">
+                    Ask things like "find invoices for unit 213" or "what jobs are still in progress?"
+                  </p>
+                )}
+                {messages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 ${
+                        m.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800'
+                      }`}
+                    >
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+                {sending && <div className="text-slate-400">Thinking...</div>}
+                {error && <div className="rounded bg-red-50 p-2 text-red-700">{error}</div>}
               </div>
-            ))}
-            {sending && <div className="text-slate-400">Thinking...</div>}
-            {error && <div className="rounded bg-red-50 p-2 text-red-700">{error}</div>}
-          </div>
 
-          <form onSubmit={onSubmit} className="flex gap-2 border-t border-slate-200 p-2">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask a question..."
-              disabled={sending}
-              className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-            />
-            <button
-              type="submit"
-              disabled={sending || !input.trim()}
-              className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
-            >
-              Send
-            </button>
-          </form>
+              <form onSubmit={onSubmit} className="flex gap-2 border-t border-slate-200 p-2">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask a question..."
+                  disabled={sending}
+                  className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  type="submit"
+                  disabled={sending || !input.trim()}
+                  className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Send
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm">
+              <p className="text-slate-600">
+                The assistant looks things up in your business for you - invoices, jobs, customers - in plain
+                English. It's part of the <span className="font-semibold text-slate-800">Pro</span> plan.
+              </p>
+              <Link
+                to="/billing"
+                className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
+              >
+                Upgrade to Pro - $25/month
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

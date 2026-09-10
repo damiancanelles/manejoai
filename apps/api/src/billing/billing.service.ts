@@ -30,9 +30,22 @@ export class BillingService {
     return (this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
   }
 
-  async createCheckoutSession(businessId: string): Promise<string> {
-    const priceId = this.config.get<string>('STRIPE_PRICE_ID');
-    if (!priceId) throw new BadRequestException('Billing is not configured on the server yet.');
+  private priceIdFor(tier: 'basic' | 'pro'): string {
+    const id =
+      tier === 'pro'
+        ? this.config.get<string>('STRIPE_PRICE_ID_PRO')
+        : this.config.get<string>('STRIPE_PRICE_ID');
+    if (!id) throw new BadRequestException('Billing is not configured on the server yet.');
+    return id;
+  }
+
+  /** Which tier a Stripe subscription's price maps to - "pro" unless it's explicitly the Basic price. */
+  private tierForPriceId(priceId: string | undefined): 'basic' | 'pro' {
+    return priceId && priceId === this.config.get<string>('STRIPE_PRICE_ID') ? 'basic' : 'pro';
+  }
+
+  async createCheckoutSession(businessId: string, tier: 'basic' | 'pro'): Promise<string> {
+    const priceId = this.priceIdFor(tier);
 
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
 
@@ -112,8 +125,12 @@ export class BillingService {
         // to the subscription item level in a newer Stripe API version -
         // verified directly against a real test subscription rather than
         // trusting the old top-level field, which is silently undefined now.
-        const periodEndSeconds = subscription.items.data[0]?.current_period_end;
+        const item = subscription.items.data[0];
+        const periodEndSeconds = item?.current_period_end;
         const periodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000) : null;
+        // Which plan they're on, from the price on the subscription's item.
+        // Left unchanged on `deleted` (the whole app locks then anyway).
+        const tier = this.tierForPriceId(item?.price?.id);
 
         const business = await this.prisma.business.findFirst({
           where: {
@@ -131,9 +148,12 @@ export class BillingService {
             subscriptionStatus: event.type === 'customer.subscription.deleted' ? 'canceled' : status,
             stripeSubscriptionId: subscription.id,
             currentPeriodEnd: periodEnd,
+            ...(event.type === 'customer.subscription.deleted' ? {} : { subscriptionTier: tier }),
           },
         });
-        this.logger.log(`Business ${business.id} subscription -> ${event.type === 'customer.subscription.deleted' ? 'canceled' : status}`);
+        this.logger.log(
+          `Business ${business.id} subscription -> ${event.type === 'customer.subscription.deleted' ? 'canceled' : `${status} (${tier})`}`,
+        );
         break;
       }
 

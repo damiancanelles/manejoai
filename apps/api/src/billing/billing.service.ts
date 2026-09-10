@@ -75,6 +75,38 @@ export class BillingService {
     return session.url;
   }
 
+  /**
+   * Swap the price on an existing subscription in place - the in-app
+   * upgrade (Basic -> Pro) / downgrade (Pro -> Basic), no Stripe-hosted
+   * page needed. Stripe prorates the difference onto the next invoice.
+   * The customer.subscription.updated webhook is still the source of truth
+   * for subscriptionTier; we also write it here so the UI flips right away.
+   */
+  async changePlan(businessId: string, tier: 'basic' | 'pro'): Promise<void> {
+    const priceId = this.priceIdFor(tier);
+    const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
+    if (!business.stripeSubscriptionId) {
+      throw new BadRequestException('No active subscription to change - subscribe first.');
+    }
+
+    const subscription = await this.stripe.subscriptions.retrieve(business.stripeSubscriptionId);
+    const item = subscription.items.data[0];
+    if (!item) throw new BadRequestException('Subscription has no line item to change.');
+    if (item.price?.id === priceId) {
+      // Already on this plan - keep the DB honest and return quietly.
+      await this.prisma.business.update({ where: { id: businessId }, data: { subscriptionTier: tier } });
+      return;
+    }
+
+    await this.stripe.subscriptions.update(business.stripeSubscriptionId, {
+      items: [{ id: item.id, price: priceId }],
+      proration_behavior: 'create_prorations',
+    });
+
+    await this.prisma.business.update({ where: { id: businessId }, data: { subscriptionTier: tier } });
+    this.logger.log(`Business ${businessId} changed plan -> ${tier}`);
+  }
+
   async createPortalSession(businessId: string): Promise<string> {
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
     if (!business.stripeCustomerId) {

@@ -21,6 +21,7 @@ function daysLeft(iso: string): number {
 export default function Billing() {
   const { business: cachedBusiness, setBusiness, logout } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // The cached business from login can be stale - most importantly right
@@ -52,6 +53,26 @@ export default function Billing() {
     }
   }
 
+  // Basic <-> Pro on an existing subscription, without leaving the app.
+  // Stripe prorates the difference; the webhook + this response both keep
+  // subscriptionTier in sync, so refetch to pick up the new label.
+  async function changePlan(plan: 'basic' | 'pro') {
+    if (plan === 'basic' && !window.confirm('Switch to Basic? You will lose the AI assistant.')) return;
+    setError(null);
+    setNotice(null);
+    setSubmitting(true);
+    try {
+      await api.post('/billing/change-plan', { tier: plan });
+      const fresh = await api.get<Business>('/businesses/me');
+      setBusiness(fresh);
+      setNotice(plan === 'pro' ? "You're on Pro now - the assistant is unlocked." : "You're on the Basic plan now.");
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function goToPortal() {
     setError(null);
     setSubmitting(true);
@@ -73,6 +94,7 @@ export default function Billing() {
         </div>
 
         {error && <div className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
+        {notice && <div className="mb-4 rounded bg-green-50 p-2 text-sm text-green-700">{notice}</div>}
 
         <div className="mb-5 rounded border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
           <div className="flex items-center justify-between">
@@ -142,13 +164,32 @@ export default function Billing() {
             </div>
           </div>
         ) : (
-          <button
-            onClick={goToPortal}
-            disabled={submitting}
-            className="w-full rounded bg-indigo-600 py-2 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
-          >
-            {submitting ? 'Redirecting...' : 'Manage subscription'}
-          </button>
+          <div className="space-y-3">
+            {tier === 'basic' ? (
+              <button
+                onClick={() => changePlan('pro')}
+                disabled={submitting}
+                className="w-full rounded bg-indigo-600 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {submitting ? 'Working...' : 'Upgrade to Pro - $25/month'}
+              </button>
+            ) : (
+              <button
+                onClick={() => changePlan('basic')}
+                disabled={submitting}
+                className="w-full rounded border border-slate-300 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+              >
+                {submitting ? 'Working...' : 'Switch to Basic - $5/month'}
+              </button>
+            )}
+            <button
+              onClick={goToPortal}
+              disabled={submitting}
+              className="w-full rounded bg-slate-100 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-50"
+            >
+              {submitting ? 'Redirecting...' : 'Manage subscription'}
+            </button>
+          </div>
         )}
 
         <div className="mt-4 flex items-center justify-between text-sm">

@@ -1,8 +1,9 @@
 import { BadRequestException, Body, Controller, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { BillingService } from './billing.service';
-import { CheckoutDto } from './dto';
+import { PlanDto } from './dto';
 
 @Controller()
 export class BillingController {
@@ -12,9 +13,19 @@ export class BillingController {
   // resubscribes, so it has to work even when their access is locked.
   @UseGuards(JwtAuthGuard)
   @Post('billing/checkout')
-  async checkout(@Body() dto: CheckoutDto, @CurrentUser() user: { businessId: string }) {
+  async checkout(@Body() dto: PlanDto, @CurrentUser() user: { businessId: string }) {
     const url = await this.billingService.createCheckoutSession(user.businessId, dto.tier);
     return { url };
+  }
+
+  // In-app upgrade/downgrade for a business that already has a subscription.
+  // SubscriptionGuard here (unlike /checkout) - a lapsed business has no
+  // subscription to swap the price on; they resubscribe via /checkout.
+  @UseGuards(JwtAuthGuard, SubscriptionGuard)
+  @Post('billing/change-plan')
+  async changePlan(@Body() dto: PlanDto, @CurrentUser() user: { businessId: string }) {
+    await this.billingService.changePlan(user.businessId, dto.tier);
+    return { ok: true };
   }
 
   @UseGuards(JwtAuthGuard)

@@ -18,7 +18,60 @@ const ICONS = {
   smartphone: 'M8 3h8v18H8V3Z M12 18h.01',
   users: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M3 20c0-3 2.5-5 6-5s6 2 6 5 M17 8a2.5 2.5 0 1 1 0 5 M17 13c2.8 0 5 1.6 5 3.6V20h-4',
   bolt: 'M13 2 4 14h6l-1 8 9-12h-6l1-8Z',
+  check: 'M20 6 9 17l-5-5',
 };
+
+function PlanCard({
+  name,
+  price,
+  tagline,
+  features,
+  highlight = false,
+}: {
+  name: string;
+  price: string;
+  tagline: string;
+  features: string[];
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={`relative flex flex-col rounded-2xl border bg-white p-6 shadow-sm ${
+        highlight ? 'border-2 border-indigo-600 shadow-md' : 'border-slate-200'
+      }`}
+    >
+      {highlight && (
+        <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">
+          Most popular
+        </span>
+      )}
+      <h3 className="text-lg font-bold text-slate-900">{name}</h3>
+      <div className="mt-2 flex items-baseline gap-1">
+        <span className="text-3xl font-bold tracking-tight text-slate-900">{price}</span>
+        <span className="text-sm text-slate-500">/month</span>
+      </div>
+      <p className="mt-2 text-sm text-slate-600">{tagline}</p>
+      <ul className="mt-5 space-y-2.5">
+        {features.map((f) => (
+          <li key={f} className="flex gap-2.5 text-sm text-slate-700">
+            <Icon path={ICONS.check} className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <Link
+        to="/register"
+        className={`mt-6 rounded-lg px-5 py-2.5 text-center text-sm font-semibold shadow-sm transition-colors ${
+          highlight
+            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+            : 'border border-indigo-600 text-indigo-600 hover:bg-indigo-50'
+        }`}
+      >
+        Start free
+      </Link>
+    </div>
+  );
+}
 
 function FeatureCard({
   icon,
@@ -51,6 +104,9 @@ export default function Landing() {
             <span className="text-lg font-bold tracking-tight">manejoai</span>
           </div>
           <div className="flex items-center gap-3">
+            <a href="#pricing" className="hidden text-sm font-medium text-slate-600 hover:text-indigo-600 sm:inline">
+              Pricing
+            </a>
             <Link to="/login" className="text-sm font-medium text-slate-600 hover:text-indigo-600">
               Log in
             </Link>
@@ -161,6 +217,51 @@ export default function Landing() {
               client would want to see, ready whenever you need them.
             </FeatureCard>
           </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="scroll-mt-16 border-t border-slate-100 bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Simple pricing, one price per business</h2>
+            <p className="mt-3 text-slate-600">
+              Every plan starts with a 14-day free trial — no card required, and the trial includes everything
+              in Pro so you can try the AI assistant before you decide. One flat price covers your whole crew.
+            </p>
+          </div>
+          <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
+            <PlanCard
+              name="Basic"
+              price="$5"
+              tagline="Everything you need to run the business side, start to finish."
+              features={[
+                'AI job intake — text in photos and a note from the field',
+                'Quotes that convert to invoices in one click',
+                'Branded invoices and emails under your own name',
+                'Automatic payment reminders, grouped by property',
+                'Every customer, property, and contact in one place',
+                'Income reports by month, customer, property, and year',
+              ]}
+            />
+            <PlanCard
+              name="Pro"
+              price="$25"
+              tagline="Everything in Basic, plus an AI assistant that knows your business."
+              highlight
+              features={[
+                'Everything in Basic',
+                'In-app AI assistant — ask about your business in plain English',
+                '“What did we do at unit 413?” · “Which invoices are still unpaid?”',
+                'Answers pulled straight from your own jobs, quotes, and invoices',
+                'More assistant capabilities added over time',
+              ]}
+            />
+          </div>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-slate-500">
+            Change plans or cancel anytime from your billing page — upgrades take effect immediately and are
+            prorated.
+          </p>
         </div>
       </section>
 

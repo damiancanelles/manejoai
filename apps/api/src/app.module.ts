@@ -22,6 +22,7 @@ import { TelegramModule } from './telegram/telegram.module';
 import { IncomingReportsModule } from './incoming-reports/incoming-reports.module';
 import { PlatformModule } from './platform/platform.module';
 import { BillingModule } from './billing/billing.module';
+import { AssistantModule } from './assistant/assistant.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { BillingModule } from './billing/billing.module';
     IncomingReportsModule,
     PlatformModule,
     BillingModule,
+    AssistantModule,
   ],
 })
 export class AppModule {}

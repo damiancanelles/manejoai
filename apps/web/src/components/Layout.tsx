@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import LogoMark from './LogoMark';
+import AssistantWidget from './AssistantWidget';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
@@ -91,6 +92,8 @@ export default function Layout() {
       <main className="flex-1 overflow-x-hidden p-4 md:p-6">
         <Outlet />
       </main>
+
+      <AssistantWidget />
     </div>
   );
 }

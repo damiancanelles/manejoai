@@ -108,9 +108,12 @@ export class BillingService {
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
         const status = subscription.status; // Stripe's own vocabulary - stored as-is, see schema comment
-        const periodEnd = (subscription as any).current_period_end
-          ? new Date((subscription as any).current_period_end * 1000)
-          : null;
+        // current_period_end moved from the top-level Subscription object
+        // to the subscription item level in a newer Stripe API version -
+        // verified directly against a real test subscription rather than
+        // trusting the old top-level field, which is silently undefined now.
+        const periodEndSeconds = subscription.items.data[0]?.current_period_end;
+        const periodEnd = periodEndSeconds ? new Date(periodEndSeconds * 1000) : null;
 
         const business = await this.prisma.business.findFirst({
           where: {

@@ -33,6 +33,10 @@ async function main() {
             phone: process.env.COMPANY_PHONE || '404-507-4044',
             emailSlug: slugify(businessName),
             replyToEmail: email,
+            // The original single-tenant business predates subscription
+            // billing - grandfathered active, same as the migration did
+            // for every business that already existed when it shipped.
+            subscriptionStatus: 'active',
           },
         },
       },

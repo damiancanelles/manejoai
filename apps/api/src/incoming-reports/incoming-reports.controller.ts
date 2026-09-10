@@ -1,13 +1,14 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ReportStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { IncomingReportsService } from './incoming-reports.service';
 import { ConvertReportDto } from './dto';
 
 type AuthedUser = { userId: string; businessId: string };
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 @Controller('incoming-reports')
 export class IncomingReportsController {
   constructor(private incomingReportsService: IncomingReportsService) {}

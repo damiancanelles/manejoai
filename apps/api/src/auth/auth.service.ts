@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { StaffRole } from '@prisma/client';
 
@@ -21,6 +22,9 @@ interface AuthUser {
     phone: string | null;
     emailSlug: string;
     replyToEmail: string | null;
+    subscriptionStatus: string;
+    trialEndsAt: Date | null;
+    currentPeriodEnd: Date | null;
   };
 }
 
@@ -30,6 +34,7 @@ export class AuthService {
     private usersService: UsersService,
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private config: ConfigService,
   ) {}
 
   /** Shared by login and register - same token/response shape either way. */
@@ -84,6 +89,8 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const emailSlug = await this.generateUniqueEmailSlug(dto.businessName);
+    const trialDays = Number(this.config.get('TRIAL_PERIOD_DAYS', 14));
+    const trialEndsAt = new Date(Date.now() + trialDays * 86_400_000);
 
     const user = await this.prisma.user.create({
       data: {
@@ -100,6 +107,9 @@ export class AuthService {
             emailSlug,
             // A real inbox to start from - editable afterward in Settings.
             replyToEmail: dto.email,
+            // subscriptionStatus stays at its schema default ('trialing') -
+            // this is what starts the clock on it (see SubscriptionGuard).
+            trialEndsAt,
           },
         },
       },

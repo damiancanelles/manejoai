@@ -19,6 +19,7 @@ import InvoiceNew from './pages/InvoiceNew';
 import Reports from './pages/Reports';
 import IncomingReports from './pages/IncomingReports';
 import Settings from './pages/Settings';
+import Billing from './pages/Billing';
 import PlatformDashboard from './pages/PlatformDashboard';
 import { isLoggedIn, isSuperAdmin } from './context/AuthContext';
 
@@ -41,6 +42,9 @@ export default function App() {
             own to navigate (Jobs/Invoices/etc are meaningless for them),
             just this one page. */}
         <Route path="/platform" element={<PlatformDashboard />} />
+        {/* Same reason as /platform - no sidebar, since a lapsed business
+            can't use anything the sidebar would link to anyway. */}
+        <Route path="/billing" element={<Billing />} />
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/accounts" element={<Accounts />} />

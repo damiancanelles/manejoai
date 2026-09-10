@@ -3,7 +3,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true exposes req.rawBody (a Buffer) on every request, needed
+  // by the Stripe webhook handler to verify its signature against the
+  // exact original bytes - without changing normal @Body() JSON parsing
+  // anywhere else (see BillingController.webhook).
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   // In dev there's no separate frontend origin (Vite proxies /api to this
   // server, so the browser only ever talks to one origin) - FRONTEND_URL is

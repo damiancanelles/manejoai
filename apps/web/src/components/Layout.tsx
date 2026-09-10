@@ -44,6 +44,9 @@ export default function Layout() {
         <NavLink to="/settings" className="mt-1 block text-slate-400 underline hover:text-indigo-600">
           Settings
         </NavLink>
+        <NavLink to="/billing" className="mt-1 block text-slate-400 underline hover:text-indigo-600">
+          Billing
+        </NavLink>
         <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-indigo-600">
           Log out
         </button>

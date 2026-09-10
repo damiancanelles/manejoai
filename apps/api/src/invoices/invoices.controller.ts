@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { InvoiceStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { InvoicesService } from './invoices.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -8,7 +9,7 @@ import { CreateInvoiceDto, InvoiceItemInputDto, UpdateInvoiceDto, UpdateInvoiceI
 
 type AuthedUser = { userId: string; businessId: string };
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard)
 @Controller('invoices')
 export class InvoicesController {
   constructor(

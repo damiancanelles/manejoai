@@ -33,6 +33,16 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error('Session expired');
   }
 
+  // Subscription lapsed (trial ended unpaid, or a renewal failed) - still
+  // logged in, just not allowed to use paid features, so redirect instead
+  // of clearing the session. /billing itself never returns this (see
+  // SubscriptionGuard - it's never applied to the checkout/portal/business
+  // routes that page calls), so this can't loop.
+  if (res.status === 402 && window.location.pathname !== '/billing') {
+    window.location.href = '/billing';
+    throw new Error('Subscription required');
+  }
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.message || `Request failed (${res.status})`);

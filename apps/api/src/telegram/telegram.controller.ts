@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TelegramWebhookGuard } from './telegram-webhook.guard';
 import { TelegramService } from './telegram.service';
@@ -28,25 +29,25 @@ export class TelegramController {
 
   // ---- Self-service setup, one business at a time (see TelegramSetupService) ----
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SubscriptionGuard)
   @Get('me/status')
   getStatus(@CurrentUser() user: { businessId: string }) {
     return this.telegramSetupService.getStatus(user.businessId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SubscriptionGuard)
   @Patch('me/token')
   saveToken(@Body() dto: SaveTelegramTokenDto, @CurrentUser() user: { businessId: string }) {
     return this.telegramSetupService.saveToken(user.businessId, dto.botToken);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SubscriptionGuard)
   @Post('me/confirm')
   confirm(@CurrentUser() user: { businessId: string }) {
     return this.telegramSetupService.confirm(user.businessId);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SubscriptionGuard)
   @Delete('me/token')
   removeToken(@CurrentUser() user: { businessId: string }) {
     return this.telegramSetupService.removeToken(user.businessId);

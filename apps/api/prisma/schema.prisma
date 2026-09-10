@@ -62,6 +62,22 @@ model Business {
   // our side, so this is the business's own word that they did it.
   telegramConfirmedAt DateTime?
 
+  // ---- Subscription billing (Stripe) ----
+  // Mirrors Stripe's own subscription status strings directly (trialing,
+  // active, past_due, canceled, incomplete, ...) - plain String rather than
+  // an enum so a new Stripe status never needs a migration to handle. See
+  // SubscriptionGuard for how this gates access.
+  subscriptionStatus String @default("trialing")
+  // Set once at registration (now + TRIAL_PERIOD_DAYS) - independent of
+  // Stripe, since no Customer/Subscription exists yet unless a business
+  // subscribes early during the trial.
+  trialEndsAt DateTime?
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  // For "renews on X" / "trial ends X" display - kept in sync from
+  // customer.subscription.* webhooks.
+  currentPeriodEnd DateTime?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

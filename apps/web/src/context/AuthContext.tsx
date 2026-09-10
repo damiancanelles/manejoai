@@ -19,6 +19,11 @@ export interface Business {
   // - not editable (see Settings), shown there for reference.
   emailSlug: string;
   replyToEmail: string | null;
+  // Mirrors Stripe's own status strings (trialing/active/past_due/canceled/...)
+  // - see the Billing page and SubscriptionGuard on the backend.
+  subscriptionStatus: string;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
 }
 
 interface RegisterInput {

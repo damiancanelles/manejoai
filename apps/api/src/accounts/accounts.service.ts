@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { searchTerms } from '../common/search';
 import { CreateAccountDto, UpdateAccountDto } from './dto';
 
 @Injectable()
@@ -11,15 +12,18 @@ export class AccountsService {
   }
 
   findAll(businessId: string, search?: string) {
+    const terms = search ? searchTerms(search) : [];
     return this.prisma.account.findMany({
       where: {
         businessId,
-        ...(search
+        ...(terms.length
           ? {
-              OR: [
-                { name: { contains: search, mode: 'insensitive' as const } },
-                { properties: { some: { name: { contains: search, mode: 'insensitive' as const } } } },
-              ],
+              AND: terms.map((term) => ({
+                OR: [
+                  { name: { contains: term, mode: 'insensitive' as const } },
+                  { properties: { some: { name: { contains: term, mode: 'insensitive' as const } } } },
+                ],
+              })),
             }
           : {}),
       },

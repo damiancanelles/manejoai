@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InvoiceStatus, QuoteStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { searchTerms } from '../common/search';
 import { CreateQuoteDto, QuoteItemInputDto, UpdateQuoteDto, UpdateQuoteItemDto } from './dto';
 
 function lineTotal(item: { quantity: number; unitPriceCents: number }) {
@@ -104,14 +105,16 @@ export class QuotesService {
         account: { businessId },
         status: filters.status,
         accountId: filters.accountId,
-        ...(filters.search
+        ...(filters.search && searchTerms(filters.search).length
           ? {
-              OR: [
-                { quoteNumber: { contains: filters.search, mode: 'insensitive' as const } },
-                { notes: { contains: filters.search, mode: 'insensitive' as const } },
-                { account: { name: { contains: filters.search, mode: 'insensitive' as const } } },
-                { property: { name: { contains: filters.search, mode: 'insensitive' as const } } },
-              ],
+              AND: searchTerms(filters.search).map((term) => ({
+                OR: [
+                  { quoteNumber: { contains: term, mode: 'insensitive' as const } },
+                  { notes: { contains: term, mode: 'insensitive' as const } },
+                  { account: { name: { contains: term, mode: 'insensitive' as const } } },
+                  { property: { name: { contains: term, mode: 'insensitive' as const } } },
+                ],
+              })),
             }
           : {}),
       },

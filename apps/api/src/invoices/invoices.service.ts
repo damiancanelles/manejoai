@@ -3,6 +3,7 @@ import { Business, ContactRole, InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { generateInvoicePdf } from './invoice-pdf';
+import { searchTerms } from '../common/search';
 import { CreateInvoiceDto, InvoiceItemInputDto, UpdateInvoiceDto } from './dto';
 
 // Once an invoice is settled, its items (and therefore its amount) are locked.
@@ -140,14 +141,16 @@ export class InvoicesService {
                 lte: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`) : undefined,
               }
             : undefined,
-        ...(filters.search
+        ...(filters.search && searchTerms(filters.search).length
           ? {
-              OR: [
-                { invoiceNumber: { contains: filters.search, mode: 'insensitive' as const } },
-                { title: { contains: filters.search, mode: 'insensitive' as const } },
-                { account: { name: { contains: filters.search, mode: 'insensitive' as const } } },
-                { property: { name: { contains: filters.search, mode: 'insensitive' as const } } },
-              ],
+              AND: searchTerms(filters.search).map((term) => ({
+                OR: [
+                  { invoiceNumber: { contains: term, mode: 'insensitive' as const } },
+                  { title: { contains: term, mode: 'insensitive' as const } },
+                  { account: { name: { contains: term, mode: 'insensitive' as const } } },
+                  { property: { name: { contains: term, mode: 'insensitive' as const } } },
+                ],
+              })),
             }
           : {}),
       },

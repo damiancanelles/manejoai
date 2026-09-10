@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { JobStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { searchTerms } from '../common/search';
 import { CreateJobDto, UpdateJobDto } from './dto';
 
 @Injectable()
@@ -64,14 +65,16 @@ export class JobsService {
                 lte: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`) : undefined,
               }
             : undefined,
-        ...(filters.search
+        ...(filters.search && searchTerms(filters.search).length
           ? {
-              OR: [
-                { title: { contains: filters.search, mode: 'insensitive' as const } },
-                { description: { contains: filters.search, mode: 'insensitive' as const } },
-                { account: { name: { contains: filters.search, mode: 'insensitive' as const } } },
-                { property: { name: { contains: filters.search, mode: 'insensitive' as const } } },
-              ],
+              AND: searchTerms(filters.search).map((term) => ({
+                OR: [
+                  { title: { contains: term, mode: 'insensitive' as const } },
+                  { description: { contains: term, mode: 'insensitive' as const } },
+                  { account: { name: { contains: term, mode: 'insensitive' as const } } },
+                  { property: { name: { contains: term, mode: 'insensitive' as const } } },
+                ],
+              })),
             }
           : {}),
       },

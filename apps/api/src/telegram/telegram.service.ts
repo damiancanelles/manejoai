@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ReportParsingService } from './report-parsing.service';
+import { isBusinessSubscribed } from '../common/subscription';
 import { ImageMediaType, TelegramMessage, TelegramUpdate } from './types';
 
 const DEBOUNCE_MS = 90_000;
@@ -42,6 +43,13 @@ export class TelegramService {
 
     const business = await this.prisma.business.findUnique({ where: { id: businessId } });
     if (!business?.telegramBotToken) return; // shouldn't happen (the webhook guard already checked a secret exists), but be defensive
+
+    // A locked-out business (subscription lapsed) stops here too - this
+    // isn't behind a JwtAuthGuard/SubscriptionGuard at all (Telegram calls
+    // it, not a logged-in user), so it has to check for itself. Nothing is
+    // buffered/stored; Telegram still gets its normal 200 (see the
+    // controller) so it doesn't keep retrying.
+    if (!isBusinessSubscribed(business)) return;
 
     // The very first message this bot ever sees is how we learn which chat
     // is "the" job-reports group - captured automatically instead of asking

@@ -1,5 +1,6 @@
 import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { isBusinessSubscribed } from '../subscription';
 
 /**
  * Hard-locks business-data routes once a business's subscription has
@@ -12,6 +13,11 @@ import { PrismaService } from '../../prisma/prisma.service';
  * BusinessesController (a lapsed business still needs to see its own
  * info/status) or the billing checkout/portal routes (that's how a lapsed
  * business resubscribes in the first place).
+ *
+ * This only covers HTTP routes a logged-in user hits directly - the
+ * reminder cron and incoming Telegram messages run on their own
+ * schedule/trigger with no request to guard, so they check
+ * isBusinessSubscribed() themselves (see RemindersService, TelegramService).
  */
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
@@ -27,10 +33,7 @@ export class SubscriptionGuard implements CanActivate {
       select: { subscriptionStatus: true, trialEndsAt: true },
     });
 
-    const stillTrialing =
-      business?.subscriptionStatus === 'trialing' && !!business.trialEndsAt && business.trialEndsAt > new Date();
-
-    if (business?.subscriptionStatus === 'active' || stillTrialing) return true;
+    if (business && isBusinessSubscribed(business)) return true;
 
     throw new HttpException(
       { message: 'Subscription required', statusCode: HttpStatus.PAYMENT_REQUIRED },

@@ -5,6 +5,7 @@ import { ContactRole, InvoiceStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { subscriptionActiveWhere } from '../common/subscription';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -85,8 +86,10 @@ export class RemindersService {
    * SENT invoices whose due date has passed become OVERDUE. Pass businessId
    * to scope this to one business (the manual "run" endpoint always does,
    * so one tenant's staff can never flip another's invoices) - the daily
-   * cron leaves it undefined and sweeps every business at once, since this
-   * is a pure status transition with nothing business-specific in it.
+   * cron leaves it undefined and sweeps every business at once. Either way,
+   * a business whose subscription has lapsed is excluded unconditionally -
+   * a lock has to stop every automated feature, not just the ones a
+   * logged-in user directly clicks (see isBusinessSubscribed).
    */
   async flagOverdueInvoices(accountId?: string, businessId?: string) {
     await this.assertOwnsAccount(accountId, businessId);
@@ -95,7 +98,7 @@ export class RemindersService {
         status: InvoiceStatus.SENT,
         dueDate: { lt: new Date() },
         accountId,
-        account: businessId ? { businessId } : undefined,
+        account: { businessId, business: subscriptionActiveWhere() },
       },
       data: { status: InvoiceStatus.OVERDUE },
     });
@@ -114,6 +117,8 @@ export class RemindersService {
    * businessId to scope this to one business (the manual endpoint always
    * does); the weekly cron leaves it undefined and sweeps every business at
    * once, using each group's own account's business for the email content.
+   * Either way, a business whose subscription has lapsed is excluded
+   * unconditionally - see flagOverdueInvoices' comment on why.
    */
   async sendOverdueDigest(accountId?: string, businessId?: string) {
     await this.assertOwnsAccount(accountId, businessId);
@@ -121,7 +126,11 @@ export class RemindersService {
     const now = Date.now();
 
     const overdueInvoices = await this.prisma.invoice.findMany({
-      where: { status: InvoiceStatus.OVERDUE, accountId, account: businessId ? { businessId } : undefined },
+      where: {
+        status: InvoiceStatus.OVERDUE,
+        accountId,
+        account: { businessId, business: subscriptionActiveWhere() },
+      },
       include: { account: { include: { contacts: true, business: true } }, property: true },
     });
 

@@ -49,7 +49,10 @@ export default function AssistantWidget() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end">
+    // z-index maxed out and nudged in from the corner so third-party
+    // overlays that inject themselves bottom-right (e.g. Netlify's
+    // owner-only drawer on *.netlify.app) can't sit on top of the bubble.
+    <div className="fixed bottom-5 right-5 z-[2147483647] flex flex-col items-end">
       {open && (
         <div className="mb-3 flex h-[28rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
           <div className="flex items-center justify-between border-b border-slate-200 bg-indigo-600 px-4 py-3 text-white">

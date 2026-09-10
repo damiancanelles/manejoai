@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
 import LogoMark from '../components/LogoMark';
+import LangToggle from '../components/LangToggle';
+import { useT } from '../i18n';
 
 function Icon({ path, className = '' }: { path: string; className?: string }) {
   return (
@@ -24,14 +26,20 @@ const ICONS = {
 function PlanCard({
   name,
   price,
+  perMonth,
   tagline,
   features,
+  mostPopular,
+  startFree,
   highlight = false,
 }: {
   name: string;
   price: string;
+  perMonth: string;
   tagline: string;
   features: string[];
+  mostPopular: string;
+  startFree: string;
   highlight?: boolean;
 }) {
   return (
@@ -42,13 +50,13 @@ function PlanCard({
     >
       {highlight && (
         <span className="absolute -top-3 left-6 rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">
-          Most popular
+          {mostPopular}
         </span>
       )}
       <h3 className="text-lg font-bold text-slate-900">{name}</h3>
       <div className="mt-2 flex items-baseline gap-1">
         <span className="text-3xl font-bold tracking-tight text-slate-900">{price}</span>
-        <span className="text-sm text-slate-500">/month</span>
+        <span className="text-sm text-slate-500">{perMonth}</span>
       </div>
       <p className="mt-2 text-sm text-slate-600">{tagline}</p>
       <ul className="mt-5 space-y-2.5">
@@ -67,7 +75,7 @@ function PlanCard({
             : 'border border-indigo-600 text-indigo-600 hover:bg-indigo-50'
         }`}
       >
-        Start free
+        {startFree}
       </Link>
     </div>
   );
@@ -76,11 +84,11 @@ function PlanCard({
 function FeatureCard({
   icon,
   title,
-  children,
+  body,
 }: {
   icon: keyof typeof ICONS;
   title: string;
-  children: string;
+  body: string;
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -88,12 +96,13 @@ function FeatureCard({
         <Icon path={ICONS[icon]} className="h-5 w-5" />
       </div>
       <h3 className="mb-1.5 font-semibold text-slate-900">{title}</h3>
-      <p className="text-sm leading-relaxed text-slate-600">{children}</p>
+      <p className="text-sm leading-relaxed text-slate-600">{body}</p>
     </div>
   );
 }
 
 export default function Landing() {
+  const t = useT();
   return (
     <div className="min-h-screen bg-white text-slate-900">
       {/* Nav */}
@@ -105,17 +114,18 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-3">
             <a href="#pricing" className="hidden text-sm font-medium text-slate-600 hover:text-indigo-600 sm:inline">
-              Pricing
+              {t('landing.nav.pricing')}
             </a>
             <Link to="/login" className="text-sm font-medium text-slate-600 hover:text-indigo-600">
-              Log in
+              {t('landing.nav.login')}
             </Link>
             <Link
               to="/register"
               className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
             >
-              Sign up free
+              {t('landing.nav.signup')}
             </Link>
+            <LangToggle />
           </div>
         </div>
       </header>
@@ -125,58 +135,46 @@ export default function Landing() {
         <div className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-28">
           <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-medium text-indigo-700 shadow-sm">
             <Icon path={ICONS.sparkles} className="h-3.5 w-3.5" />
-            AI-powered, built for the field
+            {t('landing.hero.badge')}
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            The back office for vendors who&apos;d rather be on the job
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">
-            Manejoai runs the business side for multifamily and residential vendors — painters, cleaners,
-            handymen, and every trade in between — so a low-tech, one-person crew can look, invoice, and grow
-            like a company ten times its size.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">{t('landing.hero.title')}</h1>
+          <p className="mx-auto mt-5 max-w-2xl text-lg text-slate-600">{t('landing.hero.subtitle')}</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               to="/register"
               className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
             >
-              Start free — no card needed
+              {t('landing.hero.ctaPrimary')}
             </Link>
             <Link
               to="/login"
               className="rounded-lg border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
-              Log in
+              {t('landing.hero.ctaLogin')}
             </Link>
           </div>
-          <p className="mt-4 text-xs text-slate-500">Set up your business in under two minutes.</p>
+          <p className="mt-4 text-xs text-slate-500">{t('landing.hero.note')}</p>
         </div>
       </section>
 
       {/* Who it's for */}
       <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">
-            Built for property-services vendors, not office managers
-          </h2>
-          <p className="mt-3 text-slate-600">
-            If your customers are apartment communities, HOAs, property managers, or homeowners — and your real
-            job happens on a ladder or under a sink, not behind a keyboard — this is built around how you
-            actually work.
-          </p>
+          <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t('landing.who.title')}</h2>
+          <p className="mt-3 text-slate-600">{t('landing.who.body')}</p>
         </div>
         <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <Icon path={ICONS.users} className="h-6 w-6 shrink-0 text-indigo-600" />
-            <span className="text-sm font-medium text-slate-700">Multifamily &amp; property management</span>
+            <span className="text-sm font-medium text-slate-700">{t('landing.who.tag1')}</span>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <Icon path={ICONS.smartphone} className="h-6 w-6 shrink-0 text-indigo-600" />
-            <span className="text-sm font-medium text-slate-700">Residential &amp; homeowners</span>
+            <span className="text-sm font-medium text-slate-700">{t('landing.who.tag2')}</span>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <Icon path={ICONS.bolt} className="h-6 w-6 shrink-0 text-indigo-600" />
-            <span className="text-sm font-medium text-slate-700">Every trade — solo or growing crew</span>
+            <span className="text-sm font-medium text-slate-700">{t('landing.who.tag3')}</span>
           </div>
         </div>
       </section>
@@ -185,37 +183,16 @@ export default function Landing() {
       <section className="border-t border-slate-100 bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Everything runs itself, so you don&apos;t have to</h2>
-            <p className="mt-3 text-slate-600">
-              No spreadsheets, no chasing paper, no software degree required — just what a growing vendor
-              actually needs.
-            </p>
+            <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t('landing.features.title')}</h2>
+            <p className="mt-3 text-slate-600">{t('landing.features.subtitle')}</p>
           </div>
           <div className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard icon="camera" title="Text in a job, get a job record">
-              Send photos and a quick note from the field the way you already text your crew — AI reads it and
-              turns it into an organized job, matched to the right property automatically.
-            </FeatureCard>
-            <FeatureCard icon="fileText" title="Quotes that turn into invoices">
-              Build a quote in minutes, get it approved, and it becomes a real invoice with one click — no
-              retyping line items twice.
-            </FeatureCard>
-            <FeatureCard icon="receipt" title="Professional invoices, your brand">
-              Every invoice and email goes out under your business's own name and address — polished enough
-              for a property management company, simple enough that you built it in a minute.
-            </FeatureCard>
-            <FeatureCard icon="bell" title="Payment reminders that never forget">
-              Overdue invoices get flagged and followed up automatically, grouped by property, so getting paid
-              doesn't depend on you remembering to ask.
-            </FeatureCard>
-            <FeatureCard icon="users" title="Every customer and property in one place">
-              One-off homeowners or a management company with fifty buildings - track every customer, property,
-              and contact without losing track of who owes what.
-            </FeatureCard>
-            <FeatureCard icon="sparkles" title="Reports that show you're growing">
-              See income by month, by customer, by property, year over year - the numbers a bank or a bigger
-              client would want to see, ready whenever you need them.
-            </FeatureCard>
+            <FeatureCard icon="camera" title={t('landing.features.intake.title')} body={t('landing.features.intake.body')} />
+            <FeatureCard icon="fileText" title={t('landing.features.quotes.title')} body={t('landing.features.quotes.body')} />
+            <FeatureCard icon="receipt" title={t('landing.features.invoices.title')} body={t('landing.features.invoices.body')} />
+            <FeatureCard icon="bell" title={t('landing.features.reminders.title')} body={t('landing.features.reminders.body')} />
+            <FeatureCard icon="users" title={t('landing.features.customers.title')} body={t('landing.features.customers.body')} />
+            <FeatureCard icon="sparkles" title={t('landing.features.growth.title')} body={t('landing.features.growth.body')} />
           </div>
         </div>
       </section>
@@ -224,69 +201,64 @@ export default function Landing() {
       <section id="pricing" className="scroll-mt-16 border-t border-slate-100 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Simple pricing, one price per business</h2>
-            <p className="mt-3 text-slate-600">
-              Every plan starts with a 14-day free trial — no card required, and the trial includes everything
-              in Pro so you can try the AI assistant before you decide. One flat price covers your whole crew.
-            </p>
+            <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t('landing.pricing.title')}</h2>
+            <p className="mt-3 text-slate-600">{t('landing.pricing.subtitle')}</p>
           </div>
           <div className="mx-auto mt-10 grid max-w-3xl grid-cols-1 gap-6 sm:grid-cols-2">
             <PlanCard
-              name="Basic"
+              name={t('landing.pricing.basic.name')}
               price="$5"
-              tagline="Everything you need to run the business side, start to finish."
+              perMonth={t('landing.pricing.perMonth')}
+              mostPopular={t('landing.pricing.mostPopular')}
+              startFree={t('landing.pricing.startFree')}
+              tagline={t('landing.pricing.basic.tagline')}
               features={[
-                'AI job intake — text in photos and a note from the field',
-                'Quotes that convert to invoices in one click',
-                'Branded invoices and emails under your own name',
-                'Automatic payment reminders, grouped by property',
-                'Every customer, property, and contact in one place',
-                'Income reports by month, customer, property, and year',
+                t('landing.pricing.basic.f1'),
+                t('landing.pricing.basic.f2'),
+                t('landing.pricing.basic.f3'),
+                t('landing.pricing.basic.f4'),
+                t('landing.pricing.basic.f5'),
+                t('landing.pricing.basic.f6'),
               ]}
             />
             <PlanCard
-              name="Pro"
+              name={t('landing.pricing.pro.name')}
               price="$25"
-              tagline="Everything in Basic, plus an AI assistant that knows your business."
+              perMonth={t('landing.pricing.perMonth')}
+              mostPopular={t('landing.pricing.mostPopular')}
+              startFree={t('landing.pricing.startFree')}
+              tagline={t('landing.pricing.pro.tagline')}
               highlight
               features={[
-                'Everything in Basic',
-                'In-app AI assistant — ask about your business in plain English',
-                '“What did we do at unit 413?” · “Which invoices are still unpaid?”',
-                'Answers pulled straight from your own jobs, quotes, and invoices',
-                'More assistant capabilities added over time',
+                t('landing.pricing.pro.f1'),
+                t('landing.pricing.pro.f2'),
+                t('landing.pricing.pro.f3'),
+                t('landing.pricing.pro.f4'),
+                t('landing.pricing.pro.f5'),
               ]}
             />
           </div>
-          <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-slate-500">
-            Change plans or cancel anytime from your billing page — upgrades take effect immediately and are
-            prorated.
-          </p>
+          <p className="mx-auto mt-6 max-w-2xl text-center text-xs text-slate-500">{t('landing.pricing.footnote')}</p>
         </div>
       </section>
 
       {/* No tech skills needed */}
       <section className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
-        <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">You don&apos;t need to be a tech person to run a tech-powered business</h2>
-        <p className="mx-auto mt-3 max-w-2xl text-slate-600">
-          Manejoai is built for entrepreneurs who grew a business with a truck and a phone, not a computer
-          science degree. If you can send a text message, you can run your whole back office here.
-        </p>
+        <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t('landing.noTech.title')}</h2>
+        <p className="mx-auto mt-3 max-w-2xl text-slate-600">{t('landing.noTech.body')}</p>
       </section>
 
       {/* Final CTA */}
       <section className="bg-indigo-600">
         <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">Ready to grow past the notebook and the group chat?</h2>
-          <p className="mx-auto mt-3 max-w-xl text-indigo-100">
-            Set up your business for free and send your first professional invoice today.
-          </p>
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">{t('landing.cta.title')}</h2>
+          <p className="mx-auto mt-3 max-w-xl text-indigo-100">{t('landing.cta.body')}</p>
           <div className="mt-8">
             <Link
               to="/register"
               className="inline-block rounded-lg bg-white px-6 py-3 text-sm font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-50"
             >
-              Create your account
+              {t('landing.cta.button')}
             </Link>
           </div>
         </div>
@@ -299,7 +271,7 @@ export default function Landing() {
             <LogoMark size={22} />
             <span className="font-semibold text-slate-700">manejoai</span>
           </div>
-          <p>© {new Date().getFullYear()} manejoai. Built for vendors, not spreadsheets.</p>
+          <p>{t('landing.footer.tagline', { year: new Date().getFullYear() })}</p>
         </div>
       </footer>
     </div>

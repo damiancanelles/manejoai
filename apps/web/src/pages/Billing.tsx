@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth, Business } from '../context/AuthContext';
+import { useI18n } from '../i18n';
 import LogoMark from '../components/LogoMark';
+import LangToggle from '../components/LangToggle';
 
-const STATUS_LABEL: Record<string, string> = {
-  trialing: 'Free trial',
-  active: 'Active',
-  past_due: 'Payment failed',
-  canceled: 'Canceled',
-  incomplete: 'Payment incomplete',
-  incomplete_expired: 'Payment incomplete',
-  unpaid: 'Unpaid',
+const STATUS_LABEL_KEY: Record<string, string> = {
+  trialing: 'billing.statusTrialing',
+  active: 'billing.statusActive',
+  past_due: 'billing.statusPastDue',
+  canceled: 'billing.statusCanceled',
+  incomplete: 'billing.statusIncomplete',
+  incomplete_expired: 'billing.statusIncomplete',
+  unpaid: 'billing.statusUnpaid',
 };
 
 function daysLeft(iso: string): number {
@@ -20,6 +22,7 @@ function daysLeft(iso: string): number {
 
 export default function Billing() {
   const { business: cachedBusiness, setBusiness, logout } = useAuth();
+  const { t, locale } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +60,7 @@ export default function Billing() {
   // Stripe prorates the difference; the webhook + this response both keep
   // subscriptionTier in sync, so refetch to pick up the new label.
   async function changePlan(plan: 'basic' | 'pro') {
-    if (plan === 'basic' && !window.confirm('Switch to Basic? You will lose the AI assistant.')) return;
+    if (plan === 'basic' && !window.confirm(t('billing.switchToBasicConfirm'))) return;
     setError(null);
     setNotice(null);
     setSubmitting(true);
@@ -65,7 +68,7 @@ export default function Billing() {
       await api.post('/billing/change-plan', { tier: plan });
       const fresh = await api.get<Business>('/businesses/me');
       setBusiness(fresh);
-      setNotice(plan === 'pro' ? "You're on Pro now - the assistant is unlocked." : "You're on the Basic plan now.");
+      setNotice(plan === 'pro' ? t('billing.nowOnPro') : t('billing.nowOnBasic'));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -90,7 +93,7 @@ export default function Billing() {
       <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
         <div className="mb-6 flex flex-col items-center">
           <LogoMark size={48} />
-          <h1 className="mt-3 text-xl font-bold tracking-tight text-slate-900">Billing</h1>
+          <h1 className="mt-3 text-xl font-bold tracking-tight text-slate-900">{t('billing.title')}</h1>
         </div>
 
         {error && <div className="mb-4 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
@@ -98,7 +101,7 @@ export default function Billing() {
 
         <div className="mb-5 rounded border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
           <div className="flex items-center justify-between">
-            <span className="text-slate-500">Status</span>
+            <span className="text-slate-500">{t('billing.status')}</span>
             <span
               className={`rounded px-2 py-0.5 text-xs font-medium ${
                 isActive
@@ -108,58 +111,52 @@ export default function Billing() {
                     : 'bg-red-100 text-red-700'
               }`}
             >
-              {STATUS_LABEL[status] ?? status}
+              {STATUS_LABEL_KEY[status] ? t(STATUS_LABEL_KEY[status]) : status}
             </span>
           </div>
           {isTrialing && business?.trialEndsAt && (
-            <p className="mt-2 text-slate-600">
-              {daysLeft(business.trialEndsAt)} day{daysLeft(business.trialEndsAt) === 1 ? '' : 's'} left in your free trial.
-            </p>
+            <p className="mt-2 text-slate-600">{t('billing.trialDaysLeft', { days: daysLeft(business.trialEndsAt) })}</p>
           )}
           {isActive && (
             <p className="mt-2 text-slate-600">
-              {tier === 'pro' ? 'Pro plan' : 'Basic plan'}
-              {business?.currentPeriodEnd && ` - renews ${new Date(business.currentPeriodEnd).toLocaleDateString()}`}.
+              {tier === 'pro' ? t('billing.proPlan') : t('billing.basicPlan')}
+              {business?.currentPeriodEnd &&
+                t('billing.renews', { date: new Date(business.currentPeriodEnd).toLocaleDateString(locale) })}
+              .
             </p>
           )}
-          {isTrialing && <p className="mt-1 text-slate-500">Your trial includes Pro (with the assistant).</p>}
-          {lapsed && (
-            <p className="mt-2 text-red-700">
-              Your subscription isn't active - the rest of the app is locked until this is resolved.
-            </p>
-          )}
+          {isTrialing && <p className="mt-1 text-slate-500">{t('billing.trialIncludesPro')}</p>}
+          {lapsed && <p className="mt-2 text-red-700">{t('billing.lapsed')}</p>}
         </div>
 
         {lapsed || isTrialing ? (
           <div className="space-y-3">
             <div className="rounded-lg border border-slate-200 p-4">
               <div className="flex items-baseline justify-between">
-                <span className="font-semibold text-slate-900">Basic</span>
-                <span className="text-sm text-slate-600">$5/month</span>
+                <span className="font-semibold text-slate-900">{t('billing.basicName')}</span>
+                <span className="text-sm text-slate-600">{t('billing.basicPrice')}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">Jobs, quotes, invoices, payment reminders, reports.</p>
+              <p className="mt-1 text-sm text-slate-500">{t('billing.basicDesc')}</p>
               <button
                 onClick={() => goToCheckout('basic')}
                 disabled={submitting}
                 className="mt-3 w-full rounded border border-indigo-600 py-2 text-sm font-medium text-indigo-600 transition-colors hover:bg-indigo-50 disabled:opacity-50"
               >
-                {submitting ? 'Redirecting...' : 'Choose Basic'}
+                {submitting ? t('common.redirecting') : t('billing.chooseBasic')}
               </button>
             </div>
             <div className="rounded-lg border-2 border-indigo-600 p-4">
               <div className="flex items-baseline justify-between">
-                <span className="font-semibold text-slate-900">Pro</span>
-                <span className="text-sm text-slate-600">$25/month</span>
+                <span className="font-semibold text-slate-900">{t('billing.proName')}</span>
+                <span className="text-sm text-slate-600">{t('billing.proPrice')}</span>
               </div>
-              <p className="mt-1 text-sm text-slate-500">
-                Everything in Basic, plus the AI assistant that answers questions about your business.
-              </p>
+              <p className="mt-1 text-sm text-slate-500">{t('billing.proDesc')}</p>
               <button
                 onClick={() => goToCheckout('pro')}
                 disabled={submitting}
                 className="mt-3 w-full rounded bg-indigo-600 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
               >
-                {submitting ? 'Redirecting...' : 'Choose Pro'}
+                {submitting ? t('common.redirecting') : t('billing.choosePro')}
               </button>
             </div>
           </div>
@@ -171,7 +168,7 @@ export default function Billing() {
                 disabled={submitting}
                 className="w-full rounded bg-indigo-600 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
               >
-                {submitting ? 'Working...' : 'Upgrade to Pro - $25/month'}
+                {submitting ? t('common.working') : t('billing.upgradeToPro')}
               </button>
             ) : (
               <button
@@ -179,7 +176,7 @@ export default function Billing() {
                 disabled={submitting}
                 className="w-full rounded border border-slate-300 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
               >
-                {submitting ? 'Working...' : 'Switch to Basic - $5/month'}
+                {submitting ? t('common.working') : t('billing.switchToBasic')}
               </button>
             )}
             <button
@@ -187,7 +184,7 @@ export default function Billing() {
               disabled={submitting}
               className="w-full rounded bg-slate-100 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-200 disabled:opacity-50"
             >
-              {submitting ? 'Redirecting...' : 'Manage subscription'}
+              {submitting ? t('common.redirecting') : t('billing.manageSubscription')}
             </button>
           </div>
         )}
@@ -195,14 +192,18 @@ export default function Billing() {
         <div className="mt-4 flex items-center justify-between text-sm">
           {isActive || isTrialing ? (
             <Link to="/dashboard" className="text-indigo-600 hover:underline">
-              &larr; Back to dashboard
+              {t('common.backToDashboard')}
             </Link>
           ) : (
             <span />
           )}
           <button onClick={logout} className="text-slate-400 underline hover:text-indigo-600">
-            Log out
+            {t('common.logOut')}
           </button>
+        </div>
+
+        <div className="mt-4 flex justify-center">
+          <LangToggle />
         </div>
       </div>
     </div>

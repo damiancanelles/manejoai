@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useT } from '../i18n';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -16,6 +17,7 @@ interface ChatMessage {
  */
 export default function AssistantWidget() {
   const { business } = useAuth();
+  const t = useT();
   const isPro = business?.subscriptionTier === 'pro';
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -42,7 +44,7 @@ export default function AssistantWidget() {
       const res = await api.post<{ reply: string }>('/assistant/message', { messages: next });
       setMessages([...next, { role: 'assistant', content: res.reply }]);
     } catch (err: any) {
-      setError(err.message || 'Something went wrong - try again.');
+      setError(err.message || t('assistant.error'));
     } finally {
       setSending(false);
     }
@@ -56,8 +58,8 @@ export default function AssistantWidget() {
       {open && (
         <div className="mb-3 flex h-[28rem] w-[22rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
           <div className="flex items-center justify-between border-b border-slate-200 bg-indigo-600 px-4 py-3 text-white">
-            <span className="text-sm font-semibold">Ask about your business</span>
-            <button onClick={() => setOpen(false)} aria-label="Close" className="text-indigo-100 hover:text-white">
+            <span className="text-sm font-semibold">{t('assistant.header')}</span>
+            <button onClick={() => setOpen(false)} aria-label={t('assistant.close')} className="text-indigo-100 hover:text-white">
               ✕
             </button>
           </div>
@@ -66,9 +68,7 @@ export default function AssistantWidget() {
             <>
               <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3 text-sm">
                 {messages.length === 0 && (
-                  <p className="text-slate-400">
-                    Ask things like "find invoices for unit 213" or "what jobs are still in progress?"
-                  </p>
+                  <p className="text-slate-400">{t('assistant.placeholderExamples')}</p>
                 )}
                 {messages.map((m, i) => (
                   <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -81,7 +81,7 @@ export default function AssistantWidget() {
                     </div>
                   </div>
                 ))}
-                {sending && <div className="text-slate-400">Thinking...</div>}
+                {sending && <div className="text-slate-400">{t('assistant.thinking')}</div>}
                 {error && <div className="rounded bg-red-50 p-2 text-red-700">{error}</div>}
               </div>
 
@@ -89,7 +89,7 @@ export default function AssistantWidget() {
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask a question..."
+                  placeholder={t('assistant.inputPlaceholder')}
                   disabled={sending}
                   className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
@@ -98,21 +98,18 @@ export default function AssistantWidget() {
                   disabled={sending || !input.trim()}
                   className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  Send
+                  {t('assistant.send')}
                 </button>
               </form>
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center text-sm">
-              <p className="text-slate-600">
-                The assistant looks things up in your business for you - invoices, jobs, customers - in plain
-                English. It's part of the <span className="font-semibold text-slate-800">Pro</span> plan.
-              </p>
+              <p className="text-slate-600">{t('assistant.upsell', { pro: t('assistant.proWord') })}</p>
               <Link
                 to="/billing"
                 className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-indigo-700"
               >
-                Upgrade to Pro - $25/month
+                {t('assistant.upgradeCta')}
               </Link>
             </div>
           )}
@@ -121,7 +118,7 @@ export default function AssistantWidget() {
 
       <button
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? 'Close assistant' : 'Open assistant'}
+        aria-label={open ? t('assistant.closeAria') : t('assistant.openAria')}
         className="flex h-14 w-14 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg transition-colors hover:bg-indigo-700"
       >
         {open ? (

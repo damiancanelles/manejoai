@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useT } from '../i18n';
 import LogoMark from './LogoMark';
+import LangToggle from './LangToggle';
 import AssistantWidget from './AssistantWidget';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -10,17 +12,18 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   }`;
 
 const links = [
-  { to: '/dashboard', end: true, label: 'Dashboard' },
-  { to: '/accounts', label: 'Customers' },
-  { to: '/jobs', label: 'Jobs' },
-  { to: '/job-reports', label: 'Job Reports' },
-  { to: '/quotes', label: 'Quotes' },
-  { to: '/invoices', label: 'Invoices' },
-  { to: '/reports', label: 'Reports' },
+  { to: '/dashboard', end: true, key: 'nav.dashboard' },
+  { to: '/accounts', key: 'nav.customers' },
+  { to: '/jobs', key: 'nav.jobs' },
+  { to: '/job-reports', key: 'nav.jobReports' },
+  { to: '/quotes', key: 'nav.quotes' },
+  { to: '/invoices', key: 'nav.invoices' },
+  { to: '/reports', key: 'nav.reports' },
 ];
 
 export default function Layout() {
   const { user, logout } = useAuth();
+  const t = useT();
   const location = useLocation();
   const [navOpen, setNavOpen] = useState(false);
 
@@ -36,21 +39,24 @@ export default function Layout() {
       <nav className="space-y-1">
         {links.map((l) => (
           <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
-            {l.label}
+            {t(l.key)}
           </NavLink>
         ))}
       </nav>
       <div className="mt-8 border-t border-slate-200 pt-4 text-sm text-slate-500">
         <div>{user?.name}</div>
         <NavLink to="/settings" className="mt-1 block text-slate-400 underline hover:text-indigo-600">
-          Settings
+          {t('nav.settings')}
         </NavLink>
         <NavLink to="/billing" className="mt-1 block text-slate-400 underline hover:text-indigo-600">
-          Billing
+          {t('nav.billing')}
         </NavLink>
         <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-indigo-600">
-          Log out
+          {t('common.logOut')}
         </button>
+        <div className="mt-3">
+          <LangToggle />
+        </div>
       </div>
     </>
   );
@@ -65,7 +71,7 @@ export default function Layout() {
         </div>
         <button
           onClick={() => setNavOpen(true)}
-          aria-label="Open menu"
+          aria-label={t('nav.openMenu')}
           className="rounded p-2 text-slate-600 hover:bg-slate-100"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { downloadCsv } from '../lib/csv';
 import { downloadInvoicesPdf } from '../lib/invoicePdf';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../i18n';
 import Pagination from '../components/Pagination';
 import { PAGE_SIZE, paginate } from '../lib/paginate';
 
@@ -60,6 +61,7 @@ function todayStr() {
 }
 
 export default function Reports() {
+  const t = useI18n().t;
   const [tab, setTab] = useState<'jobs' | 'invoices'>('jobs');
   const [accounts, setAccounts] = useState<Account[]>([]);
 
@@ -69,20 +71,20 @@ export default function Reports() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold">Reports</h1>
+      <h1 className="mb-6 text-2xl font-bold">{t('reports.title')}</h1>
 
       <div className="mb-4 flex gap-2">
         <button
           onClick={() => setTab('jobs')}
           className={`rounded px-3 py-1 text-sm transition-colors ${tab === 'jobs' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
-          Jobs
+          {t('reports.tabJobs')}
         </button>
         <button
           onClick={() => setTab('invoices')}
           className={`rounded px-3 py-1 text-sm transition-colors ${tab === 'invoices' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
         >
-          Invoices
+          {t('reports.tabInvoices')}
         </button>
       </div>
 
@@ -92,6 +94,7 @@ export default function Reports() {
 }
 
 function JobsReport({ accounts }: { accounts: Account[] }) {
+  const { t, locale } = useI18n();
   const [accountId, setAccountId] = useState('');
   const [status, setStatus] = useState('ALL');
   const [dateFrom, setDateFrom] = useState('');
@@ -128,14 +131,21 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
   function exportCsv() {
     downloadCsv(
       `jobs-report-${todayStr()}.csv`,
-      ['Title', 'Description', 'Status', 'Customer', 'Property', 'Logged date'],
+      [
+        t('reports.csvTitle'),
+        t('reports.csvDescription'),
+        t('reports.csvStatus'),
+        t('reports.csvCustomer'),
+        t('reports.csvProperty'),
+        t('reports.csvLoggedDate'),
+      ],
       jobs.map((j) => [
         j.title,
         j.description || '',
-        j.status,
+        t(`status.${j.status}`),
         j.account.name,
         j.property?.name || '',
-        new Date(j.createdAt).toLocaleDateString(),
+        new Date(j.createdAt).toLocaleDateString(locale),
       ]),
     );
   }
@@ -144,13 +154,13 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white shadow-sm p-4 text-sm">
         <label className="block">
-          Customer
+          {t('reports.customer')}
           <select
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
             className="mt-1 rounded border border-slate-300 px-2 py-1"
           >
-            <option value="">All customers</option>
+            <option value="">{t('reports.allCustomers')}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -159,7 +169,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
           </select>
         </label>
         <label className="block">
-          Status
+          {t('reports.status')}
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -167,13 +177,13 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
           >
             {jobStatuses.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {s === 'ALL' ? t('status.ALL') : t(`status.${s}`)}
               </option>
             ))}
           </select>
         </label>
         <label className="block">
-          From
+          {t('reports.from')}
           <input
             type="date"
             value={dateFrom}
@@ -182,7 +192,7 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
           />
         </label>
         <label className="block">
-          To
+          {t('reports.to')}
           <input
             type="date"
             value={dateTo}
@@ -191,12 +201,12 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
           />
         </label>
         <label className="block flex-1">
-          Search title / description
+          {t('reports.searchTitleDesc')}
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="e.g. paint, crack, ceiling..."
+            placeholder={t('reports.searchPlaceholder')}
             className="mt-1 w-full rounded border border-slate-300 px-2 py-1"
           />
         </label>
@@ -205,21 +215,21 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
           disabled={jobs.length === 0}
           className="rounded bg-indigo-600 px-4 py-1.5 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-40"
         >
-          Export CSV
+          {t('reports.exportCsv')}
         </button>
       </div>
 
-      <p className="mb-2 text-sm text-slate-500">{loading ? 'Loading...' : `${jobs.length} job(s)`}</p>
+      <p className="mb-2 text-sm text-slate-500">{loading ? t('common.loading') : t('reports.jobCount', { count: jobs.length })}</p>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left text-slate-500">
             <tr>
-              <th className="px-4 py-2">Job</th>
-              <th className="px-4 py-2">Customer</th>
-              <th className="px-4 py-2">Property</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Logged</th>
+              <th className="px-4 py-2">{t('reports.colJob')}</th>
+              <th className="px-4 py-2">{t('reports.colCustomer')}</th>
+              <th className="px-4 py-2">{t('reports.colProperty')}</th>
+              <th className="px-4 py-2">{t('reports.colStatus')}</th>
+              <th className="px-4 py-2">{t('reports.colLogged')}</th>
             </tr>
           </thead>
           <tbody>
@@ -232,14 +242,14 @@ function JobsReport({ accounts }: { accounts: Account[] }) {
                 </td>
                 <td className="px-4 py-2">{j.account.name}</td>
                 <td className="px-4 py-2">{j.property?.name || '—'}</td>
-                <td className="px-4 py-2">{j.status}</td>
-                <td className="px-4 py-2">{new Date(j.createdAt).toLocaleDateString()}</td>
+                <td className="px-4 py-2">{t(`status.${j.status}`)}</td>
+                <td className="px-4 py-2">{new Date(j.createdAt).toLocaleDateString(locale)}</td>
               </tr>
             ))}
             {!loading && jobs.length === 0 && (
               <tr>
                 <td colSpan={5} className="px-4 py-4 text-slate-400">
-                  No jobs match these filters.
+                  {t('reports.noJobs')}
                 </td>
               </tr>
             )}
@@ -259,6 +269,7 @@ interface SendReportResult {
 
 function InvoicesReport({ accounts }: { accounts: Account[] }) {
   const { business } = useAuth();
+  const { t, locale } = useI18n();
   const [accountId, setAccountId] = useState('');
   const [propertyId, setPropertyId] = useState('');
   const [status, setStatus] = useState('PAID');
@@ -305,11 +316,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
 
   async function sendToCustomers() {
     const customerCount = new Set(invoices.map((i) => i.account.name)).size;
-    if (
-      !confirm(
-        `This emails these ${invoices.length} invoice(s) (as separate PDFs) to ${customerCount} customer(s), with a summary in the email body. It does not change any invoice's status. Continue?`,
-      )
-    ) {
+    if (!confirm(t('reports.sendConfirm', { invoices: invoices.length, customers: customerCount }))) {
       return;
     }
     setSending(true);
@@ -329,7 +336,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
     <div>
       <div className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white shadow-sm p-4 text-sm">
         <label className="block">
-          Customer
+          {t('reports.customer')}
           <select
             value={accountId}
             onChange={(e) => {
@@ -338,7 +345,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
             }}
             className="mt-1 rounded border border-slate-300 px-2 py-1"
           >
-            <option value="">All customers</option>
+            <option value="">{t('reports.allCustomers')}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -347,14 +354,14 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
           </select>
         </label>
         <label className="block">
-          Property
+          {t('reports.property')}
           <select
             value={propertyId}
             onChange={(e) => setPropertyId(e.target.value)}
             disabled={!selectedAccount || selectedAccount.properties.length === 0}
             className="mt-1 rounded border border-slate-300 px-2 py-1 disabled:opacity-50"
           >
-            <option value="">All properties</option>
+            <option value="">{t('reports.allProperties')}</option>
             {selectedAccount?.properties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -363,7 +370,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
           </select>
         </label>
         <label className="block">
-          Status
+          {t('reports.status')}
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -371,13 +378,13 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
           >
             {invoiceStatuses.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {s === 'ALL' ? t('status.ALL') : t(`status.${s}`)}
               </option>
             ))}
           </select>
         </label>
         <label className="block">
-          From
+          {t('reports.from')}
           <input
             type="date"
             value={dateFrom}
@@ -386,7 +393,7 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
           />
         </label>
         <label className="block">
-          To
+          {t('reports.to')}
           <input
             type="date"
             value={dateTo}
@@ -399,14 +406,14 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
           disabled={invoices.length === 0}
           className="rounded border border-slate-300 px-4 py-1.5 text-slate-700 hover:bg-slate-100 disabled:opacity-40"
         >
-          Download PDFs (one per invoice)
+          {t('reports.downloadPdfs')}
         </button>
         <button
           onClick={sendToCustomers}
           disabled={invoices.length === 0 || sending}
           className="rounded bg-indigo-600 px-4 py-1.5 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-40"
         >
-          {sending ? 'Sending...' : 'Send invoices to customers'}
+          {sending ? t('reports.sending') : t('reports.sendToCustomers')}
         </button>
       </div>
 
@@ -414,13 +421,10 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
 
       {sendResult && (
         <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-          <p>
-            Emailed {sendResult.invoiceCount} invoice{sendResult.invoiceCount === 1 ? '' : 's'} in{' '}
-            {sendResult.emailCount} email{sendResult.emailCount === 1 ? '' : 's'}.
-          </p>
+          <p>{t('reports.sendResult', { invoices: sendResult.invoiceCount, emails: sendResult.emailCount })}</p>
           {sendResult.skipped.length > 0 && (
             <div className="mt-2 border-t border-green-200 pt-2 text-amber-800">
-              <p className="font-medium">Skipped (no contact marked to receive invoices):</p>
+              <p className="font-medium">{t('reports.skipped')}</p>
               <ul className="mt-1 list-disc pl-5">
                 {sendResult.skipped.map((s, i) => (
                   <li key={i}>
@@ -435,19 +439,19 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
       )}
 
       <p className="mb-2 text-sm text-slate-500">
-        {loading ? 'Loading...' : `${invoices.length} invoice(s) — ${money(totalCents)} total`}
+        {loading ? t('common.loading') : t('reports.invoiceSummary', { count: invoices.length, amount: money(totalCents) })}
       </p>
 
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-100 text-left text-slate-500">
             <tr>
-              <th className="px-4 py-2">Invoice</th>
-              <th className="px-4 py-2">Customer</th>
-              <th className="px-4 py-2">Amount</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Issued</th>
-              <th className="px-4 py-2">Due date</th>
+              <th className="px-4 py-2">{t('reports.colInvoice')}</th>
+              <th className="px-4 py-2">{t('reports.colCustomer')}</th>
+              <th className="px-4 py-2">{t('reports.colAmount')}</th>
+              <th className="px-4 py-2">{t('reports.colStatus')}</th>
+              <th className="px-4 py-2">{t('reports.colIssued')}</th>
+              <th className="px-4 py-2">{t('reports.colDueDate')}</th>
             </tr>
           </thead>
           <tbody>
@@ -460,15 +464,15 @@ function InvoicesReport({ accounts }: { accounts: Account[] }) {
                 </td>
                 <td className="px-4 py-2">{inv.account.name}</td>
                 <td className="px-4 py-2">{money(inv.amountCents)}</td>
-                <td className="px-4 py-2">{inv.status}</td>
-                <td className="px-4 py-2">{new Date(inv.issueDate).toLocaleDateString()}</td>
-                <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                <td className="px-4 py-2">{t(`status.${inv.status}`)}</td>
+                <td className="px-4 py-2">{new Date(inv.issueDate).toLocaleDateString(locale)}</td>
+                <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString(locale)}</td>
               </tr>
             ))}
             {!loading && invoices.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-4 text-slate-400">
-                  No invoices match these filters.
+                  {t('reports.noInvoices')}
                 </td>
               </tr>
             )}

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { downloadInvoicePdf } from '../lib/invoicePdf';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../i18n';
 
 interface Reminder {
   id: string;
@@ -44,6 +45,7 @@ function money(cents: number) {
 export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
   const { business } = useAuth();
+  const { t, locale } = useI18n();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
@@ -126,7 +128,7 @@ export default function InvoiceDetail() {
     }
   }
 
-  if (!invoice) return <p>Loading...</p>;
+  if (!invoice) return <p>{t('common.loading')}</p>;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -143,9 +145,9 @@ export default function InvoiceDetail() {
             onClick={() => business && downloadInvoicePdf(invoice, business)}
             className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
           >
-            Download PDF
+            {t('invoiceDetail.downloadPdf')}
           </button>
-          <span className="rounded bg-slate-100 px-2 py-1 text-sm font-medium">{invoice.status}</span>
+          <span className="rounded bg-slate-100 px-2 py-1 text-sm font-medium">{t(`status.${invoice.status}`)}</span>
         </div>
       </div>
 
@@ -153,21 +155,21 @@ export default function InvoiceDetail() {
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
         <div className="mb-2 flex justify-between">
-          <span className="text-slate-500">Issued</span>
-          <span>{new Date(invoice.issueDate).toLocaleDateString()}</span>
+          <span className="text-slate-500">{t('invoiceDetail.issued')}</span>
+          <span>{new Date(invoice.issueDate).toLocaleDateString(locale)}</span>
         </div>
         <div className="mb-2 flex justify-between">
-          <span className="text-slate-500">Due</span>
-          <span>{new Date(invoice.dueDate).toLocaleDateString()}</span>
+          <span className="text-slate-500">{t('invoiceDetail.due')}</span>
+          <span>{new Date(invoice.dueDate).toLocaleDateString(locale)}</span>
         </div>
         {invoice.job && (
           <div className="mb-2 flex justify-between">
-            <span className="text-slate-500">Job</span>
+            <span className="text-slate-500">{t('invoiceDetail.job')}</span>
             <span>{invoice.job.title}</span>
           </div>
         )}
         <div className="mt-2 flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
-          <span className="shrink-0 text-slate-500">Title</span>
+          <span className="shrink-0 text-slate-500">{t('invoiceDetail.titleLabel')}</span>
           {editingTitle ? (
             <form onSubmit={saveTitle} className="flex flex-1 items-center gap-2">
               <input
@@ -178,14 +180,14 @@ export default function InvoiceDetail() {
                 className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1"
               />
               <button type="submit" className="shrink-0 text-indigo-600 hover:underline">
-                Save
+                {t('common.save')}
               </button>
               <button
                 type="button"
                 onClick={() => setEditingTitle(false)}
                 className="shrink-0 text-slate-500 hover:underline"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </form>
           ) : (
@@ -193,7 +195,7 @@ export default function InvoiceDetail() {
               {invoice.title}
               {invoice.status === 'DRAFT' && (
                 <button onClick={() => setEditingTitle(true)} className="ml-2 text-indigo-600 hover:underline">
-                  Edit
+                  {t('common.edit')}
                 </button>
               )}
             </span>
@@ -203,10 +205,10 @@ export default function InvoiceDetail() {
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Items</h2>
+          <h2 className="text-lg font-semibold">{t('invoiceDetail.items')}</h2>
           {!locked && (
             <button onClick={() => setShowAddItem((v) => !v)} className="text-sm text-indigo-600">
-              {showAddItem ? 'Cancel' : '+ Add item'}
+              {showAddItem ? t('common.cancel') : t('invoiceDetail.addItem')}
             </button>
           )}
         </div>
@@ -215,10 +217,10 @@ export default function InvoiceDetail() {
           <table className="w-full min-w-[36rem] text-sm">
             <thead className="bg-slate-100 text-left text-slate-500">
               <tr>
-                <th className="px-3 py-2">Description</th>
-                <th className="w-16 px-3 py-2">Qty</th>
-                <th className="w-24 px-3 py-2">Unit price</th>
-                <th className="w-24 px-3 py-2 text-right">Line total</th>
+                <th className="px-3 py-2">{t('lineItems.colDescription')}</th>
+                <th className="w-16 px-3 py-2">{t('lineItems.colQty')}</th>
+                <th className="w-24 px-3 py-2">{t('lineItems.colUnitPrice')}</th>
+                <th className="w-24 px-3 py-2 text-right">{t('lineItems.colLineTotal')}</th>
                 {!locked && <th className="w-16 px-3 py-2"></th>}
               </tr>
             </thead>
@@ -253,14 +255,14 @@ export default function InvoiceDetail() {
                           className="w-24 rounded border border-slate-300 px-2 py-1"
                         />
                         <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
-                          Save
+                          {t('common.save')}
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingItemId(null)}
                           className="rounded border border-slate-300 px-3 py-1"
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                       </form>
                     </td>
@@ -274,14 +276,14 @@ export default function InvoiceDetail() {
                     {!locked && (
                       <td className="px-3 py-2 text-right">
                         <button onClick={() => setEditingItemId(item.id)} className="mr-2 text-slate-500 hover:text-slate-900">
-                          Edit
+                          {t('common.edit')}
                         </button>
                         <button
                           onClick={() => removeItem(item.id)}
                           disabled={invoice.items.length === 1}
                           className="text-slate-400 hover:text-red-600 disabled:opacity-30"
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       </td>
                     )}
@@ -296,7 +298,7 @@ export default function InvoiceDetail() {
                     <form onSubmit={addItem} className="flex flex-wrap items-center gap-2">
                       <input
                         name="description"
-                        placeholder="Description"
+                        placeholder={t('lineItems.descriptionPlaceholder')}
                         required
                         className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1"
                       />
@@ -319,7 +321,7 @@ export default function InvoiceDetail() {
                         className="w-24 rounded border border-slate-300 px-2 py-1"
                       />
                       <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
-                        Add
+                        {t('common.add')}
                       </button>
                     </form>
                   </td>
@@ -329,7 +331,7 @@ export default function InvoiceDetail() {
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
                 <td colSpan={3} className="px-3 py-2 text-right">
-                  Total
+                  {t('lineItems.total')}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{money(invoice.amountCents)}</td>
                 {!locked && <td></td>}
@@ -342,30 +344,30 @@ export default function InvoiceDetail() {
       <div className="flex flex-wrap gap-2">
         {invoice.status === 'DRAFT' && (
           <button onClick={() => action('mark-sent')} className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-4 py-2 text-sm text-white">
-            Mark as sent
+            {t('invoiceDetail.markSent')}
           </button>
         )}
         {!locked && (
           <>
             <button onClick={() => action('mark-paid')} className="rounded bg-green-600 px-4 py-2 text-sm text-white">
-              Mark as paid
+              {t('invoiceDetail.markPaid')}
             </button>
             <button onClick={() => action('cancel')} className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-700">
-              Cancel
+              {t('invoiceDetail.cancelInvoice')}
             </button>
           </>
         )}
       </div>
 
       <section>
-        <h2 className="mb-2 text-lg font-semibold">Reminder history</h2>
+        <h2 className="mb-2 text-lg font-semibold">{t('invoiceDetail.reminderHistory')}</h2>
         <ul className="space-y-1 text-sm">
           {invoice.reminders.map((r) => (
             <li key={r.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
-              Sent to {r.toEmail} on {new Date(r.sentAt).toLocaleString()}
+              {t('invoiceDetail.reminderSent', { email: r.toEmail, date: new Date(r.sentAt).toLocaleString(locale) })}
             </li>
           ))}
-          {invoice.reminders.length === 0 && <li className="text-slate-400">No reminders sent yet.</li>}
+          {invoice.reminders.length === 0 && <li className="text-slate-400">{t('invoiceDetail.noReminders')}</li>}
         </ul>
       </section>
     </div>

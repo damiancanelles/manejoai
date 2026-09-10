@@ -1,13 +1,16 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth, isLoggedIn, isSuperAdmin } from '../context/AuthContext';
+import { useT } from '../i18n';
 import LogoMark from '../components/LogoMark';
+import LangToggle from '../components/LangToggle';
 
 const inputClass =
   'mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
 
 export default function Register() {
   const { register } = useAuth();
+  const t = useT();
   const navigate = useNavigate();
 
   const [businessName, setBusinessName] = useState('');
@@ -28,11 +31,11 @@ export default function Register() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError('Password and confirmation do not match.');
+      setError(t('register.errMismatch'));
       return;
     }
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError(t('register.errShort'));
       return;
     }
 
@@ -49,7 +52,7 @@ export default function Register() {
       });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || t('register.errGeneric'));
     } finally {
       setSubmitting(false);
     }
@@ -60,20 +63,20 @@ export default function Register() {
       <form onSubmit={onSubmit} className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
         <Link to="/" className="mb-6 flex flex-col items-center">
           <LogoMark size={48} />
-          <h1 className="mt-3 text-xl font-bold tracking-tight text-slate-900">Create your business</h1>
+          <h1 className="mt-3 text-xl font-bold tracking-tight text-slate-900">{t('register.title')}</h1>
         </Link>
         {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Business info</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{t('register.businessInfo')}</p>
         <label className="mb-3 block text-sm">
-          Business name
+          {t('register.businessName')}
           <input required value={businessName} onChange={(e) => setBusinessName(e.target.value)} className={inputClass} />
         </label>
         <label className="mb-3 block text-sm">
-          Address
+          {t('register.address')}
           <input
             required
-            placeholder="Street address"
+            placeholder={t('register.streetAddress')}
             value={addressLine1}
             onChange={(e) => setAddressLine1(e.target.value)}
             className={inputClass}
@@ -81,24 +84,24 @@ export default function Register() {
         </label>
         <label className="mb-3 block text-sm">
           <input
-            placeholder="City, state, zip (optional)"
+            placeholder={t('register.cityStateZip')}
             value={addressLine2}
             onChange={(e) => setAddressLine2(e.target.value)}
             className={inputClass}
           />
         </label>
         <label className="mb-4 block text-sm">
-          Phone (optional)
+          {t('register.phoneOptional')}
           <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
         </label>
 
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Your account</p>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{t('register.yourAccount')}</p>
         <label className="mb-3 block text-sm">
-          Your name
+          {t('register.yourName')}
           <input required value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
         </label>
         <label className="mb-3 block text-sm">
-          Email
+          {t('register.email')}
           <input
             type="email"
             required
@@ -108,7 +111,7 @@ export default function Register() {
           />
         </label>
         <label className="mb-3 block text-sm">
-          Password
+          {t('register.password')}
           <input
             type="password"
             required
@@ -119,7 +122,7 @@ export default function Register() {
           />
         </label>
         <label className="mb-4 block text-sm">
-          Confirm password
+          {t('register.confirmPassword')}
           <input
             type="password"
             required
@@ -135,15 +138,19 @@ export default function Register() {
           disabled={submitting}
           className="w-full rounded bg-indigo-600 py-2 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
-          {submitting ? 'Creating account...' : 'Create account'}
+          {submitting ? t('register.submitting') : t('register.submit')}
         </button>
 
         <p className="mt-4 text-center text-sm text-slate-500">
-          Already have an account?{' '}
+          {t('register.haveAccount')}{' '}
           <Link to="/login" className="text-indigo-600 hover:underline">
-            Sign in
+            {t('register.signIn')}
           </Link>
         </p>
+
+        <div className="mt-4 flex justify-center">
+          <LangToggle />
+        </div>
       </form>
     </div>
   );

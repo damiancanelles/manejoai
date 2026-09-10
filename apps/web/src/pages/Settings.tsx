@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth, Business } from '../context/AuthContext';
+import { useI18n } from '../i18n';
 
 const inputClass =
   'mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500';
@@ -12,6 +13,7 @@ const inputClass =
  */
 function BusinessInfoSection() {
   const { business, setBusiness } = useAuth();
+  const t = useI18n().t;
   const [name, setName] = useState(business?.name ?? '');
   const [addressLine1, setAddressLine1] = useState(business?.addressLine1 ?? '');
   const [addressLine2, setAddressLine2] = useState(business?.addressLine2 ?? '');
@@ -45,26 +47,22 @@ function BusinessInfoSection() {
 
   return (
     <section className="max-w-md">
-      <h2 className="mb-2 text-lg font-semibold">Business info</h2>
-      <p className="mb-4 text-sm text-slate-500">
-        Shown on every invoice and email this business sends.
-      </p>
+      <h2 className="mb-2 text-lg font-semibold">{t('settings.businessInfo')}</h2>
+      <p className="mb-4 text-sm text-slate-500">{t('settings.businessInfoSub')}</p>
       <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
-        {success && <div className="rounded bg-green-50 p-2 text-sm text-green-800">Business info updated.</div>}
+        {success && <div className="rounded bg-green-50 p-2 text-sm text-green-800">{t('settings.businessInfoUpdated')}</div>}
 
         {business && (
           <div className="rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-            <span className="text-slate-500">Sending address</span>
+            <span className="text-slate-500">{t('settings.sendingAddress')}</span>
             <div className="font-medium text-slate-700">{business.emailSlug}@manejoai.cloud</div>
-            <p className="mt-1 text-xs text-slate-400">
-              Every invoice and reminder email is sent from this address - fixed once your business is created.
-            </p>
+            <p className="mt-1 text-xs text-slate-400">{t('settings.sendingAddressHint')}</p>
           </div>
         )}
 
         <label className="block text-sm">
-          Business name
+          {t('settings.businessName')}
           <input
             required
             value={name}
@@ -77,10 +75,10 @@ function BusinessInfoSection() {
         </label>
 
         <label className="block text-sm">
-          Address
+          {t('settings.address')}
           <input
             required
-            placeholder="Street address"
+            placeholder={t('settings.streetAddress')}
             value={addressLine1}
             onChange={(e) => {
               setAddressLine1(e.target.value);
@@ -92,7 +90,7 @@ function BusinessInfoSection() {
 
         <label className="block text-sm">
           <input
-            placeholder="City, state, zip (optional)"
+            placeholder={t('settings.cityStateZip')}
             value={addressLine2}
             onChange={(e) => {
               setAddressLine2(e.target.value);
@@ -103,7 +101,7 @@ function BusinessInfoSection() {
         </label>
 
         <label className="block text-sm">
-          Phone
+          {t('settings.phone')}
           <input
             value={phone}
             onChange={(e) => {
@@ -115,10 +113,10 @@ function BusinessInfoSection() {
         </label>
 
         <label className="block text-sm">
-          Reply-to email
+          {t('settings.replyToEmail')}
           <input
             type="email"
-            placeholder="Where replies to invoices/reminders should land"
+            placeholder={t('settings.replyToPlaceholder')}
             value={replyToEmail}
             onChange={(e) => {
               setReplyToEmail(e.target.value);
@@ -133,7 +131,7 @@ function BusinessInfoSection() {
           disabled={submitting}
           className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
-          {submitting ? 'Saving...' : 'Save changes'}
+          {submitting ? t('common.saving') : t('common.saveChanges')}
         </button>
       </form>
     </section>
@@ -156,6 +154,7 @@ interface TelegramStatus {
  * verify privacy mode or group membership from our side.
  */
 function TelegramSection() {
+  const { t, locale } = useI18n();
   const [status, setStatus] = useState<TelegramStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [botToken, setBotToken] = useState('');
@@ -183,7 +182,7 @@ function TelegramSection() {
       const updated = await api.patch<TelegramStatus>('/telegram/me/token', { botToken });
       setStatus(updated);
       setBotToken('');
-      setSuccess(`Connected to @${updated.botUsername}. Now finish the steps below.`);
+      setSuccess(t('settings.tgConnected', { username: updated.botUsername ?? '' }));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -198,7 +197,7 @@ function TelegramSection() {
     try {
       const updated = await api.post<TelegramStatus>('/telegram/me/confirm');
       setStatus(updated);
-      setSuccess('Marked as set up.');
+      setSuccess(t('settings.tgMarkedSetUp'));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -207,14 +206,14 @@ function TelegramSection() {
   }
 
   async function onDisconnect() {
-    if (!confirm('Disconnect this bot? Job reports will stop coming in until you connect a new one.')) return;
+    if (!confirm(t('settings.tgDisconnectConfirm'))) return;
     setError(null);
     setSuccess(null);
     setDisconnecting(true);
     try {
       const updated = await api.delete<TelegramStatus>('/telegram/me/token');
       setStatus(updated);
-      setSuccess('Disconnected.');
+      setSuccess(t('settings.tgDisconnected'));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -224,11 +223,8 @@ function TelegramSection() {
 
   return (
     <section className="max-w-lg">
-      <h2 className="mb-2 text-lg font-semibold">Job reports (Telegram)</h2>
-      <p className="mb-4 text-sm text-slate-500">
-        Let your crew text job photos/updates into a Telegram group and have them show up as Job Reports here,
-        ready to turn into real jobs.
-      </p>
+      <h2 className="mb-2 text-lg font-semibold">{t('settings.telegramTitle')}</h2>
+      <p className="mb-4 text-sm text-slate-500">{t('settings.telegramSub')}</p>
 
       <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
@@ -237,17 +233,19 @@ function TelegramSection() {
         {!loading && status && (
           <div className="grid grid-cols-1 gap-2 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-sm sm:grid-cols-3">
             <div>
-              <span className="text-slate-500">Bot</span>
-              <div className="font-medium text-slate-700">{status.hasToken ? `@${status.botUsername}` : 'Not connected'}</div>
+              <span className="text-slate-500">{t('settings.tgBot')}</span>
+              <div className="font-medium text-slate-700">{status.hasToken ? `@${status.botUsername}` : t('settings.tgNotConnected')}</div>
             </div>
             <div>
-              <span className="text-slate-500">Group</span>
-              <div className="font-medium text-slate-700">{status.groupLinked ? status.groupTitle || 'Linked' : 'Waiting for a message'}</div>
+              <span className="text-slate-500">{t('settings.tgGroup')}</span>
+              <div className="font-medium text-slate-700">{status.groupLinked ? status.groupTitle || t('settings.tgLinked') : t('settings.tgWaiting')}</div>
             </div>
             <div>
-              <span className="text-slate-500">Setup</span>
+              <span className="text-slate-500">{t('settings.tgSetup')}</span>
               <div className="font-medium text-slate-700">
-                {status.confirmedAt ? `Confirmed ${new Date(status.confirmedAt).toLocaleDateString()}` : 'Not confirmed'}
+                {status.confirmedAt
+                  ? t('settings.tgConfirmedOn', { date: new Date(status.confirmedAt).toLocaleDateString(locale) })
+                  : t('settings.tgNotConfirmed')}
               </div>
             </div>
           </div>
@@ -255,28 +253,33 @@ function TelegramSection() {
 
         <ol className="list-decimal space-y-1.5 pl-5 text-sm text-slate-600">
           <li>
-            Message <span className="font-medium text-slate-800">@BotFather</span> on Telegram and send{' '}
-            <code className="rounded bg-slate-100 px-1 py-0.5">/newbot</code> to create a bot (skip this if you
-            already have one) - it'll give you a token that looks like{' '}
-            <code className="rounded bg-slate-100 px-1 py-0.5">123456:ABC-your-token</code>.
+            {t('settings.tgStep1a')}
+            <span className="font-medium text-slate-800">@BotFather</span>
+            {t('settings.tgStep1b')}
+            <code className="rounded bg-slate-100 px-1 py-0.5">/newbot</code>
+            {t('settings.tgStep1c')}
+            <code className="rounded bg-slate-100 px-1 py-0.5">123456:ABC-your-token</code>
+            {t('settings.tgStep1d')}
           </li>
-          <li>Paste that token below and click Save.</li>
+          <li>{t('settings.tgStep2')}</li>
           <li>
-            Back in @BotFather, send <code className="rounded bg-slate-100 px-1 py-0.5">/setprivacy</code>, pick
-            your bot, and choose <span className="font-medium text-slate-800">Disable</span> - otherwise it can
-            only see messages that directly @mention it, not ordinary chatter.
+            {t('settings.tgStep3a')}
+            <code className="rounded bg-slate-100 px-1 py-0.5">/setprivacy</code>
+            {t('settings.tgStep3b')}
+            <span className="font-medium text-slate-800">{t('settings.tgStep3disable')}</span>
+            {t('settings.tgStep3c')}
           </li>
-          <li>Add your bot to the Telegram group your crew reports jobs in, like any other member.</li>
-          <li>Send any message in that group - the "Group" status above will pick it up automatically.</li>
-          <li>Once all of that's done, click "I've completed these steps" below.</li>
+          <li>{t('settings.tgStep4')}</li>
+          <li>{t('settings.tgStep5')}</li>
+          <li>{t('settings.tgStep6')}</li>
         </ol>
 
         <form onSubmit={onSaveToken} className="flex flex-wrap items-end gap-2">
           <label className="block flex-1 text-sm">
-            Bot token
+            {t('settings.tgBotToken')}
             <input
               type="password"
-              placeholder={status?.hasToken ? 'Enter a new token to replace the current one' : 'From @BotFather'}
+              placeholder={status?.hasToken ? t('settings.tgTokenPlaceholderNew') : t('settings.tgTokenPlaceholderFrom')}
               value={botToken}
               onChange={(e) => setBotToken(e.target.value)}
               required
@@ -288,7 +291,7 @@ function TelegramSection() {
             disabled={saving}
             className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? t('common.saving') : t('settings.tgSave')}
           </button>
         </form>
 
@@ -299,7 +302,7 @@ function TelegramSection() {
             disabled={!status?.hasToken || confirming}
             className="rounded bg-green-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-green-700 disabled:opacity-40"
           >
-            {confirming ? 'Saving...' : "I've completed these steps"}
+            {confirming ? t('common.saving') : t('settings.tgCompletedSteps')}
           </button>
           {status?.hasToken && (
             <button
@@ -308,7 +311,7 @@ function TelegramSection() {
               disabled={disconnecting}
               className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-50"
             >
-              {disconnecting ? 'Disconnecting...' : 'Disconnect'}
+              {disconnecting ? t('settings.tgDisconnecting') : t('settings.tgDisconnect')}
             </button>
           )}
         </div>
@@ -318,6 +321,7 @@ function TelegramSection() {
 }
 
 function ChangePasswordSection() {
+  const t = useI18n().t;
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -331,11 +335,11 @@ function ChangePasswordSection() {
     setSuccess(false);
 
     if (newPassword !== confirmPassword) {
-      setError('New password and confirmation do not match.');
+      setError(t('settings.pwMismatch'));
       return;
     }
     if (newPassword.length < 8) {
-      setError('New password must be at least 8 characters.');
+      setError(t('settings.pwShort'));
       return;
     }
 
@@ -355,16 +359,16 @@ function ChangePasswordSection() {
 
   return (
     <section className="max-w-sm">
-      <h2 className="mb-2 text-lg font-semibold">Change password</h2>
-      <p className="mb-4 text-sm text-slate-500">Just for your own login - doesn't affect anyone else on this business.</p>
+      <h2 className="mb-2 text-lg font-semibold">{t('settings.pwTitle')}</h2>
+      <p className="mb-4 text-sm text-slate-500">{t('settings.pwSub')}</p>
       <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
         {success && (
-          <div className="rounded bg-green-50 p-2 text-sm text-green-800">Password changed successfully.</div>
+          <div className="rounded bg-green-50 p-2 text-sm text-green-800">{t('settings.pwChanged')}</div>
         )}
 
         <label className="block text-sm">
-          Current password
+          {t('settings.pwCurrent')}
           <input
             type="password"
             required
@@ -375,7 +379,7 @@ function ChangePasswordSection() {
         </label>
 
         <label className="block text-sm">
-          New password
+          {t('settings.pwNew')}
           <input
             type="password"
             required
@@ -387,7 +391,7 @@ function ChangePasswordSection() {
         </label>
 
         <label className="block text-sm">
-          Confirm new password
+          {t('settings.pwConfirm')}
           <input
             type="password"
             required
@@ -403,7 +407,7 @@ function ChangePasswordSection() {
           disabled={submitting}
           className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
-          {submitting ? 'Saving...' : 'Change password'}
+          {submitting ? t('common.saving') : t('settings.pwSubmit')}
         </button>
       </form>
     </section>
@@ -411,9 +415,10 @@ function ChangePasswordSection() {
 }
 
 export default function Settings() {
+  const t = useI18n().t;
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
       <BusinessInfoSection />
       <TelegramSection />
       <ChangePasswordSection />

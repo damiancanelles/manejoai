@@ -1,3 +1,5 @@
+import { useT } from '../i18n';
+
 interface YearSwitcherProps {
   years: number[]; // newest first, e.g. from yearsWithInvoices()
   selected: number | null; // null = all time
@@ -6,6 +8,7 @@ interface YearSwitcherProps {
 
 /** Same pill-button style as the app's other status/tab filters. */
 export default function YearSwitcher({ years, selected, onChange }: YearSwitcherProps) {
+  const t = useT();
   if (years.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-2">
@@ -26,7 +29,7 @@ export default function YearSwitcher({ years, selected, onChange }: YearSwitcher
           selected === null ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
         }`}
       >
-        All time
+        {t('yearSwitcher.allTime')}
       </button>
     </div>
   );

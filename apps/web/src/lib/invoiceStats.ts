@@ -49,7 +49,11 @@ export interface MonthBucket {
  * included; `null` (all time) gives every month that actually has data,
  * across however many years, oldest first.
  */
-export function monthlyIncome(invoices: StatsInvoice[], year: number | null): MonthBucket[] {
+export function monthlyIncome(
+  invoices: StatsInvoice[],
+  year: number | null,
+  locale = 'en-US',
+): MonthBucket[] {
   const relevant = invoices.filter((i) => i.status !== 'CANCELED');
 
   if (year != null) {
@@ -57,7 +61,7 @@ export function monthlyIncome(invoices: StatsInvoice[], year: number | null): Mo
     for (let m = 0; m < 12; m++) {
       const d = new Date(year, m, 1);
       const key = `${year}-${String(m + 1).padStart(2, '0')}`;
-      buckets.push({ key, label: d.toLocaleDateString('en-US', { month: 'short' }), cents: 0 });
+      buckets.push({ key, label: d.toLocaleDateString(locale, { month: 'short' }), cents: 0 });
     }
     const byKey = new Map(buckets.map((b) => [b.key, b]));
     for (const inv of relevant) {
@@ -74,7 +78,7 @@ export function monthlyIncome(invoices: StatsInvoice[], year: number | null): Mo
     const d = new Date(inv.issueDate);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     if (!byKey.has(key)) {
-      byKey.set(key, { key, label: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), cents: 0 });
+      byKey.set(key, { key, label: d.toLocaleDateString(locale, { month: 'short', year: '2-digit' }), cents: 0 });
     }
     byKey.get(key)!.cents += inv.amountCents;
   }

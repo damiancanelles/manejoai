@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import Pagination from '../components/Pagination';
 import { PAGE_SIZE, paginate } from '../lib/paginate';
+import { useI18n } from '../i18n';
 
 interface Account {
   id: string;
@@ -28,6 +29,7 @@ interface IncomingReport {
 const statuses = ['PENDING', 'CONVERTED', 'DISMISSED', 'ALL'];
 
 export default function IncomingReports() {
+  const t = useI18n().t;
   const [reports, setReports] = useState<IncomingReport[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [status, setStatus] = useState('PENDING');
@@ -64,10 +66,8 @@ export default function IncomingReports() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="mb-1 text-2xl font-bold">Job reports</h1>
-      <p className="mb-4 text-sm text-slate-500">
-        Worker updates from the Telegram job-reports group, waiting for review before they become Jobs.
-      </p>
+      <h1 className="mb-1 text-2xl font-bold">{t('jobReports.title')}</h1>
+      <p className="mb-4 text-sm text-slate-500">{t('jobReports.subtitle')}</p>
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">
@@ -79,7 +79,7 @@ export default function IncomingReports() {
                 status === s ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {s}
+              {s === 'ALL' ? t('status.ALL') : s === 'PENDING' ? t('status.PENDING') : t(`status.${s}`)}
             </button>
           ))}
         </div>
@@ -87,15 +87,15 @@ export default function IncomingReports() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search sender, message, property..."
+          placeholder={t('jobReports.search')}
           className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>
 
-      {loading && <p className="text-sm text-slate-400">Loading...</p>}
+      {loading && <p className="text-sm text-slate-400">{t('common.loading')}</p>}
       {!loading && reports.length === 0 && (
         <p className="text-sm text-slate-400">
-          {status === 'PENDING' ? 'No pending reports - all caught up.' : 'No reports match these filters.'}
+          {status === 'PENDING' ? t('jobReports.allCaughtUp') : t('jobReports.noneMatch')}
         </p>
       )}
 
@@ -123,6 +123,7 @@ function ReportCard({
   accounts: Account[];
   onDone: () => void;
 }) {
+  const { t, locale } = useI18n();
   const [accountId, setAccountId] = useState(report.matchedProperty?.account.id ?? '');
   const [propertyId, setPropertyId] = useState(report.matchedPropertyId ?? '');
   const [title, setTitle] = useState(report.suggestedTitle ?? '');
@@ -135,7 +136,7 @@ function ReportCard({
 
   async function convert() {
     if (!accountId || !title) {
-      setError('Customer and title are required.');
+      setError(t('jobReports.errRequired'));
       return;
     }
     setSaving(true);
@@ -169,7 +170,7 @@ function ReportCard({
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between text-sm text-slate-500">
-        <span>{report.senderName ?? 'Unknown sender'} · Telegram</span>
+        <span>{report.senderName ?? t('jobReports.unknownSender')} · Telegram</span>
         <div className="flex items-center gap-2">
           {!isPending && (
             <span
@@ -177,10 +178,10 @@ function ReportCard({
                 report.status === 'CONVERTED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
               }`}
             >
-              {report.status}
+              {t(`status.${report.status}`)}
             </span>
           )}
-          <span>{new Date(report.receivedAt).toLocaleString()}</span>
+          <span>{new Date(report.receivedAt).toLocaleString(locale)}</span>
         </div>
       </div>
 
@@ -200,8 +201,8 @@ function ReportCard({
 
       {report.suggestedPropertyText && (
         <p className="mb-3 text-xs text-slate-400">
-          Property mentioned in message: "{report.suggestedPropertyText}"
-          {!report.matchedPropertyId && ' — no confident match, pick it below'}
+          {t('jobReports.propertyMentioned', { text: report.suggestedPropertyText })}
+          {!report.matchedPropertyId && t('jobReports.noMatch')}
         </p>
       )}
 
@@ -210,16 +211,16 @@ function ReportCard({
           <span>
             {report.status === 'CONVERTED' && report.jobId ? (
               <>
-                Converted to job — {title || 'untitled'}
+                {t('jobReports.convertedTo', { title: title || t('jobReports.untitled') })}
                 {selectedAccount && ` (${selectedAccount.name})`}
               </>
             ) : (
-              'Dismissed'
+              t('jobReports.dismissedLabel')
             )}
           </span>
           {report.status === 'CONVERTED' && report.jobId && (
             <Link to={`/jobs/${report.jobId}`} className="text-indigo-600 hover:underline">
-              View job
+              {t('jobReports.viewJob')}
             </Link>
           )}
         </div>
@@ -230,7 +231,7 @@ function ReportCard({
           <div className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <label className="block text-sm">
-                Customer
+                {t('jobReports.customer')}
                 <select
                   value={accountId}
                   onChange={(e) => {
@@ -239,7 +240,7 @@ function ReportCard({
                   }}
                   className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
                 >
-                  <option value="">Select a customer...</option>
+                  <option value="">{t('jobReports.selectCustomer')}</option>
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
                       {a.name}
@@ -249,14 +250,14 @@ function ReportCard({
               </label>
 
               <label className="block text-sm">
-                Property
+                {t('jobReports.property')}
                 <select
                   value={propertyId}
                   onChange={(e) => setPropertyId(e.target.value)}
                   disabled={!selectedAccount || selectedAccount.properties.length === 0}
                   className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
                 >
-                  <option value="">None</option>
+                  <option value="">{t('common.none')}</option>
                   {selectedAccount?.properties.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -267,7 +268,7 @@ function ReportCard({
             </div>
 
             <label className="block text-sm">
-              Title
+              {t('jobReports.titleField')}
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -276,7 +277,7 @@ function ReportCard({
             </label>
 
             <label className="block text-sm">
-              Description
+              {t('jobReports.description')}
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -292,7 +293,7 @@ function ReportCard({
               disabled={saving}
               className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
             >
-              Create job
+              {t('jobReports.createJob')}
             </button>
             <button
               type="button"
@@ -300,11 +301,11 @@ function ReportCard({
               disabled={saving}
               className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-600 disabled:opacity-50"
             >
-              Dismiss
+              {t('jobReports.dismiss')}
             </button>
             {accountId && (
               <Link to={`/accounts/${accountId}`} className="ml-auto text-xs text-indigo-600">
-                View customer
+                {t('jobReports.viewCustomer')}
               </Link>
             )}
           </div>

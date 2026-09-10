@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import Pagination from '../components/Pagination';
 import { PAGE_SIZE, paginate } from '../lib/paginate';
+import { useI18n } from '../i18n';
 
 interface Invoice {
   id: string;
@@ -32,6 +33,7 @@ function todayStr() {
 }
 
 export default function Invoices() {
+  const { t, locale } = useI18n();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -108,7 +110,7 @@ export default function Invoices() {
   }
 
   async function sendAllDrafts() {
-    if (!confirm('This emails every draft invoice to its customer (grouped by property) and marks them Sent. Continue?')) {
+    if (!confirm(t('invoices.sendDraftsConfirm'))) {
       return;
     }
     setSending(true);
@@ -150,20 +152,20 @@ export default function Invoices() {
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Invoices</h1>
+        <h1 className="text-2xl font-bold">{t('invoices.title')}</h1>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={sendAllDrafts}
             disabled={sending}
             className="rounded border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50"
           >
-            {sending ? 'Sending...' : 'Send all drafts'}
+            {sending ? t('invoices.sending') : t('invoices.sendAllDrafts')}
           </button>
           <Link
             to="/invoices/new"
             className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
           >
-            New invoice
+            {t('invoices.new')}
           </Link>
         </div>
       </div>
@@ -172,13 +174,10 @@ export default function Invoices() {
 
       {result && (
         <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-          <p>
-            Sent {result.sentCount} invoice{result.sentCount === 1 ? '' : 's'} in {result.emailCount} email
-            {result.emailCount === 1 ? '' : 's'}.
-          </p>
+          <p>{t('invoices.sentResult', { invoices: result.sentCount, emails: result.emailCount })}</p>
           {result.skipped.length > 0 && (
             <div className="mt-2 border-t border-green-200 pt-2 text-amber-800">
-              <p className="font-medium">Skipped (no contact marked to receive invoices):</p>
+              <p className="font-medium">{t('invoices.skippedInvoices')}</p>
               <ul className="mt-1 list-disc pl-5">
                 {result.skipped.map((s, i) => (
                   <li key={i}>
@@ -194,8 +193,10 @@ export default function Invoices() {
 
       {paymentResult && (
         <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-          Recorded a payment of {money(paymentResult.amountCents)} covering {paymentResult.invoices.length} invoice
-          {paymentResult.invoices.length === 1 ? '' : 's'}.
+          {t('invoices.paymentResult', {
+            amount: money(paymentResult.amountCents),
+            count: paymentResult.invoices.length,
+          })}
         </div>
       )}
 
@@ -209,16 +210,16 @@ export default function Invoices() {
                 status === s ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {s}
+              {s === 'ALL' ? t('status.ALL') : t(`status.${s}`)}
             </button>
           ))}
         </div>
-        {draftCount > 0 && <p className="text-sm text-slate-500">{draftCount} draft(s) currently shown</p>}
+        {draftCount > 0 && <p className="text-sm text-slate-500">{t('invoices.draftsShown', { count: draftCount })}</p>}
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search invoice #, customer, property, title..."
+          placeholder={t('invoices.search')}
           className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>
@@ -226,23 +227,21 @@ export default function Invoices() {
       {selected.size > 0 && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm">
           <span>
-            {selected.size} invoice{selected.size === 1 ? '' : 's'} selected — {money(selectedTotal)}
+            {t('invoices.selectedSummary', { count: selected.size, amount: money(selectedTotal) })}
             {mixedAccounts && (
-              <span className="ml-2 text-red-600">
-                Select invoices from one customer at a time to record a payment.
-              </span>
+              <span className="ml-2 text-red-600">{t('invoices.mixedAccounts')}</span>
             )}
           </span>
           <div className="flex gap-2">
             <button onClick={() => setSelected(new Set())} className="text-slate-500 hover:text-slate-700">
-              Clear
+              {t('invoices.clear')}
             </button>
             <button
               onClick={() => setShowPaymentForm((v) => !v)}
               disabled={mixedAccounts}
               className="rounded bg-indigo-600 px-3 py-1 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-40"
             >
-              Record payment
+              {t('invoices.recordPayment')}
             </button>
           </div>
         </div>
@@ -253,13 +252,16 @@ export default function Invoices() {
           {paymentError && <div className="rounded bg-red-50 p-2 text-red-700">{paymentError}</div>}
           <div>
             <p className="mb-1 font-medium">
-              {selectedInvoices.map((i) => i.invoiceNumber).join(', ')} — total {money(selectedTotal)}
+              {t('invoices.paymentLine', {
+                numbers: selectedInvoices.map((i) => i.invoiceNumber).join(', '),
+                amount: money(selectedTotal),
+              })}
             </p>
-            <p className="text-slate-500">Recording for {selectedInvoices[0]?.account.name}</p>
+            <p className="text-slate-500">{t('invoices.recordingFor', { name: selectedInvoices[0]?.account.name ?? '' })}</p>
           </div>
           <div className="flex flex-wrap gap-4">
             <label className="block">
-              Payment date
+              {t('invoices.paymentDate')}
               <input
                 name="paidAt"
                 type="date"
@@ -269,11 +271,11 @@ export default function Invoices() {
               />
             </label>
             <label className="block flex-1">
-              Notes (optional)
+              {t('invoices.notes')}
               <input
                 name="notes"
                 type="text"
-                placeholder="e.g. Check #1234"
+                placeholder={t('invoices.notesPlaceholder')}
                 className="mt-1 w-full rounded border border-slate-300 px-2 py-1"
               />
             </label>
@@ -284,17 +286,17 @@ export default function Invoices() {
               disabled={recordingPayment}
               className="rounded bg-indigo-600 px-4 py-1.5 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
             >
-              {recordingPayment ? 'Recording...' : 'Record payment'}
+              {recordingPayment ? t('invoices.recording') : t('invoices.recordPayment')}
             </button>
             <button type="button" onClick={() => setShowPaymentForm(false)} className="rounded border border-slate-300 px-4 py-1.5">
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </form>
       )}
 
       {loading ? (
-        <p>Loading...</p>
+        <p>{t('common.loading')}</p>
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
@@ -309,11 +311,11 @@ export default function Invoices() {
                       disabled={payablePage.length === 0}
                     />
                   </th>
-                  <th className="px-4 py-2">Invoice</th>
-                  <th className="px-4 py-2">Customer</th>
-                  <th className="px-4 py-2">Amount</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2">Due date</th>
+                  <th className="px-4 py-2">{t('invoices.colInvoice')}</th>
+                  <th className="px-4 py-2">{t('invoices.colCustomer')}</th>
+                  <th className="px-4 py-2">{t('invoices.colAmount')}</th>
+                  <th className="px-4 py-2">{t('invoices.colStatus')}</th>
+                  <th className="px-4 py-2">{t('invoices.colDueDate')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -334,14 +336,14 @@ export default function Invoices() {
                     </td>
                     <td className="px-4 py-2">{inv.account.name}</td>
                     <td className="px-4 py-2">{money(inv.amountCents)}</td>
-                    <td className="px-4 py-2">{inv.status}</td>
-                    <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString()}</td>
+                    <td className="px-4 py-2">{t(`status.${inv.status}`)}</td>
+                    <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString(locale)}</td>
                   </tr>
                 ))}
                 {invoices.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-4 text-slate-400">
-                      No invoices match these filters.
+                      {t('invoices.empty')}
                     </td>
                   </tr>
                 )}

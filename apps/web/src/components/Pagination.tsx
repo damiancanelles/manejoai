@@ -1,3 +1,5 @@
+import { useT } from '../i18n';
+
 interface PaginationProps {
   page: number;
   totalItems: number;
@@ -7,6 +9,7 @@ interface PaginationProps {
 
 /** Simple prev/next + page-number pagination, 20 items/page by default across the app. */
 export default function Pagination({ page, totalItems, pageSize, onChange }: PaginationProps) {
+  const t = useT();
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   if (totalPages <= 1) return null;
 
@@ -23,16 +26,14 @@ export default function Pagination({ page, totalItems, pageSize, onChange }: Pag
 
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-      <p className="text-slate-500">
-        {from}–{to} of {totalItems}
-      </p>
+      <p className="text-slate-500">{t('pagination.range', { from, to, total: totalItems })}</p>
       <div className="flex flex-wrap items-center gap-1">
         <button
           onClick={() => onChange(page - 1)}
           disabled={page <= 1}
           className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40"
         >
-          Prev
+          {t('pagination.prev')}
         </button>
         {pages.map((p, i) =>
           p === '...' ? (
@@ -58,7 +59,7 @@ export default function Pagination({ page, totalItems, pageSize, onChange }: Pag
           disabled={page >= totalPages}
           className="rounded border border-slate-300 px-2 py-1 disabled:opacity-40"
         >
-          Next
+          {t('pagination.next')}
         </button>
       </div>
     </div>

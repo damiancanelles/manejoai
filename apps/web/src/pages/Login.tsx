@@ -1,10 +1,13 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth, isLoggedIn, isSuperAdmin } from '../context/AuthContext';
+import { useT } from '../i18n';
 import LogoMark from '../components/LogoMark';
+import LangToggle from '../components/LangToggle';
 
 export default function Login() {
   const { login } = useAuth();
+  const t = useT();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +24,7 @@ export default function Login() {
       const user = await login(email, password);
       navigate(user.role === 'SUPERADMIN' ? '/platform' : '/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || t('login.error'));
     } finally {
       setSubmitting(false);
     }
@@ -36,7 +39,7 @@ export default function Login() {
         </Link>
         {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
         <label className="mb-3 block text-sm">
-          Email
+          {t('login.email')}
           <input
             type="email"
             required
@@ -46,7 +49,7 @@ export default function Login() {
           />
         </label>
         <label className="mb-4 block text-sm">
-          Password
+          {t('login.password')}
           <input
             type="password"
             required
@@ -60,15 +63,19 @@ export default function Login() {
           disabled={submitting}
           className="w-full rounded bg-indigo-600 py-2 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
         >
-          {submitting ? 'Signing in...' : 'Sign in'}
+          {submitting ? t('login.submitting') : t('login.submit')}
         </button>
 
         <p className="mt-4 text-center text-sm text-slate-500">
-          New here?{' '}
+          {t('login.newHere')}{' '}
           <Link to="/register" className="text-indigo-600 hover:underline">
-            Create an account
+            {t('login.createAccount')}
           </Link>
         </p>
+
+        <div className="mt-4 flex justify-center">
+          <LangToggle />
+        </div>
       </form>
     </div>
   );

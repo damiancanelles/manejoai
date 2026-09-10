@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { useT } from '../i18n';
 
 interface Account {
   id: string;
@@ -23,6 +24,7 @@ function money(cents: number) {
 }
 
 export default function QuoteNew() {
+  const t = useT();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -72,11 +74,11 @@ export default function QuoteNew() {
       unitPriceCents: Math.round((Number(row.unitPrice) || 0) * 100),
     }));
     if (parsedItems.some((it) => !it.description)) {
-      setError('Every item needs a description.');
+      setError(t('lineItems.errDescription'));
       return;
     }
     if (parsedItems.some((it) => !it.quantity || it.quantity < 1)) {
-      setError('Every item needs a quantity of at least 1.');
+      setError(t('lineItems.errQuantity'));
       return;
     }
 
@@ -96,18 +98,18 @@ export default function QuoteNew() {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold">New quote</h1>
+      <h1 className="mb-6 text-2xl font-bold">{t('quoteNew.title')}</h1>
       {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
       <form onSubmit={onSubmit} className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <label className="block text-sm">
-          Customer
+          {t('quoteNew.customer')}
           <select
             required
             value={accountId}
             onChange={(e) => setAccountId(e.target.value)}
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
           >
-            <option value="">Select a customer...</option>
+            <option value="">{t('quoteNew.selectCustomer')}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
@@ -118,9 +120,9 @@ export default function QuoteNew() {
 
         {selectedAccount && selectedAccount.properties.length > 0 && (
           <label className="block text-sm">
-            Property (optional)
+            {t('quoteNew.property')}
             <select name="propertyId" className="mt-1 w-full rounded border border-slate-300 px-3 py-2">
-              <option value="">None</option>
+              <option value="">{t('common.none')}</option>
               {selectedAccount.properties.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -132,9 +134,9 @@ export default function QuoteNew() {
 
         {selectedAccount && selectedAccount.jobs.length > 0 && (
           <label className="block text-sm">
-            Related job (optional)
+            {t('quoteNew.relatedJob')}
             <select name="jobId" className="mt-1 w-full rounded border border-slate-300 px-3 py-2">
-              <option value="">None</option>
+              <option value="">{t('common.none')}</option>
               {selectedAccount.jobs.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title}
@@ -146,19 +148,19 @@ export default function QuoteNew() {
 
         <div className="text-sm">
           <div className="mb-1 flex items-center justify-between">
-            <span>Items</span>
+            <span>{t('lineItems.items')}</span>
             <button type="button" onClick={addRow} className="text-indigo-600">
-              + Add item
+              {t('lineItems.addItem')}
             </button>
           </div>
           <div className="overflow-x-auto rounded border border-slate-200">
             <table className="w-full min-w-[36rem] text-sm">
               <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
-                  <th className="px-2 py-1.5">Description</th>
-                  <th className="w-20 px-2 py-1.5">Qty</th>
-                  <th className="w-28 px-2 py-1.5">Unit price</th>
-                  <th className="w-28 px-2 py-1.5 text-right">Line total</th>
+                  <th className="px-2 py-1.5">{t('lineItems.colDescription')}</th>
+                  <th className="w-20 px-2 py-1.5">{t('lineItems.colQty')}</th>
+                  <th className="w-28 px-2 py-1.5">{t('lineItems.colUnitPrice')}</th>
+                  <th className="w-28 px-2 py-1.5 text-right">{t('lineItems.colLineTotal')}</th>
                   <th className="w-8"></th>
                 </tr>
               </thead>
@@ -171,7 +173,7 @@ export default function QuoteNew() {
                         <input
                           value={row.description}
                           onChange={(e) => updateItem(i, 'description', e.target.value)}
-                          placeholder="e.g. Interior paint - Unit 101"
+                          placeholder={t('lineItems.itemPlaceholder')}
                           required
                           className="w-full rounded border border-slate-300 px-2 py-1"
                         />
@@ -206,7 +208,7 @@ export default function QuoteNew() {
                           onClick={() => removeRow(i)}
                           disabled={items.length === 1}
                           className="text-slate-400 hover:text-red-600 disabled:opacity-30"
-                          aria-label="Remove item"
+                          aria-label={t('lineItems.removeItem')}
                         >
                           ×
                         </button>
@@ -218,7 +220,7 @@ export default function QuoteNew() {
               <tfoot>
                 <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
                   <td colSpan={3} className="px-2 py-1.5 text-right">
-                    Total
+                    {t('lineItems.total')}
                   </td>
                   <td className="px-2 py-1.5 text-right tabular-nums">{money(totalCents)}</td>
                   <td></td>
@@ -229,7 +231,7 @@ export default function QuoteNew() {
         </div>
 
         <label className="block text-sm">
-          Notes (optional)
+          {t('quoteNew.notes')}
           <textarea name="notes" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
         </label>
 
@@ -237,7 +239,7 @@ export default function QuoteNew() {
           type="submit"
           className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
         >
-          Create quote
+          {t('quoteNew.submit')}
         </button>
       </form>
     </div>

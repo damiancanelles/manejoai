@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { money, type MonthBucket } from '../lib/invoiceStats';
+import { useT } from '../i18n';
 
 // Single hue (sequential default, matching the app's brand indigo) - one
 // series, so no legend: the section heading above the chart already says
@@ -18,6 +19,7 @@ function niceMax(dollars: number): number {
 }
 
 export default function MonthlyIncomeChart({ data }: { data: MonthBucket[] }) {
+  const t = useT();
   const [hover, setHover] = useState<{ index: number; x: number; y: number } | null>(null);
 
   const width = 720;
@@ -40,7 +42,7 @@ export default function MonthlyIncomeChart({ data }: { data: MonthBucket[] }) {
 
   return (
     <div className="relative">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label="Gross income by month">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img" aria-label={t('chart.ariaLabel')}>
         {ticks.map((tickCents, i) => {
           const y = marginTop + plotHeight - (tickCents / axisMax) * plotHeight;
           return (

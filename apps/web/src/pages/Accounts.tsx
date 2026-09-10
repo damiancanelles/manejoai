@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import Pagination from '../components/Pagination';
 import { PAGE_SIZE, paginate } from '../lib/paginate';
+import { useT } from '../i18n';
 
 interface Account {
   id: string;
@@ -14,6 +15,7 @@ interface Account {
 const types = ['ALL', 'INDIVIDUAL', 'MULTIFAMILY'];
 
 export default function Accounts() {
+  const t = useT();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [type, setType] = useState('ALL');
   const [search, setSearch] = useState('');
@@ -56,19 +58,19 @@ export default function Accounts() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Customers</h1>
+        <h1 className="text-2xl font-bold">{t('accounts.title')}</h1>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
         >
-          {showForm ? 'Cancel' : 'New customer'}
+          {showForm ? t('common.cancel') : t('accounts.new')}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={onSubmit} className="mb-6 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white shadow-sm p-4">
           <label className="text-sm">
-            Name
+            {t('accounts.name')}
             <input
               required
               value={name}
@@ -77,36 +79,36 @@ export default function Accounts() {
             />
           </label>
           <label className="text-sm">
-            Type
+            {t('accounts.type')}
             <select
               value={newType}
               onChange={(e) => setNewType(e.target.value as any)}
               className="mt-1 block rounded border border-slate-300 px-3 py-2"
             >
-              <option value="INDIVIDUAL">Individual customer</option>
-              <option value="MULTIFAMILY">Multifamily / property owner</option>
+              <option value="INDIVIDUAL">{t('accountType.INDIVIDUAL_LONG')}</option>
+              <option value="MULTIFAMILY">{t('accountType.MULTIFAMILY_LONG')}</option>
             </select>
           </label>
           <button
             type="submit"
             className="rounded bg-indigo-600 px-4 py-2 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700"
           >
-            Create
+            {t('common.create')}
           </button>
         </form>
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap gap-2">
-          {types.map((t) => (
+          {types.map((ty) => (
             <button
-              key={t}
-              onClick={() => setType(t)}
+              key={ty}
+              onClick={() => setType(ty)}
               className={`rounded px-3 py-1 text-sm transition-colors ${
-                type === t ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                type === ty ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {t === 'ALL' ? 'ALL' : t === 'MULTIFAMILY' ? 'Multifamily' : 'Individual'}
+              {ty === 'ALL' ? t('status.ALL') : ty === 'MULTIFAMILY' ? t('accountType.MULTIFAMILY') : t('accountType.INDIVIDUAL')}
             </button>
           ))}
         </div>
@@ -114,22 +116,22 @@ export default function Accounts() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search customer or property name..."
+          placeholder={t('accounts.search')}
           className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm sm:ml-auto sm:w-72"
         />
       </div>
 
       {loading ? (
-        <p>Loading...</p>
+        <p>{t('common.loading')}</p>
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
             <table className="w-full text-sm">
               <thead className="bg-slate-100 text-left text-slate-500">
                 <tr>
-                  <th className="px-4 py-2">Name</th>
-                  <th className="px-4 py-2">Type</th>
-                  <th className="px-4 py-2">Properties</th>
+                  <th className="px-4 py-2">{t('accounts.colName')}</th>
+                  <th className="px-4 py-2">{t('accounts.colType')}</th>
+                  <th className="px-4 py-2">{t('accounts.colProperties')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,14 +142,14 @@ export default function Accounts() {
                         {a.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-2">{a.type === 'MULTIFAMILY' ? 'Multifamily' : 'Individual'}</td>
+                    <td className="px-4 py-2">{a.type === 'MULTIFAMILY' ? t('accountType.MULTIFAMILY') : t('accountType.INDIVIDUAL')}</td>
                     <td className="px-4 py-2">{a.properties.length}</td>
                   </tr>
                 ))}
                 {visibleAccounts.length === 0 && (
                   <tr>
                     <td colSpan={3} className="px-4 py-4 text-slate-400">
-                      No customers match these filters.
+                      {t('accounts.empty')}
                     </td>
                   </tr>
                 )}

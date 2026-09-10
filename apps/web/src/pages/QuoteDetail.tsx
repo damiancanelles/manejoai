@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { useI18n } from '../i18n';
 
 interface QuoteItem {
   id: string;
@@ -28,6 +29,7 @@ function money(cents: number) {
 }
 
 export default function QuoteDetail() {
+  const { t, locale } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -117,7 +119,7 @@ export default function QuoteDetail() {
     }
   }
 
-  if (!quote) return <p>Loading...</p>;
+  if (!quote) return <p>{t('common.loading')}</p>;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -134,7 +136,7 @@ export default function QuoteDetail() {
             locked ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
           }`}
         >
-          {quote.status}
+          {t(`status.${quote.status}`)}
         </span>
       </div>
 
@@ -142,9 +144,11 @@ export default function QuoteDetail() {
 
       {locked && quote.invoice && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-          Approved {quote.approvedAt && `on ${new Date(quote.approvedAt).toLocaleDateString()}`} — converted to{' '}
+          {t('quoteDetail.approved')}{' '}
+          {quote.approvedAt && t('quoteDetail.approvedOn', { date: new Date(quote.approvedAt).toLocaleDateString(locale) })}{' '}
+          {t('quoteDetail.convertedTo')}{' '}
           <Link to={`/invoices/${quote.invoice.id}`} className="font-medium underline">
-            invoice {quote.invoice.invoiceNumber}
+            {t('quoteDetail.invoiceLabel', { number: quote.invoice.invoiceNumber })}
           </Link>
           .
         </div>
@@ -152,12 +156,12 @@ export default function QuoteDetail() {
 
       <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
         <div className="mb-2 flex justify-between">
-          <span className="text-slate-500">Issued</span>
-          <span>{new Date(quote.issueDate).toLocaleDateString()}</span>
+          <span className="text-slate-500">{t('quoteDetail.issued')}</span>
+          <span>{new Date(quote.issueDate).toLocaleDateString(locale)}</span>
         </div>
         {quote.job && (
           <div className="mb-2 flex justify-between">
-            <span className="text-slate-500">Job</span>
+            <span className="text-slate-500">{t('quoteDetail.job')}</span>
             <span>{quote.job.title}</span>
           </div>
         )}
@@ -166,10 +170,10 @@ export default function QuoteDetail() {
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Items</h2>
+          <h2 className="text-lg font-semibold">{t('quoteDetail.items')}</h2>
           {!locked && (
             <button onClick={() => setShowAddItem((v) => !v)} className="text-sm text-indigo-600">
-              {showAddItem ? 'Cancel' : '+ Add item'}
+              {showAddItem ? t('common.cancel') : t('quoteDetail.addItem')}
             </button>
           )}
         </div>
@@ -178,10 +182,10 @@ export default function QuoteDetail() {
           <table className="w-full min-w-[36rem] text-sm">
             <thead className="bg-slate-100 text-left text-slate-500">
               <tr>
-                <th className="px-3 py-2">Description</th>
-                <th className="w-16 px-3 py-2">Qty</th>
-                <th className="w-24 px-3 py-2">Unit price</th>
-                <th className="w-24 px-3 py-2 text-right">Line total</th>
+                <th className="px-3 py-2">{t('lineItems.colDescription')}</th>
+                <th className="w-16 px-3 py-2">{t('lineItems.colQty')}</th>
+                <th className="w-24 px-3 py-2">{t('lineItems.colUnitPrice')}</th>
+                <th className="w-24 px-3 py-2 text-right">{t('lineItems.colLineTotal')}</th>
                 {!locked && <th className="w-16 px-3 py-2"></th>}
               </tr>
             </thead>
@@ -216,14 +220,14 @@ export default function QuoteDetail() {
                           className="w-24 rounded border border-slate-300 px-2 py-1"
                         />
                         <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
-                          Save
+                          {t('common.save')}
                         </button>
                         <button
                           type="button"
                           onClick={() => setEditingItemId(null)}
                           className="rounded border border-slate-300 px-3 py-1"
                         >
-                          Cancel
+                          {t('common.cancel')}
                         </button>
                       </form>
                     </td>
@@ -237,14 +241,14 @@ export default function QuoteDetail() {
                     {!locked && (
                       <td className="px-3 py-2 text-right">
                         <button onClick={() => setEditingItemId(item.id)} className="mr-2 text-slate-500 hover:text-slate-900">
-                          Edit
+                          {t('common.edit')}
                         </button>
                         <button
                           onClick={() => removeItem(item.id)}
                           disabled={quote.items.length === 1}
                           className="text-slate-400 hover:text-red-600 disabled:opacity-30"
                         >
-                          Remove
+                          {t('common.remove')}
                         </button>
                       </td>
                     )}
@@ -259,7 +263,7 @@ export default function QuoteDetail() {
                     <form onSubmit={addItem} className="flex flex-wrap items-center gap-2">
                       <input
                         name="description"
-                        placeholder="Description"
+                        placeholder={t('lineItems.descriptionPlaceholder')}
                         required
                         className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1"
                       />
@@ -282,7 +286,7 @@ export default function QuoteDetail() {
                         className="w-24 rounded border border-slate-300 px-2 py-1"
                       />
                       <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
-                        Add
+                        {t('common.add')}
                       </button>
                     </form>
                   </td>
@@ -292,7 +296,7 @@ export default function QuoteDetail() {
             <tfoot>
               <tr className="border-t border-slate-200 bg-slate-50 font-semibold">
                 <td colSpan={3} className="px-3 py-2 text-right">
-                  Total
+                  {t('lineItems.total')}
                 </td>
                 <td className="px-3 py-2 text-right tabular-nums">{money(quote.amountCents)}</td>
                 {!locked && <td></td>}
@@ -309,10 +313,10 @@ export default function QuoteDetail() {
             disabled={approving}
             className="rounded bg-green-600 px-4 py-2 text-sm text-white disabled:opacity-50"
           >
-            {approving ? 'Approving...' : 'Approve → create invoice'}
+            {approving ? t('quoteDetail.approving') : t('quoteDetail.approveCreate')}
           </button>
           <button onClick={removeQuote} className="rounded bg-slate-200 px-4 py-2 text-sm text-slate-700">
-            Delete quote
+            {t('quoteDetail.deleteQuote')}
           </button>
         </div>
       )}

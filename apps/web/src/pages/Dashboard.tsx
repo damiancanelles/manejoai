@@ -5,6 +5,7 @@ import MonthlyIncomeChart from '../components/MonthlyIncomeChart';
 import RankedTable from '../components/RankedTable';
 import YearSwitcher from '../components/YearSwitcher';
 import { sumByStatus, monthlyIncome, incomeByCustomer, yearsWithInvoices, money } from '../lib/invoiceStats';
+import { useI18n } from '../i18n';
 
 interface Invoice {
   id: string;
@@ -18,6 +19,7 @@ interface Invoice {
 }
 
 export default function Dashboard() {
+  const { t, locale } = useI18n();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState<number | null>(null);
@@ -33,47 +35,47 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <p>{t('common.loading')}</p>;
 
   const years = yearsWithInvoices(invoices);
-  const yearLabel = year != null ? `${year}` : 'all time';
+  const yearLabel = year != null ? `${year}` : t('dashboard.allTime');
 
   const scoped = invoices.filter((i) => year == null || new Date(i.issueDate).getFullYear() === year);
   const overdue = scoped.filter((i) => i.status === 'OVERDUE');
   const sent = scoped.filter((i) => i.status === 'SENT');
   const overdueTotal = sumByStatus(invoices, 'OVERDUE', year);
   const paidTotal = sumByStatus(invoices, 'PAID', year);
-  const monthly = monthlyIncome(invoices, year);
+  const monthly = monthlyIncome(invoices, year, locale);
   const byCustomer = incomeByCustomer(invoices, year);
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
         <YearSwitcher years={years} selected={year} onChange={setYear} />
       </div>
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatTile
-          label={`Overdue (${yearLabel})`}
+          label={t('dashboard.overdue', { year: yearLabel })}
           value={String(overdue.length)}
-          sub={`${money(overdueTotal)} outstanding`}
+          sub={t('dashboard.overdueSub', { amount: money(overdueTotal) })}
           tone="red"
         />
-        <StatTile label={`Sent, not yet due (${yearLabel})`} value={String(sent.length)} tone="amber" />
-        <StatTile label={`Paid (${yearLabel})`} value={money(paidTotal)} tone="green" />
+        <StatTile label={t('dashboard.sentNotDue', { year: yearLabel })} value={String(sent.length)} tone="amber" />
+        <StatTile label={t('dashboard.paid', { year: yearLabel })} value={money(paidTotal)} tone="green" />
       </div>
 
       <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold">Gross income by month</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t('dashboard.byMonth')}</h2>
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <MonthlyIncomeChart data={monthly} />
         </div>
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Gross income by customer</h2>
-        <RankedTable rows={byCustomer} emptyLabel="No invoices yet." />
+        <h2 className="mb-3 text-lg font-semibold">{t('dashboard.byCustomer')}</h2>
+        <RankedTable rows={byCustomer} emptyLabel={t('dashboard.noInvoices')} />
       </section>
     </div>
   );

@@ -1,6 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { useI18n } from '../i18n';
 
 interface Photo {
   id: string;
@@ -32,6 +33,7 @@ function toDateInputValue(iso?: string | null) {
 }
 
 export default function JobDetail() {
+  const { t, locale } = useI18n();
   const { id } = useParams<{ id: string }>();
   const [job, setJob] = useState<Job | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -105,7 +107,7 @@ export default function JobDetail() {
     }
   }
 
-  if (!job) return <p>Loading...</p>;
+  if (!job) return <p>{t('common.loading')}</p>;
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -118,14 +120,14 @@ export default function JobDetail() {
               {job.account.name}
             </Link>
             {job.property && <> — {job.property.name}</>}
-            {job.scheduledAt && <> — scheduled {new Date(job.scheduledAt).toLocaleDateString()}</>}
+            {job.scheduledAt && <> — {t('jobDetail.scheduledOn', { date: new Date(job.scheduledAt).toLocaleDateString(locale) })}</>}
           </p>
         </div>
         <button
           onClick={() => setEditing((v) => !v)}
           className="shrink-0 rounded border border-slate-300 px-3 py-1 text-sm text-slate-600 hover:bg-slate-100"
         >
-          {editing ? 'Cancel' : 'Edit job'}
+          {editing ? t('common.cancel') : t('jobDetail.editJob')}
         </button>
       </div>
 
@@ -134,7 +136,7 @@ export default function JobDetail() {
           {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
 
           <label className="block text-sm">
-            Customer
+            {t('jobDetail.customer')}
             <select
               value={formAccountId}
               onChange={(e) => setFormAccountId(e.target.value)}
@@ -147,20 +149,18 @@ export default function JobDetail() {
               ))}
             </select>
             {formAccountId !== job.accountId && job.invoices.length > 0 && (
-              <p className="mt-1 text-xs text-red-600">
-                This job has an invoice attached, so it can't be moved to a different customer.
-              </p>
+              <p className="mt-1 text-xs text-red-600">{t('jobDetail.moveWarning')}</p>
             )}
           </label>
 
           <label className="block text-sm">
-            Property (optional)
+            {t('jobDetail.property')}
             <select
               name="propertyId"
               defaultValue={formAccountId === job.accountId ? job.propertyId || '' : ''}
               className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
             >
-              <option value="">None</option>
+              <option value="">{t('common.none')}</option>
               {formAccount?.properties.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -170,7 +170,7 @@ export default function JobDetail() {
           </label>
 
           <label className="block text-sm">
-            Title
+            {t('jobDetail.title')}
             <input
               name="title"
               type="text"
@@ -181,7 +181,7 @@ export default function JobDetail() {
           </label>
 
           <label className="block text-sm">
-            Description (optional)
+            {t('jobDetail.description')}
             <textarea
               name="description"
               defaultValue={job.description}
@@ -190,7 +190,7 @@ export default function JobDetail() {
           </label>
 
           <label className="block text-sm">
-            Scheduled for (optional)
+            {t('jobDetail.scheduledFor')}
             <input
               name="scheduledAt"
               type="date"
@@ -204,13 +204,13 @@ export default function JobDetail() {
             disabled={formAccountId !== job.accountId && job.invoices.length > 0}
             className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-4 py-2 text-sm text-white disabled:opacity-50"
           >
-            Save changes
+            {t('common.saveChanges')}
           </button>
         </form>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-slate-500">Status:</span>
+        <span className="text-sm text-slate-500">{t('jobDetail.status')}</span>
         {['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED'].map((s) => (
           <button
             key={s}
@@ -219,16 +219,16 @@ export default function JobDetail() {
               job.status === s ? 'bg-indigo-600 hover:bg-indigo-700 transition-colors text-white' : 'bg-slate-100 text-slate-600'
             }`}
           >
-            {s}
+            {t(`status.${s}`)}
           </button>
         ))}
       </div>
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Photos</h2>
+          <h2 className="text-lg font-semibold">{t('jobDetail.photos')}</h2>
           <label className="cursor-pointer text-sm text-indigo-600">
-            {uploading ? 'Uploading...' : '+ Add photo'}
+            {uploading ? t('jobDetail.uploading') : t('jobDetail.addPhoto')}
             <input type="file" accept="image/*" className="hidden" onChange={onFileChange} disabled={uploading} />
           </label>
         </div>
@@ -238,7 +238,7 @@ export default function JobDetail() {
               <img src={p.url} alt={p.caption || ''} className="h-32 w-full rounded border border-slate-200 object-cover" />
             </a>
           ))}
-          {job.photos.length === 0 && <p className="text-sm text-slate-400">No photos yet.</p>}
+          {job.photos.length === 0 && <p className="text-sm text-slate-400">{t('jobDetail.noPhotos')}</p>}
         </div>
       </section>
     </div>

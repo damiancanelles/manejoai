@@ -4,7 +4,7 @@ import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { ProTierGuard } from '../common/guards/pro-tier.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AssistantService } from './assistant.service';
-import { ChatDto } from './dto';
+import { ChatDto, ExecuteActionDto } from './dto';
 
 const MAX_HISTORY = 20; // basic cost guard against an unbounded client-side history
 
@@ -22,7 +22,19 @@ export class AssistantController {
       throw new BadRequestException('messages must not be empty');
     }
     const history = dto.messages.slice(-MAX_HISTORY);
-    const reply = await this.assistantService.chat(user.businessId, history);
-    return { reply };
+    const { reply, actions } = await this.assistantService.chat(user.businessId, history);
+    return { reply, actions };
+  }
+
+  // What actually runs a change the assistant proposed - only reachable by
+  // the user clicking Approve on a card in the UI. Same guards as chatting,
+  // so a lapsed or downgraded business can't execute a stale action either.
+  @Post('actions/execute')
+  async executeAction(
+    @Body() dto: ExecuteActionDto,
+    @CurrentUser() user: { userId: string; businessId: string },
+  ) {
+    const { link } = await this.assistantService.executeAction(dto.type, dto.params, user.userId, user.businessId);
+    return { ok: true, link };
   }
 }

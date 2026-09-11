@@ -7,5 +7,6 @@ import { MailModule } from '../mail/mail.module';
   imports: [MailModule],
   providers: [RemindersService],
   controllers: [RemindersController],
+  exports: [RemindersService],
 })
 export class RemindersModule {}

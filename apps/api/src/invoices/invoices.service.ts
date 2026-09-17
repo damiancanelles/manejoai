@@ -243,11 +243,17 @@ export class InvoicesService {
   }
 
   /**
-   * Emails every DRAFT invoice to its customer and marks it SENT. Invoices
-   * are grouped by (account, property) - a multifamily account can have a
+   * Emails every DRAFT invoice to its customer and marks it SENT - grouped
+   * by (account, property), since a multifamily account can have a
    * different invoicing contact per building (see the Contact.propertyId
    * relation), so each group goes to its own recipient(s) as one email with
    * each of that group's draft invoices attached as its own separate PDF.
+   *
+   * A group with no contact on file to email still gets marked SENT (just
+   * without an email going out) - this doubles as "I already sent these
+   * myself" bulk button for customers who don't have an email contact
+   * configured, not only as a send-the-email action. It's reported back in
+   * `skipped` either way, so nothing sent silently goes unnoticed.
    */
   async sendAllDrafts(businessId: string) {
     const business = await this.prisma.business.findUniqueOrThrow({ where: { id: businessId } });
@@ -288,8 +294,13 @@ export class InvoicesService {
           account: first.account.name,
           property: first.property?.name ?? null,
           invoiceNumbers,
-          reason: 'No contact marked to receive invoices for this customer/property',
+          reason: 'No contact marked to receive invoices - marked Sent without emailing',
         });
+        await this.prisma.invoice.updateMany({
+          where: { id: { in: group.map((i) => i.id) } },
+          data: { status: InvoiceStatus.SENT },
+        });
+        sentCount += group.length;
         continue;
       }
 

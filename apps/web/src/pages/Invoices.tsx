@@ -8,11 +8,13 @@ import { useI18n } from '../i18n';
 interface Invoice {
   id: string;
   invoiceNumber: string;
+  title: string;
   amountCents: number;
   status: string;
   dueDate: string;
   accountId: string;
   account: { name: string };
+  property?: { name: string } | null;
 }
 interface SendDraftsResult {
   sentCount: number;
@@ -313,6 +315,8 @@ export default function Invoices() {
                   </th>
                   <th className="px-4 py-2">{t('invoices.colInvoice')}</th>
                   <th className="px-4 py-2">{t('invoices.colCustomer')}</th>
+                  <th className="px-4 py-2">{t('invoices.colProperty')}</th>
+                  <th className="px-4 py-2">{t('invoices.colTitle')}</th>
                   <th className="px-4 py-2">{t('invoices.colAmount')}</th>
                   <th className="px-4 py-2">{t('invoices.colStatus')}</th>
                   <th className="px-4 py-2">{t('invoices.colDueDate')}</th>
@@ -335,6 +339,8 @@ export default function Invoices() {
                       </Link>
                     </td>
                     <td className="px-4 py-2">{inv.account.name}</td>
+                    <td className="px-4 py-2">{inv.property?.name ?? '—'}</td>
+                    <td className="px-4 py-2">{inv.title}</td>
                     <td className="px-4 py-2">{money(inv.amountCents)}</td>
                     <td className="px-4 py-2">{t(`status.${inv.status}`)}</td>
                     <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString(locale)}</td>
@@ -342,7 +348,7 @@ export default function Invoices() {
                 ))}
                 {invoices.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-4 text-slate-400">
+                    <td colSpan={8} className="px-4 py-4 text-slate-400">
                       {t('invoices.empty')}
                     </td>
                   </tr>

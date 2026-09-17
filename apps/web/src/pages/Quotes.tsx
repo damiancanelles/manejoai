@@ -8,10 +8,12 @@ import { useI18n } from '../i18n';
 interface Quote {
   id: string;
   quoteNumber: string;
+  notes?: string | null;
   amountCents: number;
   status: string;
   issueDate: string;
   account: { name: string };
+  property?: { name: string } | null;
 }
 
 const statuses = ['ALL', 'PENDING', 'APPROVED'];
@@ -93,6 +95,8 @@ export default function Quotes() {
                 <tr>
                   <th className="px-4 py-2">{t('quotes.colQuote')}</th>
                   <th className="px-4 py-2">{t('quotes.colCustomer')}</th>
+                  <th className="px-4 py-2">{t('quotes.colProperty')}</th>
+                  <th className="px-4 py-2">{t('quotes.colNotes')}</th>
                   <th className="px-4 py-2">{t('quotes.colAmount')}</th>
                   <th className="px-4 py-2">{t('quotes.colStatus')}</th>
                   <th className="px-4 py-2">{t('quotes.colIssued')}</th>
@@ -107,6 +111,8 @@ export default function Quotes() {
                       </Link>
                     </td>
                     <td className="px-4 py-2">{q.account.name}</td>
+                    <td className="px-4 py-2">{q.property?.name ?? '—'}</td>
+                    <td className="px-4 py-2">{q.notes || '—'}</td>
                     <td className="px-4 py-2">{money(q.amountCents)}</td>
                     <td className="px-4 py-2">{t(`status.${q.status}`)}</td>
                     <td className="px-4 py-2">{new Date(q.issueDate).toLocaleDateString(locale)}</td>
@@ -114,7 +120,7 @@ export default function Quotes() {
                 ))}
                 {quotes.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-4 text-slate-400">
+                    <td colSpan={7} className="px-4 py-4 text-slate-400">
                       {t('quotes.empty')}
                     </td>
                   </tr>

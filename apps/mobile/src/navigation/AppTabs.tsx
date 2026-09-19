@@ -4,7 +4,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import JobsStack from './JobsStack';
 import InvoicesStack from './InvoicesStack';
 import MoreStack from './MoreStack';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
+import AssistantScreen from '../screens/AssistantScreen';
 import { useT } from '../i18n';
 import { colors } from '../theme';
 import type { AppTabParamList } from './types';
@@ -52,13 +52,12 @@ export default function AppTabs() {
       />
       <Tab.Screen
         name="Assistant"
+        component={AssistantScreen}
         options={{
           title: 'Assistant',
           tabBarIcon: ({ color, size }) => <Ionicons name="sparkles-outline" color={color} size={size} />,
         }}
-      >
-        {() => <PlaceholderScreen title="Assistant" note="The propose/approve agent lands in WO-3." />}
-      </Tab.Screen>
+      />
       <Tab.Screen
         name="More"
         component={MoreStack}

@@ -26,7 +26,14 @@
       "expo-secure-store",
       "expo-localization",
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "manejoai uses your photo library so you can attach job photos to a job.",
+          "cameraPermission": "manejoai uses your camera so you can photograph a job as you finish it."
+        }
+      ]
     ],
     "extra": {
       "eas": {

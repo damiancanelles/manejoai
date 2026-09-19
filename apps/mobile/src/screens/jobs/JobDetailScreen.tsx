@@ -1,9 +1,10 @@
-import { useLayoutEffect } from 'react';
-import { ActivityIndicator, FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { useLayoutEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { api } from '../../api/client';
 import { useI18n } from '../../i18n';
+import { pickAndUploadJobPhoto } from '../../lib/jobPhotos';
 import Badge from '../../components/Badge';
 import DetailField, { DetailCard } from '../../components/DetailField';
 import { statusTone } from '../../lib/statusTone';
@@ -26,11 +27,15 @@ interface JobDetail {
   photos: Photo[];
 }
 
+const STATUSES = ['SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELED'];
+
 export default function JobDetailScreen() {
   const { t, locale } = useI18n();
   const navigation = useNavigation();
   const route = useRoute<RouteProp<JobsStackParamList, 'JobDetail'>>();
   const { jobId, title } = route.params;
+  const queryClient = useQueryClient();
+  const [uploading, setUploading] = useState(false);
 
   useLayoutEffect(() => {
     if (title) navigation.setOptions({ title });
@@ -40,6 +45,31 @@ export default function JobDetailScreen() {
     queryKey: ['jobs', jobId],
     queryFn: () => api.get<JobDetail>(`/jobs/${jobId}`),
   });
+
+  const statusMutation = useMutation({
+    mutationFn: (status: string) => api.patch(`/jobs/${jobId}`, { status }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['jobs', jobId] }),
+  });
+
+  async function addPhoto(source: 'camera' | 'library') {
+    setUploading(true);
+    try {
+      const uploaded = await pickAndUploadJobPhoto(jobId, source);
+      if (uploaded) await queryClient.invalidateQueries({ queryKey: ['jobs', jobId] });
+    } catch (err: any) {
+      Alert.alert(t('assistant.error'), err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function onAddPhotoPress() {
+    Alert.alert(t('jobDetail.addPhoto'), undefined, [
+      { text: 'Take photo', onPress: () => addPhoto('camera') },
+      { text: 'Choose from library', onPress: () => addPhoto('library') },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
+  }
 
   if (isLoading && !data) {
     return (
@@ -72,7 +102,33 @@ export default function JobDetailScreen() {
         )}
       </DetailCard>
 
-      <Text style={styles.sectionTitle}>{t('jobDetail.photos')} {data.photos.length > 0 ? `(${data.photos.length})` : ''}</Text>
+      <View>
+        <Text style={styles.statusLabel}>{t('jobDetail.status')}</Text>
+        <View style={styles.statusRow}>
+          {STATUSES.map((s) => {
+            const active = data.status === s;
+            return (
+              <Pressable
+                key={s}
+                onPress={() => statusMutation.mutate(s)}
+                disabled={statusMutation.isPending}
+                style={[styles.statusPill, active && styles.statusPillActive]}
+              >
+                <Text style={[styles.statusPillText, active && styles.statusPillTextActive]}>{t(`status.${s}`)}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.photosHeader}>
+        <Text style={styles.sectionTitle}>
+          {t('jobDetail.photos')} {data.photos.length > 0 ? `(${data.photos.length})` : ''}
+        </Text>
+        <Pressable onPress={onAddPhotoPress} disabled={uploading}>
+          <Text style={styles.addPhotoText}>{uploading ? t('jobDetail.uploading') : t('jobDetail.addPhoto')}</Text>
+        </Pressable>
+      </View>
       {data.photos.length === 0 ? (
         <Text style={styles.empty}>{t('jobDetail.noPhotos')}</Text>
       ) : (
@@ -97,7 +153,15 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   title: { fontSize: 20, fontWeight: '700', color: colors.text, flex: 1 },
   description: { fontSize: 14, color: colors.textMuted },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginTop: spacing.xs },
+  statusLabel: { fontSize: 13, color: colors.textMuted, marginBottom: spacing.xs },
+  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  statusPill: { borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  statusPillActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  statusPillText: { fontSize: 12.5, fontWeight: '600', color: colors.textMuted },
+  statusPillTextActive: { color: '#fff' },
+  photosHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  addPhotoText: { fontSize: 13, fontWeight: '600', color: colors.accent },
   empty: { fontSize: 13, color: colors.textMuted },
   photoRow: { gap: spacing.xs, marginBottom: spacing.xs },
   photo: { flex: 1, aspectRatio: 1, borderRadius: 8, backgroundColor: colors.border },

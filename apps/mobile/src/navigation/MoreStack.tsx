@@ -1,12 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useT } from '../i18n';
 import MoreScreen from '../screens/MoreScreen';
-import PlaceholderScreen from '../screens/PlaceholderScreen';
 import CustomersStack from './CustomersStack';
 import QuotesStack from './QuotesStack';
 import ReportsScreen from '../screens/reports/ReportsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import BillingScreen from '../screens/BillingScreen';
+import JobReportsScreen from '../screens/JobReportsScreen';
 import type { MoreStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MoreStackParamList>();
@@ -23,9 +23,7 @@ export default function MoreStack() {
       </Stack.Screen>
       <Stack.Screen name="Customers" component={CustomersStack} options={{ headerShown: false }} />
       <Stack.Screen name="Quotes" component={QuotesStack} options={{ headerShown: false }} />
-      <Stack.Screen name="JobReports" options={{ title: t('nav.jobReports') }}>
-        {() => <PlaceholderScreen title={t('nav.jobReports')} note="Telegram job reports awaiting review land in WO-1." />}
-      </Stack.Screen>
+      <Stack.Screen name="JobReports" component={JobReportsScreen} options={{ title: t('nav.jobReports') }} />
       <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />
       <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
       <Stack.Screen name="Billing" component={BillingScreen} options={{ title: t('nav.billing') }} />

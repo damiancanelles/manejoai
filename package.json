@@ -7,11 +7,13 @@
   },
   "workspaces": [
     "apps/api",
-    "apps/web"
+    "apps/web",
+    "apps/mobile"
   ],
   "scripts": {
     "dev:api": "npm run start:dev --workspace=@manejoai/api",
     "dev:web": "npm run dev --workspace=@manejoai/web",
+    "dev:mobile": "npm run start --workspace=@manejoai/mobile",
     "build:api": "npm run build --workspace=@manejoai/api",
     "build:web": "npm run build --workspace=@manejoai/web",
     "prisma:migrate": "npm run prisma:migrate --workspace=@manejoai/api",

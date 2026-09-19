@@ -4,6 +4,7 @@
 export type JobsStackParamList = {
   JobsList: undefined;
   JobDetail: { jobId: string; title?: string };
+  JobNew: undefined;
 };
 
 export type InvoicesStackParamList = {

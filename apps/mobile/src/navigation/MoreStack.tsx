@@ -4,6 +4,7 @@ import MoreScreen from '../screens/MoreScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
 import CustomersStack from './CustomersStack';
 import QuotesStack from './QuotesStack';
+import ReportsScreen from '../screens/reports/ReportsScreen';
 import type { MoreStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MoreStackParamList>();
@@ -23,9 +24,7 @@ export default function MoreStack() {
       <Stack.Screen name="JobReports" options={{ title: t('nav.jobReports') }}>
         {() => <PlaceholderScreen title={t('nav.jobReports')} note="Telegram job reports awaiting review land in WO-1." />}
       </Stack.Screen>
-      <Stack.Screen name="Reports" options={{ title: t('nav.reports') }}>
-        {() => <PlaceholderScreen title={t('nav.reports')} note="Job/invoice reports land in WO-1, exported via the native share sheet." />}
-      </Stack.Screen>
+      <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />
       <Stack.Screen name="Settings" options={{ title: t('nav.settings') }}>
         {() => <PlaceholderScreen title={t('nav.settings')} note="Business info, Telegram reconnect, and password change land in WO-2." />}
       </Stack.Screen>

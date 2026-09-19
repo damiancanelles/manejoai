@@ -5,6 +5,8 @@ import PlaceholderScreen from '../screens/PlaceholderScreen';
 import CustomersStack from './CustomersStack';
 import QuotesStack from './QuotesStack';
 import ReportsScreen from '../screens/reports/ReportsScreen';
+import SettingsScreen from '../screens/SettingsScreen';
+import BillingScreen from '../screens/BillingScreen';
 import type { MoreStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MoreStackParamList>();
@@ -25,12 +27,8 @@ export default function MoreStack() {
         {() => <PlaceholderScreen title={t('nav.jobReports')} note="Telegram job reports awaiting review land in WO-1." />}
       </Stack.Screen>
       <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: t('nav.reports') }} />
-      <Stack.Screen name="Settings" options={{ title: t('nav.settings') }}>
-        {() => <PlaceholderScreen title={t('nav.settings')} note="Business info, Telegram reconnect, and password change land in WO-2." />}
-      </Stack.Screen>
-      <Stack.Screen name="Billing" options={{ title: t('nav.billing') }}>
-        {() => <PlaceholderScreen title={t('nav.billing')} note="Opens Stripe Checkout/Portal in-app - lands in WO-2." />}
-      </Stack.Screen>
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: t('nav.settings') }} />
+      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: t('nav.billing') }} />
     </Stack.Navigator>
   );
 }

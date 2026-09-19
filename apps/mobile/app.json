@@ -33,7 +33,8 @@
           "photosPermission": "manejoai uses your photo library so you can attach job photos to a job.",
           "cameraPermission": "manejoai uses your camera so you can photograph a job as you finish it."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {

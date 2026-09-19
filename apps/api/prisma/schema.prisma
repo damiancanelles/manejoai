@@ -118,6 +118,13 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  // Expo push token for the mobile app, one per user (a second login on a
+  // different device just overwrites this - fine for now, nothing actually
+  // sends a push yet; this is only the registration side, see the mobile
+  // build plan). Null until they've logged into the mobile app at least
+  // once and granted notification permission.
+  expoPushToken String?
+
   jobsCreated     Job[]     @relation("JobCreatedBy")
   invoicesCreated Invoice[] @relation("InvoiceCreatedBy")
   quotesCreated   Quote[]   @relation("QuoteCreatedBy")

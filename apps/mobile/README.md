@@ -1,10 +1,10 @@
 # manejoai Mobile
 
 React Native app (Expo, managed workflow) for iOS and Android. Talks to the
-same `apps/api` the web app does — see `src/api/client.ts`. This is WO-0
-from the mobile build plan: a real login → API → render pipeline on a real
-device, plus the full navigation shell with placeholder screens for
-everything WO-1+ fills in.
+same `apps/api` the web app does — see `src/api/client.ts`. WO-0 (login,
+nav shell, i18n) and most of WO-1 (Customers/Jobs/Quotes/Invoices, all
+view-only) from the mobile build plan are done; see that plan for what's
+left.
 
 ## Running it
 
@@ -30,23 +30,37 @@ be built/submitted until told to.
 ## What's real vs. placeholder right now
 
 - **Real:** Login, secure token storage, the bottom-tab + "More" navigation
-  shell, i18n (EN/ES, ported from the web app), and the Dashboard screen
-  (fetches `/businesses/me` live - this is what actually proves the
-  pipeline works end to end).
-- **Placeholder:** Jobs, Invoices, Customers, Quotes, Job Reports, Reports,
-  Settings, Billing, Assistant - all reachable in navigation, all showing
-  a "coming in WO-X" note. See the mobile build plan artifact for what
-  lands in each phase.
+  shell, i18n (EN/ES, ported from the web app), push-token registration
+  (see below), and: Dashboard, Customers (list + detail), Jobs (list +
+  detail, incl. photos - view-only, camera capture is WO-2), Quotes
+  (list + detail), Invoices (list + detail) - all live against the real
+  API, all read-only for now.
+- **Placeholder:** Job Reports, Reports, Settings, Billing, Assistant -
+  reachable in navigation, showing a "coming in WO-X" note. See the
+  mobile build plan artifact for what lands in each phase.
+
+## Push notifications - registration only, nothing sends one yet
+
+`src/lib/pushNotifications.ts` requests permission and gets an Expo push
+token after login; `AuthContext` POSTs it to `PATCH /users/me/push-token`
+(stored on `User.expoPushToken`). It fails harmlessly (no token, nothing
+sent) on a simulator, if permission is denied, or before `eas init` has
+linked a project id - there's no urgency to any of that since nothing on
+the backend actually sends a push yet.
 
 ## EAS - still needs a one-time setup, not done yet
 
-`eas.json` has build profiles configured, but actually building requires
-an Expo account:
+Building (not the same as `npx expo start`, which doesn't need any of
+this) requires an Expo account. **Use `eas-cli`, not `eas`** - `npx eas
+login` fails ("could not determine executable to run") because npx looks
+for a package literally named `eas`; the real package is `eas-cli` (its
+bin happens to be called `eas`). Don't add `eas-cli` as a project
+dependency either - `expo-doctor` flags that, and npx doesn't need it:
 
 ```
-npx eas login       # your own Expo account (or create one - it's free)
-npx eas init        # links this project to that account, writes a project id into app.json
-npx eas build --profile development --platform ios      # or android
+npx eas-cli login       # your own Expo account (or create one - it's free)
+npx eas-cli init        # links this project to that account, writes a project id into app.json
+npx eas-cli build --profile development --platform ios      # or android
 ```
 
 That's a manual step (needs real account credentials), same as the Apple

@@ -14,6 +14,16 @@ export const colors = {
   warning: '#d97706',
 };
 
+// bg/fg pairs for the five status tones (see lib/statusTone.ts) - same
+// semantics as the web app's status pill classes.
+export const tones = {
+  neutral: { bg: '#f1f5f9', fg: '#475569' }, // slate-100 / slate-600
+  accent: { bg: '#e0e7ff', fg: '#4338ca' }, // indigo-100 / indigo-700
+  warning: { bg: '#fef3c7', fg: '#b45309' }, // amber-100 / amber-700
+  success: { bg: '#dcfce7', fg: '#15803d' }, // green-100 / green-700
+  danger: { bg: '#fee2e2', fg: '#b91c1c' }, // red-100 / red-700
+};
+
 export const spacing = {
   xs: 4,
   sm: 8,

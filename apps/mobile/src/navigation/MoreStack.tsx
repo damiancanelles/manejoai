@@ -2,6 +2,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useT } from '../i18n';
 import MoreScreen from '../screens/MoreScreen';
 import PlaceholderScreen from '../screens/PlaceholderScreen';
+import CustomersStack from './CustomersStack';
+import QuotesStack from './QuotesStack';
 import type { MoreStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<MoreStackParamList>();
@@ -16,12 +18,8 @@ export default function MoreStack() {
       <Stack.Screen name="More" options={{ title: t('common.more') }}>
         {() => <MoreScreen />}
       </Stack.Screen>
-      <Stack.Screen name="Customers" options={{ title: t('nav.customers') }}>
-        {() => <PlaceholderScreen title={t('nav.customers')} note="Customer list and detail land in WO-1." />}
-      </Stack.Screen>
-      <Stack.Screen name="Quotes" options={{ title: t('nav.quotes') }}>
-        {() => <PlaceholderScreen title={t('nav.quotes')} note="Quote list, detail, and creation land in WO-1/WO-2." />}
-      </Stack.Screen>
+      <Stack.Screen name="Customers" component={CustomersStack} options={{ headerShown: false }} />
+      <Stack.Screen name="Quotes" component={QuotesStack} options={{ headerShown: false }} />
       <Stack.Screen name="JobReports" options={{ title: t('nav.jobReports') }}>
         {() => <PlaceholderScreen title={t('nav.jobReports')} note="Telegram job reports awaiting review land in WO-1." />}
       </Stack.Screen>

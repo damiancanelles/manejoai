@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, setToken, setUnauthorizedHandler, setSubscriptionRequiredHandler } from '../api/client';
+import { getExpoPushToken } from '../lib/pushNotifications';
 
 // Same shapes as apps/web/src/context/AuthContext.tsx - both clients talk
 // to the same /auth/login response.
@@ -96,6 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem(USER_KEY, JSON.stringify(res.user));
     setUser(res.user);
     setBusiness(res.business);
+
+    // Fire-and-forget - registration only, nothing depends on this
+    // succeeding, and it fails harmlessly (returns null) before `eas init`
+    // has linked a project id, on a simulator, or if permission is denied.
+    getExpoPushToken()
+      .then((token) => (token ? api.patch('/users/me/push-token', { token }) : undefined))
+      .catch(() => {});
+
     return res.user;
   }
 

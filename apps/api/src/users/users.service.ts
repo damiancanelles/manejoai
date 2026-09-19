@@ -29,4 +29,12 @@ export class UsersService {
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash } });
     return { ok: true };
   }
+
+  // Registration only for now - nothing sends a push notification yet.
+  // One token per user; logging into the mobile app on a second device
+  // just overwrites it.
+  async registerPushToken(userId: string, token: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { expoPushToken: token } });
+    return { ok: true };
+  }
 }

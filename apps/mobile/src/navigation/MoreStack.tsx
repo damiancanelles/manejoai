@@ -18,7 +18,7 @@ export default function MoreStack() {
   const t = useT();
   return (
     <Stack.Navigator>
-      <Stack.Screen name="More" options={{ title: t('common.more') }}>
+      <Stack.Screen name="MoreHome" options={{ title: t('common.more') }}>
         {() => <MoreScreen />}
       </Stack.Screen>
       <Stack.Screen name="Customers" component={CustomersStack} options={{ headerShown: false }} />

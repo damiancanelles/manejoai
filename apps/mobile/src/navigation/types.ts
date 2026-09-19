@@ -29,7 +29,10 @@ export type CustomersStackParamList = {
 // MoreStack.tsx. Their own List/Detail params live in the param lists
 // above, not here.
 export type MoreStackParamList = {
-  More: undefined;
+  // Named MoreHome, not More, so this stack's landing screen doesn't share
+  // a name with the "More" tab that hosts it - React Navigation warns about
+  // ambiguous nested same-name screens otherwise ("More, More > More").
+  MoreHome: undefined;
   Customers: undefined;
   Quotes: undefined;
   JobReports: undefined;

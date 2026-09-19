@@ -1,12 +1,12 @@
 import { useLayoutEffect } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { api } from '../../api/client';
 import { useI18n } from '../../i18n';
 import Badge from '../../components/Badge';
 import DetailField, { DetailCard } from '../../components/DetailField';
-import LineItems from '../../components/LineItems';
+import EditableLineItems from '../../components/EditableLineItems';
 import { statusTone } from '../../lib/statusTone';
 import { colors, spacing, tones } from '../../theme';
 import type { QuotesStackParamList } from '../../navigation/types';
@@ -37,6 +37,7 @@ export default function QuoteDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<QuotesStackParamList, 'QuoteDetail'>>();
   const { quoteId, quoteNumber } = route.params;
+  const queryClient = useQueryClient();
 
   useLayoutEffect(() => {
     if (quoteNumber) navigation.setOptions({ title: quoteNumber });
@@ -46,6 +47,45 @@ export default function QuoteDetailScreen() {
     queryKey: ['quotes', quoteId],
     queryFn: () => api.get<QuoteDetail>(`/quotes/${quoteId}`),
   });
+
+  function invalidate() {
+    queryClient.invalidateQueries({ queryKey: ['quotes', quoteId] });
+    queryClient.invalidateQueries({ queryKey: ['quotes'] });
+  }
+
+  const addItem = useMutation({
+    mutationFn: (row: { description: string; quantity: number; unitPriceCents: number }) => api.post<void>(`/quotes/${quoteId}/items`, row),
+    onSuccess: invalidate,
+  });
+  const updateItem = useMutation({
+    mutationFn: ({ itemId, row }: { itemId: string; row: { description: string; quantity: number; unitPriceCents: number } }) =>
+      api.patch<void>(`/quotes/${quoteId}/items/${itemId}`, row),
+    onSuccess: invalidate,
+  });
+  const removeItem = useMutation({
+    mutationFn: (itemId: string) => api.delete<void>(`/quotes/${quoteId}/items/${itemId}`),
+    onSuccess: invalidate,
+  });
+  const approve = useMutation({
+    mutationFn: () => api.post(`/quotes/${quoteId}/approve`),
+    onSuccess: invalidate,
+    onError: (err: any) => Alert.alert(t('assistant.error'), err.message),
+  });
+  const removeQuote = useMutation({
+    mutationFn: () => api.delete(`/quotes/${quoteId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      navigation.goBack();
+    },
+    onError: (err: any) => Alert.alert(t('assistant.error'), err.message),
+  });
+
+  function confirmRemoveQuote() {
+    Alert.alert(t('quoteDetail.deleteQuote'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('quoteDetail.deleteQuote'), style: 'destructive', onPress: () => removeQuote.mutate() },
+    ]);
+  }
 
   if (isLoading && !data) {
     return (
@@ -61,6 +101,8 @@ export default function QuoteDetailScreen() {
       </View>
     );
   }
+
+  const locked = data.status === 'APPROVED';
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -89,7 +131,26 @@ export default function QuoteDetailScreen() {
       {data.notes ? <Text style={styles.notes}>{data.notes}</Text> : null}
 
       <Text style={styles.sectionTitle}>{t('quoteDetail.items')}</Text>
-      <LineItems items={data.items} totalCents={data.amountCents} totalLabel={t('lineItems.total')} />
+      <EditableLineItems
+        items={data.items}
+        totalCents={data.amountCents}
+        totalLabel={t('lineItems.total')}
+        locked={locked}
+        onAdd={(row) => addItem.mutateAsync(row)}
+        onUpdate={(itemId, row) => updateItem.mutateAsync({ itemId, row })}
+        onRemove={(itemId) => removeItem.mutateAsync(itemId)}
+      />
+
+      {!locked && (
+        <View style={styles.actions}>
+          <Pressable onPress={() => approve.mutate()} disabled={approve.isPending} style={[styles.approveBtn, approve.isPending && styles.btnDisabled]}>
+            <Text style={styles.approveBtnText}>{approve.isPending ? t('quoteDetail.approving') : t('quoteDetail.approveCreate')}</Text>
+          </Pressable>
+          <Pressable onPress={confirmRemoveQuote} style={styles.deleteBtn}>
+            <Text style={styles.deleteBtnText}>{t('quoteDetail.deleteQuote')}</Text>
+          </Pressable>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -106,4 +167,10 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   approvedBanner: { backgroundColor: tones.success.bg, borderRadius: 8, padding: spacing.sm },
   approvedText: { fontSize: 13, color: tones.success.fg },
+  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  approveBtn: { flex: 1, backgroundColor: tones.success.fg, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  approveBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
+  deleteBtn: { backgroundColor: colors.border, borderRadius: 8, paddingVertical: 12, paddingHorizontal: spacing.md, alignItems: 'center' },
+  deleteBtnText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  btnDisabled: { opacity: 0.6 },
 });

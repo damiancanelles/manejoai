@@ -10,11 +10,13 @@ export type JobsStackParamList = {
 export type InvoicesStackParamList = {
   InvoicesList: undefined;
   InvoiceDetail: { invoiceId: string; invoiceNumber?: string };
+  InvoiceNew: undefined;
 };
 
 export type QuotesStackParamList = {
   QuotesList: undefined;
   QuoteDetail: { quoteId: string; quoteNumber?: string };
+  QuoteNew: undefined;
 };
 
 export type CustomersStackParamList = {

@@ -26,6 +26,12 @@
       "expo-secure-store",
       "expo-localization",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "df5047ba-d399-41ff-a4a4-2ac42d89fc8e"
+      }
+    },
+    "owner": "damiancanelles"
   }
 }

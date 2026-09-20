@@ -272,6 +272,9 @@ export default function Landing() {
             <span className="font-semibold text-slate-700">manejoai</span>
           </div>
           <p>{t('landing.footer.tagline', { year: new Date().getFullYear() })}</p>
+          <Link to="/privacy" className="text-slate-400 hover:text-indigo-600 hover:underline">
+            Privacy Policy
+          </Link>
         </div>
       </footer>
     </div>

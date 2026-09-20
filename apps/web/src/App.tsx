@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Privacy from './pages/Privacy';
 import Dashboard from './pages/Dashboard';
 import Accounts from './pages/Accounts';
 import AccountDetail from './pages/AccountDetail';
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/privacy" element={<Privacy />} />
       <Route element={<ProtectedRoute />}>
         {/* No sidebar/Layout here - a super-admin has no business of their
             own to navigate (Jobs/Invoices/etc are meaningless for them),

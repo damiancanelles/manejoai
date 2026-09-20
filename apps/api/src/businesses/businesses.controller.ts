@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { BusinessesService } from './businesses.service';
 import { UpdateBusinessDto } from './dto';
@@ -7,7 +8,7 @@ import { UpdateBusinessDto } from './dto';
 // "me" only, same as UsersController's /users/me/password - no ":id" route
 // at all, so there's no cross-tenant surface to guard: a caller can only
 // ever read/update their own business, straight from their JWT.
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, CrewGuard)
 @Controller('businesses')
 export class BusinessesController {
   constructor(private businessesService: BusinessesService) {}

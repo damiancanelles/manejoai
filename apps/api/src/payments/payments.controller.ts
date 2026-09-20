@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PaymentsService } from './payments.service';
 import { RecordPaymentDto } from './dto';
 
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard)
 @Controller('payments')
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}

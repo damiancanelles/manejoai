@@ -11,11 +11,12 @@ export class IncomingReportsService {
     private jobsService: JobsService,
   ) {}
 
-  findAll(businessId: string, status?: ReportStatus, search?: string) {
+  findAll(businessId: string, status?: ReportStatus, search?: string, submittedByUserId?: string) {
     return this.prisma.incomingReport.findMany({
       where: {
         businessId,
         status,
+        submittedByUserId,
         ...(search
           ? {
               OR: [

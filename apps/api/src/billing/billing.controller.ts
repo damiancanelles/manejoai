@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Headers, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { BillingService } from './billing.service';
 import { PlanDto } from './dto';
@@ -11,7 +12,7 @@ export class BillingController {
 
   // Deliberately no SubscriptionGuard here - this is how a lapsed business
   // resubscribes, so it has to work even when their access is locked.
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CrewGuard)
   @Post('billing/checkout')
   async checkout(@Body() dto: PlanDto, @CurrentUser() user: { businessId: string }) {
     const url = await this.billingService.createCheckoutSession(user.businessId, dto.tier);
@@ -21,14 +22,14 @@ export class BillingController {
   // In-app upgrade/downgrade for a business that already has a subscription.
   // SubscriptionGuard here (unlike /checkout) - a lapsed business has no
   // subscription to swap the price on; they resubscribe via /checkout.
-  @UseGuards(JwtAuthGuard, SubscriptionGuard)
+  @UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard)
   @Post('billing/change-plan')
   async changePlan(@Body() dto: PlanDto, @CurrentUser() user: { businessId: string }) {
     await this.billingService.changePlan(user.businessId, dto.tier);
     return { ok: true };
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, CrewGuard)
   @Post('billing/portal')
   async portal(@CurrentUser() user: { businessId: string }) {
     const url = await this.billingService.createPortalSession(user.businessId);

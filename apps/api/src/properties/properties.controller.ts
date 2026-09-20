@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto, UpdatePropertyDto } from './dto';
 
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard)
 @Controller('properties')
 export class PropertiesController {
   constructor(private propertiesService: PropertiesService) {}

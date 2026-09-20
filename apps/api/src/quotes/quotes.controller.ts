@@ -2,13 +2,14 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } f
 import { QuoteStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { QuotesService } from './quotes.service';
 import { CreateQuoteDto, QuoteItemInputDto, UpdateQuoteDto, UpdateQuoteItemDto } from './dto';
 
 type AuthedUser = { userId: string; businessId: string };
 
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard)
 @Controller('quotes')
 export class QuotesController {
   constructor(private quotesService: QuotesService) {}

@@ -92,6 +92,7 @@ model Business {
   invoices        Invoice[]
   quotes          Quote[]
   incomingReports IncomingReport[]
+  timeEntries     TimeEntry[]
 }
 
 // ---------- Staff / auth ----------
@@ -105,6 +106,11 @@ enum StaffRole {
   // for the account, not a real tenant - see the "Manejoai Platform"
   // business created for this in scripts/create-superadmin.ts.
   SUPERADMIN
+  // A field worker's restricted sub-account - can only submit job reports
+  // (IncomingReport, source "app") and clock in/out (TimeEntry). Blocked
+  // from every other route by CrewGuard; see common/guards/crew.guard.ts.
+  // Mobile-only - the web app doesn't build a UI for this role.
+  CREW
 }
 
 model User {
@@ -115,6 +121,10 @@ model User {
   passwordHash String
   name         String
   role         StaffRole @default(STAFF)
+  // Deactivating a crew member sets this false instead of deleting the row,
+  // so their TimeEntry/IncomingReport history stays intact and attributable.
+  // Login checks this; unused by ADMIN/STAFF for now.
+  active       Boolean   @default(true)
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -129,7 +139,9 @@ model User {
   invoicesCreated Invoice[] @relation("InvoiceCreatedBy")
   quotesCreated   Quote[]   @relation("QuoteCreatedBy")
   paymentsCreated Payment[] @relation("PaymentCreatedBy")
-  reportsReviewed IncomingReport[] @relation("ReportReviewedBy")
+  reportsReviewed  IncomingReport[] @relation("ReportReviewedBy")
+  reportsSubmitted IncomingReport[] @relation("ReportSubmittedBy")
+  timeEntries      TimeEntry[]
 
   @@index([businessId])
 }
@@ -449,11 +461,16 @@ model IncomingReport {
   id         String   @id @default(cuid())
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  source     String   @default("telegram")
+  source     String   @default("telegram") // "telegram" | "app" (a crew member's own submission)
 
-  senderName String? // Telegram display name - free text, no worker accounts yet
-  rawText    String? // concatenated text from the message burst
+  senderName String? // display name - free text for Telegram, the crew member's name for "app"
+  rawText    String? // concatenated text from the message burst, or the crew member's typed note
   photoUrls  String[] // already-uploaded R2 URLs
+
+  // Set only for source "app" - real attribution to a crew account, unlike
+  // Telegram's free-text senderName (no worker accounts existed for that).
+  submittedByUserId String?
+  submittedBy       User?   @relation("ReportSubmittedBy", fields: [submittedByUserId], references: [id])
 
   // Claude's best-effort extraction - always shown to staff, never auto-trusted
   suggestedTitle        String?
@@ -476,6 +493,23 @@ model IncomingReport {
   reviewedBy   User?     @relation("ReportReviewedBy", fields: [reviewedById], references: [id])
 
   @@index([businessId])
+}
+
+// One clock-in/clock-out pair per shift. An open entry (clockOut: null) is
+// "currently clocked in" - hours only count once it's closed. Any staff
+// role can clock themselves in/out; only ADMIN/STAFF can list a business's
+// entries (CrewGuard on that route) to build the day/week hours view.
+model TimeEntry {
+  id         String    @id @default(cuid())
+  businessId String
+  business   Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clockIn    DateTime  @default(now())
+  clockOut   DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([businessId, userId])
 }
 
 // One row per reminder email actually sent, so the scheduler never double-sends

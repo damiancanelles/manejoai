@@ -15,11 +15,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JobStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JobsService } from './jobs.service';
 import { CreateJobDto, UpdateJobDto } from './dto';
 
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard)
 @Controller('jobs')
 export class JobsController {
   constructor(private jobsService: JobsService) {}

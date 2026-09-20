@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } f
 import { InvoiceStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { InvoicesService } from './invoices.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -9,7 +10,7 @@ import { CreateInvoiceDto, InvoiceItemInputDto, UpdateInvoiceDto, UpdateInvoiceI
 
 type AuthedUser = { userId: string; businessId: string };
 
-@UseGuards(JwtAuthGuard, SubscriptionGuard)
+@UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard)
 @Controller('invoices')
 export class InvoicesController {
   constructor(

@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Post, UseGuards } from '@nestjs/
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { ProTierGuard } from '../common/guards/pro-tier.guard';
+import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AssistantService } from './assistant.service';
 import { ChatDto, ExecuteActionDto } from './dto';
@@ -10,8 +11,9 @@ const MAX_HISTORY = 20; // basic cost guard against an unbounded client-side his
 
 // SubscriptionGuard: locked out if the subscription lapsed, same as every
 // other feature. ProTierGuard: the assistant is Pro-only ($25), so a Basic
-// business (subscribed, full app access) still gets a 403 here.
-@UseGuards(JwtAuthGuard, SubscriptionGuard, ProTierGuard)
+// business (subscribed, full app access) still gets a 403 here. CrewGuard:
+// crew accounts never reach the assistant.
+@UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard, ProTierGuard)
 @Controller('assistant')
 export class AssistantController {
   constructor(private assistantService: AssistantService) {}

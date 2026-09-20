@@ -55,6 +55,11 @@ export class AuthService {
     const passwordOk = await bcrypt.compare(password, user.passwordHash);
     if (!passwordOk) throw new UnauthorizedException('Invalid email or password');
 
+    // Deactivated crew members (see UsersService.deactivateCrewUser) can no
+    // longer sign in - checked after the password so a wrong password still
+    // reads as "invalid credentials", not a hint the account exists.
+    if (!user.active) throw new UnauthorizedException('This account has been deactivated');
+
     return this.issueSession(user);
   }
 

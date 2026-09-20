@@ -50,7 +50,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   const res = await fetch(`${API_BASE}/api${path}`, { ...options, headers });
 
-  if (res.status === 401) {
+  // /auth/login returns its own 401 for plain bad credentials (see
+  // auth.service.ts) - that's not an expired session (there was never one),
+  // so it should surface as-is below, not get rewritten and clear a token
+  // that was never set.
+  if (res.status === 401 && !path.startsWith('/auth/')) {
     await setToken(null);
     unauthorizedHandler?.();
     throw new Error('Session expired');

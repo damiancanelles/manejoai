@@ -10,5 +10,8 @@ import { ReportParsingService } from './report-parsing.service';
   imports: [StorageModule],
   controllers: [TelegramController],
   providers: [TelegramService, TelegramSetupService, TelegramWebhookGuard, ReportParsingService],
+  // ReportParsingService (Claude extraction) is reused by IncomingReportsModule
+  // for crew-submitted reports, not just Telegram's.
+  exports: [ReportParsingService],
 })
 export class TelegramModule {}

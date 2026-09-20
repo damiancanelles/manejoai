@@ -1,14 +1,21 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ReportStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
+import { ReportParsingService } from '../telegram/report-parsing.service';
+import { ImageMediaType } from '../telegram/types';
+import { StorageService } from '../storage/storage.service';
 import { ConvertReportDto } from './dto';
 
 @Injectable()
 export class IncomingReportsService {
+  private logger = new Logger(IncomingReportsService.name);
+
   constructor(
     private prisma: PrismaService,
     private jobsService: JobsService,
+    private reportParser: ReportParsingService,
+    private storage: StorageService,
   ) {}
 
   findAll(businessId: string, status?: ReportStatus, search?: string, submittedByUserId?: string) {
@@ -78,5 +85,52 @@ export class IncomingReportsService {
       where: { id },
       data: { status: ReportStatus.DISMISSED, reviewedById, reviewedAt: new Date() },
     });
+  }
+
+  // A crew member's own submission (source "app") - same shape as a
+  // Telegram report once saved, so it goes through the exact same
+  // review/convert screens. Unlike Telegram, no property auto-match: the
+  // reviewer picks accountId/propertyId by hand on convert either way, and
+  // suggestedPropertyText (if Claude found one) is still shown as a hint.
+  async submit(rawText: string | undefined, photos: Express.Multer.File[], submittedByUserId: string, businessId: string) {
+    const submitter = await this.prisma.user.findUnique({ where: { id: submittedByUserId }, select: { name: true } });
+
+    let suggestedTitle: string | null = null;
+    let suggestedDescription: string | null = null;
+    let suggestedPropertyText: string | null = null;
+
+    try {
+      const images = photos.map((f) => ({ buffer: f.buffer, contentType: f.mimetype as ImageMediaType }));
+      const parsed = await this.reportParser.parse(rawText ?? '', images);
+      suggestedTitle = parsed.title;
+      suggestedDescription = parsed.description;
+      suggestedPropertyText = parsed.propertyText;
+    } catch (err) {
+      // Still save the raw report even if Claude parsing failed - the
+      // reviewer can fill in the fields by hand from the photos/text.
+      this.logger.error(`Claude parsing failed, saving report unparsed: ${(err as Error).message}`);
+    }
+
+    const report = await this.prisma.incomingReport.create({
+      data: {
+        businessId,
+        source: 'app',
+        senderName: submitter?.name ?? null,
+        submittedByUserId,
+        rawText: rawText || null,
+        suggestedTitle,
+        suggestedDescription,
+        suggestedPropertyText,
+      },
+    });
+
+    if (photos.length > 0) {
+      const photoUrls = await Promise.all(
+        photos.map((file) => this.storage.saveReportPhoto(report.id, file.buffer, file.mimetype)),
+      );
+      await this.prisma.incomingReport.update({ where: { id: report.id }, data: { photoUrls } });
+    }
+
+    return this.findOne(report.id, businessId);
   }
 }

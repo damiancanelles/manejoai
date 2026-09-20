@@ -19,3 +19,11 @@ export class ConvertReportDto {
   @IsString()
   description?: string;
 }
+
+// multipart/form-data - photos arrive as separate files (see the
+// FilesInterceptor route), this is just the text field alongside them.
+export class SubmitReportDto {
+  @IsOptional()
+  @IsString()
+  rawText?: string;
+}

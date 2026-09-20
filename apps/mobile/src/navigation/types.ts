@@ -36,6 +36,8 @@ export type MoreStackParamList = {
   Customers: undefined;
   Quotes: undefined;
   JobReports: undefined;
+  Team: undefined;
+  TeamMemberDetail: { crewId: string; crewName?: string };
   Reports: undefined;
   Settings: undefined;
   Billing: undefined;

@@ -15,6 +15,8 @@ const TONES: Record<string, Tone> = {
   COMPLETED: 'success',
   PENDING: 'warning',
   APPROVED: 'success',
+  CONVERTED: 'success',
+  DISMISSED: 'neutral',
 };
 
 export function statusTone(status: string): Tone {

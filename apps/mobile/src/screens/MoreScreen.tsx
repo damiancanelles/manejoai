@@ -12,6 +12,7 @@ const ROWS: { key: keyof MoreStackParamList; labelKey: string }[] = [
   { key: 'Customers', labelKey: 'nav.customers' },
   { key: 'Quotes', labelKey: 'nav.quotes' },
   { key: 'JobReports', labelKey: 'nav.jobReports' },
+  { key: 'Team', labelKey: 'nav.team' },
   { key: 'Reports', labelKey: 'nav.reports' },
   { key: 'Settings', labelKey: 'nav.settings' },
   { key: 'Billing', labelKey: 'nav.billing' },

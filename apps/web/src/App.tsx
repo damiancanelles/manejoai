@@ -18,6 +18,8 @@ import InvoiceDetail from './pages/InvoiceDetail';
 import InvoiceNew from './pages/InvoiceNew';
 import Reports from './pages/Reports';
 import IncomingReports from './pages/IncomingReports';
+import Team from './pages/Team';
+import TeamMemberDetail from './pages/TeamMemberDetail';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import PlatformDashboard from './pages/PlatformDashboard';
@@ -60,6 +62,8 @@ export default function App() {
           <Route path="/invoices/:id" element={<InvoiceDetail />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/job-reports" element={<IncomingReports />} />
+          <Route path="/team" element={<Team />} />
+          <Route path="/team/:id" element={<TeamMemberDetail />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>

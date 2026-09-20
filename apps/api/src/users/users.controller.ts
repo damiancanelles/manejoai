@@ -41,6 +41,12 @@ export class UsersController {
   }
 
   @UseGuards(SubscriptionGuard, CrewGuard)
+  @Get(':id')
+  findCrew(@Param('id') id: string, @CurrentUser() user: { businessId: string }) {
+    return this.usersService.findCrewUser(id, user.businessId);
+  }
+
+  @UseGuards(SubscriptionGuard, CrewGuard)
   @Delete(':id')
   deactivateCrew(@Param('id') id: string, @CurrentUser() user: { businessId: string }) {
     return this.usersService.deactivateCrewUser(id, user.businessId);

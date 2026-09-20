@@ -16,6 +16,7 @@ const links = [
   { to: '/accounts', key: 'nav.customers' },
   { to: '/jobs', key: 'nav.jobs' },
   { to: '/job-reports', key: 'nav.jobReports' },
+  { to: '/team', key: 'nav.team' },
   { to: '/quotes', key: 'nav.quotes' },
   { to: '/invoices', key: 'nav.invoices' },
   { to: '/reports', key: 'nav.reports' },

@@ -35,6 +35,18 @@ export class UsersService {
     });
   }
 
+  async findCrewUser(id: string, businessId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, name: true, email: true, active: true, createdAt: true, businessId: true, role: true },
+    });
+    if (!user || user.businessId !== businessId || user.role !== StaffRole.CREW) {
+      throw new NotFoundException('Crew member not found');
+    }
+    const { businessId: _b, role: _r, ...rest } = user;
+    return rest;
+  }
+
   async deactivateCrewUser(id: string, businessId: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user || user.businessId !== businessId || user.role !== StaffRole.CREW) {

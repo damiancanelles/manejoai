@@ -20,6 +20,7 @@ import { MailModule } from './mail/mail.module';
 import { StorageModule } from './storage/storage.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { IncomingReportsModule } from './incoming-reports/incoming-reports.module';
+import { TimeEntriesModule } from './time-entries/time-entries.module';
 import { PlatformModule } from './platform/platform.module';
 import { BillingModule } from './billing/billing.module';
 import { AssistantModule } from './assistant/assistant.module';
@@ -49,6 +50,7 @@ import { AssistantModule } from './assistant/assistant.module';
     RemindersModule,
     TelegramModule,
     IncomingReportsModule,
+    TimeEntriesModule,
     PlatformModule,
     BillingModule,
     AssistantModule,

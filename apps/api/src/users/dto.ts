@@ -1,4 +1,4 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 
 export class ChangePasswordDto {
   @IsString()
@@ -15,4 +15,16 @@ export class RegisterPushTokenDto {
   // format isn't a stable contract to hard-code a regex against.
   @IsString()
   token!: string;
+}
+
+export class CreateCrewUserDto {
+  @IsString()
+  name!: string;
+
+  @IsEmail()
+  email!: string;
+
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  password!: string;
 }

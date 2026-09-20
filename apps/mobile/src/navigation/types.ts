@@ -52,3 +52,10 @@ export type AppTabParamList = {
 export type AuthStackParamList = {
   Login: undefined;
 };
+
+// A CREW account's entire app - two tabs, no nested stacks. See CrewTabs.tsx
+// and RootNavigator's role branch.
+export type CrewTabParamList = {
+  Clock: undefined;
+  Report: undefined;
+};

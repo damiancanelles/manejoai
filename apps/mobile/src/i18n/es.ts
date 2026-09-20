@@ -37,6 +37,8 @@ export const es: Record<string, string> = {
   'nav.billing': 'Facturación',
   'nav.openMenu': 'Abrir menú',
   'nav.language': 'Idioma',
+  'nav.clock': 'Reloj',
+  'nav.reportJob': 'Reportar',
 
   // Job statuses
   'status.ALL': 'TODOS',
@@ -290,6 +292,25 @@ export const es: Record<string, string> = {
   'jobDetail.addPhoto': '+ Agregar foto',
   'jobDetail.uploading': 'Subiendo…',
   'jobDetail.noPhotos': 'Aún no hay fotos.',
+
+  // Cuadrilla: pestaña Reloj
+  'clock.hi': 'Hola, {name}',
+  'clock.clockedInSince': 'En turno desde las {time}',
+  'clock.notClockedIn': 'No has marcado entrada.',
+  'clock.clockIn': 'Marcar entrada',
+  'clock.clockOut': 'Marcar salida',
+  'clock.recent': 'Reciente',
+  'clock.inProgress': 'en curso',
+  'clock.noEntries': 'Aún no hay registros de horario.',
+
+  // Cuadrilla: pestaña Reportar
+  'reportJob.title': 'Reportar un trabajo',
+  'reportJob.subtitle': 'Describe lo que hiciste - tu oficina lo revisará y lo convertirá en un trabajo.',
+  'reportJob.notePlaceholder': '¿Qué hiciste?',
+  'reportJob.addPhoto': '+ Agregar foto',
+  'reportJob.submit': 'Enviar reporte',
+  'reportJob.sent': 'Reporte enviado.',
+  'reportJob.errEmpty': 'Agrega una nota o al menos una foto.',
 
   // Quotes list
   'quotes.title': 'Cotizaciones',

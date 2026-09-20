@@ -9,7 +9,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'STAFF' | 'SUPERADMIN';
+  role: 'ADMIN' | 'STAFF' | 'SUPERADMIN' | 'CREW';
 }
 
 export interface Business {

@@ -40,6 +40,8 @@ export const en: Record<string, string> = {
   'nav.billing': 'Billing',
   'nav.openMenu': 'Open menu',
   'nav.language': 'Language',
+  'nav.clock': 'Clock',
+  'nav.reportJob': 'Report',
 
   // Job statuses
   'status.ALL': 'ALL',
@@ -293,6 +295,25 @@ export const en: Record<string, string> = {
   'jobDetail.addPhoto': '+ Add photo',
   'jobDetail.uploading': 'Uploading…',
   'jobDetail.noPhotos': 'No photos yet.',
+
+  // Crew: Clock tab
+  'clock.hi': 'Hi, {name}',
+  'clock.clockedInSince': 'Clocked in since {time}',
+  'clock.notClockedIn': "You're not clocked in.",
+  'clock.clockIn': 'Clock in',
+  'clock.clockOut': 'Clock out',
+  'clock.recent': 'Recent',
+  'clock.inProgress': 'in progress',
+  'clock.noEntries': 'No time entries yet.',
+
+  // Crew: Report tab
+  'reportJob.title': 'Report a job',
+  'reportJob.subtitle': "Describe what you did - your office will review it and turn it into a job.",
+  'reportJob.notePlaceholder': 'What did you do?',
+  'reportJob.addPhoto': '+ Add photo',
+  'reportJob.submit': 'Send report',
+  'reportJob.sent': 'Report sent.',
+  'reportJob.errEmpty': 'Add a note or at least one photo.',
 
   // Quotes list
   'quotes.title': 'Quotes',

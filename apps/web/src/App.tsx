@@ -24,14 +24,16 @@ import TeamMemberDetail from './pages/TeamMemberDetail';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import PlatformDashboard from './pages/PlatformDashboard';
-import { isLoggedIn, isSuperAdmin } from './context/AuthContext';
+import Crew from './pages/Crew';
+import { isCrew, isLoggedIn, isSuperAdmin } from './context/AuthContext';
 
 // "/" is the public marketing page for a signed-out visitor - a logged-in
 // user lands on the real app instead: a super-admin at the platform-wide
-// dashboard, everyone else at their own business's Dashboard.
+// dashboard, a crew account at its own restricted page, everyone else at
+// their own business's Dashboard.
 function Home() {
   if (!isLoggedIn()) return <Landing />;
-  return <Navigate to={isSuperAdmin() ? '/platform' : '/dashboard'} replace />;
+  return <Navigate to={isSuperAdmin() ? '/platform' : isCrew() ? '/crew' : '/dashboard'} replace />;
 }
 
 export default function App() {
@@ -49,6 +51,9 @@ export default function App() {
         {/* Same reason as /platform - no sidebar, since a lapsed business
             can't use anything the sidebar would link to anyway. */}
         <Route path="/billing" element={<Billing />} />
+        {/* No sidebar - a crew account's whole app is this one page (see
+            ProtectedRoute, which redirects crew here from anywhere else). */}
+        <Route path="/crew" element={<Crew />} />
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/accounts" element={<Accounts />} />

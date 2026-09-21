@@ -638,4 +638,24 @@ export const en: Record<string, string> = {
   'platform.today': 'Today',
   'platform.yesterday': 'Yesterday',
   'platform.daysAgo': '{days} days ago',
+
+  // Crew - a restricted sub-account's whole app (job reports + clock
+  // in/out), mirrors the mobile app's CrewTabs.
+  'crew.tabClock': 'Clock',
+  'crew.tabReport': 'Report',
+  'clock.hi': 'Hi, {name}',
+  'clock.clockedInSince': 'Clocked in since {time}',
+  'clock.notClockedIn': "You're not clocked in.",
+  'clock.clockIn': 'Clock in',
+  'clock.clockOut': 'Clock out',
+  'clock.recent': 'Recent',
+  'clock.inProgress': 'in progress',
+  'clock.noEntries': 'No time entries yet.',
+  'reportJob.title': 'Report a job',
+  'reportJob.subtitle': 'Describe what you did - your office will review it and turn it into a job.',
+  'reportJob.notePlaceholder': 'What did you do?',
+  'reportJob.addPhoto': '+ Add photo',
+  'reportJob.submit': 'Send report',
+  'reportJob.sent': 'Report sent.',
+  'reportJob.errEmpty': 'Add a note or at least one photo.',
 };

@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { useAuth, isLoggedIn, isSuperAdmin } from '../context/AuthContext';
+import { useAuth, isCrew, isLoggedIn, isSuperAdmin } from '../context/AuthContext';
 import { useT } from '../i18n';
 import LogoMark from '../components/LogoMark';
 import LangToggle from '../components/LangToggle';
@@ -14,7 +14,7 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (isLoggedIn()) return <Navigate to={isSuperAdmin() ? '/platform' : '/dashboard'} replace />;
+  if (isLoggedIn()) return <Navigate to={isSuperAdmin() ? '/platform' : isCrew() ? '/crew' : '/dashboard'} replace />;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -22,7 +22,7 @@ export default function Login() {
     setSubmitting(true);
     try {
       const user = await login(email, password);
-      navigate(user.role === 'SUPERADMIN' ? '/platform' : '/dashboard');
+      navigate(user.role === 'SUPERADMIN' ? '/platform' : user.role === 'CREW' ? '/crew' : '/dashboard');
     } catch (err: any) {
       setError(err.message || t('login.error'));
     } finally {

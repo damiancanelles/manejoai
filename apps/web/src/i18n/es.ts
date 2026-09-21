@@ -637,4 +637,24 @@ export const es: Record<string, string> = {
   'platform.today': 'Hoy',
   'platform.yesterday': 'Ayer',
   'platform.daysAgo': 'hace {days} días',
+
+  // Cuadrilla - la app completa de una cuenta restringida (reportes de
+  // trabajo + entrada/salida), refleja las pestañas CrewTabs de la app móvil.
+  'crew.tabClock': 'Reloj',
+  'crew.tabReport': 'Reportar',
+  'clock.hi': 'Hola, {name}',
+  'clock.clockedInSince': 'En turno desde las {time}',
+  'clock.notClockedIn': 'No has marcado entrada.',
+  'clock.clockIn': 'Marcar entrada',
+  'clock.clockOut': 'Marcar salida',
+  'clock.recent': 'Reciente',
+  'clock.inProgress': 'en curso',
+  'clock.noEntries': 'Aún no hay registros de horario.',
+  'reportJob.title': 'Reportar un trabajo',
+  'reportJob.subtitle': 'Describe lo que hiciste - tu oficina lo revisará y lo convertirá en un trabajo.',
+  'reportJob.notePlaceholder': '¿Qué hiciste?',
+  'reportJob.addPhoto': '+ Agregar foto',
+  'reportJob.submit': 'Enviar reporte',
+  'reportJob.sent': 'Reporte enviado.',
+  'reportJob.errEmpty': 'Agrega una nota o al menos una foto.',
 };

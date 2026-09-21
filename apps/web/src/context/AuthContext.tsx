@@ -6,7 +6,7 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: 'ADMIN' | 'STAFF' | 'SUPERADMIN';
+  role: 'ADMIN' | 'STAFF' | 'SUPERADMIN' | 'CREW';
 }
 
 export interface Business {
@@ -129,4 +129,12 @@ export function isLoggedIn() {
 // in App.tsx can use it outside a component, same as isLoggedIn().
 export function isSuperAdmin() {
   return readStored<AuthUser>('manejoai_user')?.role === 'SUPERADMIN';
+}
+
+// A crew account - restricted to job reports + clock in/out, same as the
+// mobile app's CrewTabs. Every other backend route 403s for this role
+// (CrewGuard), so the full sidebar app is never shown to them - see
+// ProtectedRoute and Home() in App.tsx.
+export function isCrew() {
+  return readStored<AuthUser>('manejoai_user')?.role === 'CREW';
 }

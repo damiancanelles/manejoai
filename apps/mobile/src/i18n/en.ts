@@ -511,6 +511,15 @@ export const en: Record<string, string> = {
   'team.reports': 'Job reports',
   'team.noReports': 'No job reports submitted yet.',
   'team.photoCount': '{count} photo(s)',
+  'team.timeEntries': 'Time entries',
+  'team.addEntry': '+ Add entry',
+  'team.entryClockIn': 'Clock in',
+  'team.entryClockOut': 'Clock out (optional)',
+  'team.errClockOutBeforeIn': 'Clock-out must be after clock-in.',
+  'team.deleteEntryConfirm': 'Delete this time entry? This cannot be undone.',
+  'team.noEntries': 'No time entries yet.',
+  'team.datePlaceholder': 'YYYY-MM-DD',
+  'team.timePlaceholder': 'HH:MM',
 
   // Settings
   'settings.title': 'Settings',

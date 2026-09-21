@@ -508,6 +508,15 @@ export const es: Record<string, string> = {
   'team.reports': 'Reportes de trabajo',
   'team.noReports': 'Aún no se han enviado reportes de trabajo.',
   'team.photoCount': '{count} foto(s)',
+  'team.timeEntries': 'Registros de horario',
+  'team.addEntry': '+ Agregar registro',
+  'team.entryClockIn': 'Entrada',
+  'team.entryClockOut': 'Salida (opcional)',
+  'team.errClockOutBeforeIn': 'La salida debe ser posterior a la entrada.',
+  'team.deleteEntryConfirm': '¿Eliminar este registro de horario? No se puede deshacer.',
+  'team.noEntries': 'Aún no hay registros de horario.',
+  'team.datePlaceholder': 'AAAA-MM-DD',
+  'team.timePlaceholder': 'HH:MM',
 
   // Settings
   'settings.title': 'Configuración',

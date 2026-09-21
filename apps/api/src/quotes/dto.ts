@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsDateString, IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { ArrayMinSize, IsArray, IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 
 export class QuoteItemInputDto {
   @IsString()
@@ -56,9 +56,13 @@ export class CreateQuoteDto {
   @IsDateString()
   issueDate?: string;
 
-  @IsOptional()
+  // Required, not just a freeform extra - if this quote is later approved,
+  // its Invoice's title (also required) falls back to this (see
+  // QuotesService.approve), so a quote created without one used to produce
+  // a generic, uninformative invoice title.
   @IsString()
-  notes?: string;
+  @IsNotEmpty()
+  notes!: string;
 }
 
 export class UpdateQuoteDto {

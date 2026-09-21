@@ -81,6 +81,11 @@ export default function QuoteNew() {
       setError(t('lineItems.errQuantity'));
       return;
     }
+    const notes = (form.get('notes') as string).trim();
+    if (!notes) {
+      setError(t('quoteNew.errNotes'));
+      return;
+    }
 
     try {
       const quote = await api.post<{ id: string }>('/quotes', {
@@ -88,7 +93,7 @@ export default function QuoteNew() {
         propertyId: (form.get('propertyId') as string) || undefined,
         jobId: (form.get('jobId') as string) || undefined,
         items: parsedItems,
-        notes: (form.get('notes') as string) || undefined,
+        notes,
       });
       navigate(`/quotes/${quote.id}`);
     } catch (err: any) {
@@ -232,7 +237,8 @@ export default function QuoteNew() {
 
         <label className="block text-sm">
           {t('quoteNew.notes')}
-          <textarea name="notes" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
+          <textarea name="notes" required className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
+          <span className="mt-1 block text-xs text-slate-400">{t('quoteNew.notesHint')}</span>
         </label>
 
         <button

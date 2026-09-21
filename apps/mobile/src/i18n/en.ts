@@ -348,7 +348,8 @@ export const en: Record<string, string> = {
   'quoteNew.selectCustomer': 'Select a customer…',
   'quoteNew.property': 'Property (optional)',
   'quoteNew.relatedJob': 'Related job (optional)',
-  'quoteNew.notes': 'Notes (optional)',
+  'quoteNew.notes': 'Notes (a short description of the work quoted)',
+  'quoteNew.errNotes': 'Add a note describing the work - this becomes the invoice title if the quote is approved.',
   'quoteNew.submit': 'Create quote',
 
   // Quote detail

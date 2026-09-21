@@ -256,15 +256,15 @@ const WRITE_TOOLS: Anthropic.Tool[] = [
   ),
   proposeTool(
     'propose_create_quote',
-    'Propose creating a new quote for a customer, with line items.',
+    'Propose creating a new quote for a customer, with line items. notes is required - it describes the work quoted, and becomes the invoice title if this quote is later approved, so always ask the user what the quote is for if they have not said.',
     {
       accountId: { type: 'string' },
       propertyId: { type: 'string' },
       jobId: { type: 'string' },
       items: { type: 'array', items: ITEM_SCHEMA, minItems: 1 },
-      notes: { type: 'string' },
+      notes: { type: 'string', description: 'Required - a short description of the work quoted.' },
     },
-    ['accountId', 'items'],
+    ['accountId', 'items', 'notes'],
   ),
   proposeTool(
     'propose_add_quote_item',

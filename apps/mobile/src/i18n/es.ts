@@ -345,7 +345,8 @@ export const es: Record<string, string> = {
   'quoteNew.selectCustomer': 'Selecciona un cliente…',
   'quoteNew.property': 'Propiedad (opcional)',
   'quoteNew.relatedJob': 'Trabajo relacionado (opcional)',
-  'quoteNew.notes': 'Notas (opcional)',
+  'quoteNew.notes': 'Notas (una breve descripción del trabajo cotizado)',
+  'quoteNew.errNotes': 'Agrega una nota que describa el trabajo - esto se convierte en el título de la factura si la cotización se aprueba.',
   'quoteNew.submit': 'Crear cotización',
 
   // Quote detail

@@ -5,6 +5,7 @@ import { JobsService } from '../jobs/jobs.service';
 import { ReportParsingService } from '../telegram/report-parsing.service';
 import { ImageMediaType } from '../telegram/types';
 import { StorageService } from '../storage/storage.service';
+import { matchPropertyByText } from '../common/property-matching';
 import { ConvertReportDto } from './dto';
 
 @Injectable()
@@ -89,15 +90,14 @@ export class IncomingReportsService {
 
   // A crew member's own submission (source "app") - same shape as a
   // Telegram report once saved, so it goes through the exact same
-  // review/convert screens. Unlike Telegram, no property auto-match: the
-  // reviewer picks accountId/propertyId by hand on convert either way, and
-  // suggestedPropertyText (if Claude found one) is still shown as a hint.
+  // review/convert screens, property auto-match included.
   async submit(rawText: string | undefined, photos: Express.Multer.File[], submittedByUserId: string, businessId: string) {
     const submitter = await this.prisma.user.findUnique({ where: { id: submittedByUserId }, select: { name: true } });
 
     let suggestedTitle: string | null = null;
     let suggestedDescription: string | null = null;
     let suggestedPropertyText: string | null = null;
+    let matchedPropertyId: string | null = null;
 
     try {
       const images = photos.map((f) => ({ buffer: f.buffer, contentType: f.mimetype as ImageMediaType }));
@@ -105,6 +105,9 @@ export class IncomingReportsService {
       suggestedTitle = parsed.title;
       suggestedDescription = parsed.description;
       suggestedPropertyText = parsed.propertyText;
+      if (parsed.propertyText) {
+        matchedPropertyId = await matchPropertyByText(this.prisma, businessId, parsed.propertyText);
+      }
     } catch (err) {
       // Still save the raw report even if Claude parsing failed - the
       // reviewer can fill in the fields by hand from the photos/text.
@@ -121,6 +124,7 @@ export class IncomingReportsService {
         suggestedTitle,
         suggestedDescription,
         suggestedPropertyText,
+        matchedPropertyId,
       },
     });
 

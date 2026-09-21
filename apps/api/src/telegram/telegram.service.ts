@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import { ReportParsingService } from './report-parsing.service';
 import { isBusinessSubscribed } from '../common/subscription';
+import { matchPropertyByText } from '../common/property-matching';
 import { ImageMediaType, TelegramMessage, TelegramUpdate } from './types';
 
 const DEBOUNCE_MS = 90_000;
@@ -118,7 +119,7 @@ export class TelegramService {
       suggestedDescription = parsed.description;
       suggestedPropertyText = parsed.propertyText;
       if (parsed.propertyText) {
-        matchedPropertyId = await this.matchProperty(burst.businessId, parsed.propertyText);
+        matchedPropertyId = await matchPropertyByText(this.prisma, burst.businessId, parsed.propertyText);
       }
     } catch (err) {
       // Still save the raw report even if Claude parsing failed - staff can
@@ -143,43 +144,6 @@ export class TelegramService {
     );
   }
 
-  /**
-   * Match against this business's real Property names - tolerant of the
-   * kind of thing workers actually type: typos ("Vinning Montain" for
-   * "Vinings Mountain") and a unit/apartment number tacked on that
-   * Property.name doesn't have ("Vinings Mountain - Unit 533"). Exact match
-   * wins outright; otherwise falls back to bigram similarity and only
-   * returns a match if it's both confident and clearly ahead of the
-   * next-closest property - ambiguous or weak matches are left null for
-   * staff to resolve manually.
-   */
-  private async matchProperty(businessId: string, propertyText: string): Promise<string | null> {
-    const properties = await this.prisma.property.findMany({
-      where: { account: { businessId } },
-      select: { id: true, name: true },
-    });
-    if (properties.length === 0) return null;
-
-    const stripped = propertyText.replace(/[-,]?\s*(unit|apt|apartment|bldg|building|#)\s*\S+\s*$/i, '');
-    const needle = normalize(stripped) || normalize(propertyText);
-    if (!needle) return null;
-
-    const exact = properties.filter((p) => normalize(p.name) === needle);
-    if (exact.length === 1) return exact[0].id;
-
-    const scored = properties
-      .map((p) => ({ id: p.id, score: diceCoefficient(needle, normalize(p.name)) }))
-      .sort((a, b) => b.score - a.score);
-
-    const [best, runnerUp] = scored;
-    const CONFIDENT_THRESHOLD = 0.5;
-    const MIN_LEAD = 0.15; // best must clearly beat the next-closest property
-    if (best && best.score >= CONFIDENT_THRESHOLD && (!runnerUp || best.score - runnerUp.score >= MIN_LEAD)) {
-      return best.id;
-    }
-    return null;
-  }
-
   private async downloadTelegramFile(
     botToken: string,
     fileId: string,
@@ -194,39 +158,4 @@ export class TelegramService {
     const contentType: ImageMediaType = filePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
     return { buffer, contentType };
   }
-}
-
-function normalize(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[̀-ͯ]/g, '') // strip accents (after NFKD decomposition)
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-/** Character-bigram counts, padded so short strings still produce some. */
-function bigrams(s: string): Map<string, number> {
-  const counts = new Map<string, number>();
-  const padded = ` ${s} `;
-  for (let i = 0; i < padded.length - 1; i++) {
-    const bg = padded.slice(i, i + 2);
-    counts.set(bg, (counts.get(bg) ?? 0) + 1);
-  }
-  return counts;
-}
-
-/** Sørensen-Dice coefficient over character bigrams - 1 = identical, 0 = nothing in common. */
-function diceCoefficient(a: string, b: string): number {
-  const bgA = bigrams(a);
-  const bgB = bigrams(b);
-  let intersection = 0;
-  for (const [bg, countA] of bgA) {
-    const countB = bgB.get(bg);
-    if (countB) intersection += Math.min(countA, countB);
-  }
-  const totalA = [...bgA.values()].reduce((sum, c) => sum + c, 0);
-  const totalB = [...bgB.values()].reduce((sum, c) => sum + c, 0);
-  if (totalA === 0 || totalB === 0) return 0;
-  return (2 * intersection) / (totalA + totalB);
 }

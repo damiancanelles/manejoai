@@ -51,12 +51,13 @@ export default function QuoteNewScreen() {
       }));
       if (parsedItems.some((it) => !it.description)) throw new Error(t('lineItems.errDescription'));
       if (parsedItems.some((it) => !it.quantity || it.quantity < 1)) throw new Error(t('lineItems.errQuantity'));
+      if (!notes.trim()) throw new Error(t('quoteNew.errNotes'));
       return api.post<{ id: string }>('/quotes', {
         accountId,
         propertyId: propertyId || undefined,
         jobId: jobId || undefined,
         items: parsedItems,
-        notes: notes || undefined,
+        notes: notes.trim(),
       });
     },
     onSuccess: (quote) => {
@@ -66,7 +67,7 @@ export default function QuoteNewScreen() {
     onError: (err: any) => Alert.alert(t('assistant.error'), err.message),
   });
 
-  const canSubmit = !!accountId && !createQuote.isPending;
+  const canSubmit = !!accountId && !!notes.trim() && !createQuote.isPending;
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>

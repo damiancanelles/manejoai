@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
 import { useMutation } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import { useT } from '../../i18n';
@@ -9,8 +10,6 @@ import { colors, spacing, tones } from '../../theme';
 
 interface PickedPhoto {
   uri: string;
-  name: string;
-  type: string;
 }
 
 const MAX_PHOTOS = 5;
@@ -35,19 +34,7 @@ export default function ReportJobScreen() {
           : await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: 'images', allowsMultipleSelection: true, selectionLimit: remaining });
 
       if (result.canceled || !result.assets?.length) return;
-      setPhotos((prev) => [
-        ...prev,
-        ...result.assets.slice(0, remaining).map((a) => ({
-          uri: a.uri,
-          name: a.fileName ?? `report-${Date.now()}.jpg`,
-          // Force a plain jpeg/png type for upload even when the OS reports
-          // something our backend/S3 might balk at (e.g. image/heic on an
-          // iPhone still set to "Most Compatible" off) - the asset's bytes
-          // are what the picker already gave us, this only affects the
-          // Content-Type header the upload sends.
-          type: a.mimeType && a.mimeType.startsWith('image/') ? a.mimeType : 'image/jpeg',
-        })),
-      ]);
+      setPhotos((prev) => [...prev, ...result.assets.slice(0, remaining).map((a) => ({ uri: a.uri }))]);
     } catch (err: any) {
       Alert.alert(t('assistant.error'), err.message || String(err));
     }
@@ -70,8 +57,15 @@ export default function ReportJobScreen() {
     mutationFn: () => {
       const form = new FormData();
       if (rawText.trim()) form.append('rawText', rawText.trim());
+      // The classic RN FormData part shape ({uri, name, type}) throws
+      // "Unsupported FormDataPart implementation" under Expo's fetch
+      // polyfill (SDK 53+) - it only accepts a real Blob/File-like part
+      // with a .bytes() method. expo-file-system's File class implements
+      // Blob and has .bytes(), so it satisfies that check. See
+      // src/lib/jobPhotos.ts for the same fix on the existing job-photo
+      // upload.
       photos.forEach((p) => {
-        form.append('photos', { uri: p.uri, name: p.name, type: p.type } as unknown as Blob);
+        form.append('photos', new File(p.uri));
       });
       return api.post('/incoming-reports', form);
     },

@@ -34,7 +34,11 @@ export async function pickAndUploadJobPhoto(jobId: string, source: PhotoSource):
   form.append('file', {
     uri: asset.uri,
     name: asset.fileName ?? `job-photo-${Date.now()}.jpg`,
-    type: asset.mimeType ?? 'image/jpeg',
+    // Force a plain image/* type even when the OS reports something our
+    // backend/S3 might balk at (e.g. image/heic on an iPhone still set to
+    // "Most Compatible" off) - only affects the Content-Type header sent,
+    // not the asset's actual bytes.
+    type: asset.mimeType && asset.mimeType.startsWith('image/') ? asset.mimeType : 'image/jpeg',
   } as unknown as Blob);
 
   await api.post(`/jobs/${jobId}/photos`, form);

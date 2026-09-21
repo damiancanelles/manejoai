@@ -21,27 +21,36 @@ export default function ReportJobScreen() {
   const [photos, setPhotos] = useState<PickedPhoto[]>([]);
 
   async function addPhoto(source: 'camera' | 'library') {
-    const permission =
-      source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== 'granted') return;
+    try {
+      const permission =
+        source === 'camera' ? await ImagePicker.requestCameraPermissionsAsync() : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permission.status !== 'granted') return;
 
-    const remaining = MAX_PHOTOS - photos.length;
-    if (remaining <= 0) return;
+      const remaining = MAX_PHOTOS - photos.length;
+      if (remaining <= 0) return;
 
-    const result =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync({ quality: 0.7, mediaTypes: 'images' })
-        : await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: 'images', allowsMultipleSelection: true, selectionLimit: remaining });
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({ quality: 0.7, mediaTypes: 'images' })
+          : await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: 'images', allowsMultipleSelection: true, selectionLimit: remaining });
 
-    if (result.canceled || !result.assets?.length) return;
-    setPhotos((prev) => [
-      ...prev,
-      ...result.assets.slice(0, remaining).map((a) => ({
-        uri: a.uri,
-        name: a.fileName ?? `report-${Date.now()}.jpg`,
-        type: a.mimeType ?? 'image/jpeg',
-      })),
-    ]);
+      if (result.canceled || !result.assets?.length) return;
+      setPhotos((prev) => [
+        ...prev,
+        ...result.assets.slice(0, remaining).map((a) => ({
+          uri: a.uri,
+          name: a.fileName ?? `report-${Date.now()}.jpg`,
+          // Force a plain jpeg/png type for upload even when the OS reports
+          // something our backend/S3 might balk at (e.g. image/heic on an
+          // iPhone still set to "Most Compatible" off) - the asset's bytes
+          // are what the picker already gave us, this only affects the
+          // Content-Type header the upload sends.
+          type: a.mimeType && a.mimeType.startsWith('image/') ? a.mimeType : 'image/jpeg',
+        })),
+      ]);
+    } catch (err: any) {
+      Alert.alert(t('assistant.error'), err.message || String(err));
+    }
   }
 
   function onAddPhotoPress() {

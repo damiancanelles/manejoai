@@ -13,6 +13,8 @@ import { PropertiesService } from '../properties/properties.service';
 import { ContactsService } from '../contacts/contacts.service';
 import { PaymentsService } from '../payments/payments.service';
 import { RemindersService } from '../reminders/reminders.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { buildAccountStatement, buildPropertyStatement } from '../common/statements';
 
 import { CreateAccountDto } from '../accounts/dto';
 import { CreatePropertyDto } from '../properties/dto';
@@ -50,10 +52,14 @@ Use search_accounts/search_jobs/search_quotes/search_invoices/search_payments to
 
 A payment is the "money actually received" record - created either by the single-invoice "mark as paid" button or by recording one payment against several invoices at once (see propose_record_payment). It's separate from an invoice's own status: search_payments/get_payment answer "what have we actually collected" questions (by date, by customer), while search_invoices answers "what's outstanding/what did we bill" questions.
 
+When asked for a "statement" (of account, or for one property), use get_statement rather than piecing one together from search_invoices/search_payments yourself - it computes the running totals correctly (a batch payment can cover several properties of the same customer at once, so a property's own paid/balance figures aren't just its invoices' payments split evenly) and gives you the one link that becomes a real downloadable PDF.
+
 How work is recorded here: most businesses log the work they did as an INVOICE - the invoice title describes the job (e.g. "Unit 413 Punch Out", "Unit 620 Sheetrock repair"). A separate "Job" record exists but many businesses never use it. So for "what did we do at X" type questions, search invoices first; also search jobs, but don't conclude nothing happened just because search_jobs is empty - check invoices too. If a search comes back empty, retry with just the single most distinctive term (e.g. a unit number) before giving up.
 
 ## Linking back into the app
 When you mention a specific customer, job, quote, or invoice that you looked up, link to it with a normal markdown link using its real id and one of these paths: a customer -> \`/accounts/<id>\`, a job -> \`/jobs/<id>\`, a quote -> \`/quotes/<id>\`, an invoice -> \`/invoices/<id>\`. Only link to records you actually looked up in this conversation - never fabricate a link.
+
+A statement (get_statement) is different: it never opens a page - the \`link\` the tool returns, given back verbatim in a markdown link, triggers a PDF download right there in the chat. Always offer it after building a statement, e.g. "Here's Harborview's statement: $2,400 invoiced, $1,800 paid, $600 balance due. [Download PDF](<link>)".
 
 ## Style
 Keep answers short and concrete, the way a colleague would answer over chat, not a formal report. Reply in the same language the user is writing to you in. Dollar amounts from tools are in cents - always convert to dollars when you mention them, and always pass unitPriceCents in cents (e.g. $45.00 = 4500) when proposing quote/invoice items.`;
@@ -210,6 +216,21 @@ const READ_TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: { paymentId: { type: 'string' } },
       required: ['paymentId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'get_statement',
+    description:
+      "Build a statement of account - every invoice and payment for one customer, or for just one of their properties, over an optional date range, with running totals (invoiced, paid, balance due). Pass exactly one of accountId or propertyId. The result includes a `link` - give that back to the user as a markdown link exactly as provided (e.g. [Download statement](<link>)); the app turns it into a PDF download, not a page.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        accountId: { type: 'string', description: 'A whole customer\'s statement - omit if using propertyId' },
+        propertyId: { type: 'string', description: "One property's own statement - omit if using accountId" },
+        dateFrom: { type: 'string', description: 'Optional - ISO date, only invoices/payments on or after this date' },
+        dateTo: { type: 'string', description: 'Optional - ISO date, only invoices/payments on or before this date' },
+      },
       additionalProperties: false,
     },
   },
@@ -402,6 +423,7 @@ export class AssistantService {
     private contactsService: ContactsService,
     private paymentsService: PaymentsService,
     private remindersService: RemindersService,
+    private prisma: PrismaService,
   ) {
     this.client = new Anthropic({ apiKey: this.config.get<string>('ANTHROPIC_API_KEY') });
   }
@@ -550,6 +572,46 @@ export class AssistantService {
             id: inv.id,
             invoiceNumber: inv.invoiceNumber,
             amountCents: inv.amountCents,
+          })),
+        };
+      }
+      case 'get_statement': {
+        if (!input.accountId && !input.propertyId) {
+          return { error: 'Pass exactly one of accountId or propertyId.' };
+        }
+        if (input.accountId && input.propertyId) {
+          return { error: 'Pass only one of accountId or propertyId, not both.' };
+        }
+        const statement = input.propertyId
+          ? await buildPropertyStatement(this.prisma, input.propertyId, businessId, input.dateFrom, input.dateTo)
+          : await buildAccountStatement(this.prisma, input.accountId, businessId, input.dateFrom, input.dateTo);
+
+        const qs = new URLSearchParams();
+        if (input.dateFrom) qs.set('dateFrom', input.dateFrom);
+        if (input.dateTo) qs.set('dateTo', input.dateTo);
+        const base = statement.scope === 'property' ? `/statements/property/${input.propertyId}` : `/statements/account/${input.accountId}`;
+        const link = qs.toString() ? `${base}?${qs.toString()}` : base;
+
+        return {
+          link,
+          customer: statement.accountName,
+          property: statement.propertyName,
+          periodFrom: statement.periodFrom,
+          periodTo: statement.periodTo,
+          totals: statement.totals,
+          invoices: statement.invoices.map((i) => ({
+            invoiceNumber: i.invoiceNumber,
+            title: i.title,
+            issueDate: i.issueDate,
+            dueDate: i.dueDate,
+            status: i.status,
+            amountCents: i.amountCents,
+            property: i.propertyName,
+          })),
+          payments: statement.payments.map((p) => ({
+            paidAt: p.paidAt,
+            appliedCents: p.appliedCents,
+            invoiceNumbers: p.invoiceNumbers,
           })),
         };
       }

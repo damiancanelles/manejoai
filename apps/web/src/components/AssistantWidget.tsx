@@ -1,6 +1,7 @@
 import { FormEvent, Fragment, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { downloadStatementPdf } from '../lib/statementPdf';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../i18n';
 
@@ -27,7 +28,54 @@ interface ChatMessage {
 // links without that shape) passes through untouched.
 const LINK_RE = /\[([^\]]+)\]\((\/[^\s)]+)\)/g;
 
-/** Renders assistant text, turning `[label](/path)` into a real in-SPA navigation link. */
+// get_statement hands the assistant a /statements/account/<id> or
+// /statements/property/<id> "link" (see assistant.service.ts) - it never
+// opens a page, it's the chat's own signal to download a PDF right there.
+const STATEMENT_RE = /^\/statements\/(account|property)\/([^/?]+)(?:\?(.*))?$/;
+
+/** A statement link downloads a PDF on click instead of navigating - same visual style as a normal chat link. */
+function StatementLink({ href, label }: { href: string; label: string }) {
+  const { business } = useAuth();
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClick() {
+    const match = href.match(STATEMENT_RE);
+    if (!match || !business) return;
+    const [, scope, id, qs] = match;
+    const params = new URLSearchParams(qs ?? '');
+    setDownloading(true);
+    setError(null);
+    try {
+      await downloadStatementPdf(
+        scope as 'account' | 'property',
+        id,
+        business,
+        params.get('dateFrom') ?? undefined,
+        params.get('dateTo') ?? undefined,
+      );
+    } catch (err: any) {
+      setError(err.message || 'Download failed');
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <>
+      <button
+        onClick={handleClick}
+        disabled={downloading}
+        className="font-medium text-indigo-600 underline hover:text-indigo-700 disabled:opacity-50"
+      >
+        {downloading ? '…' : label}
+      </button>
+      {error && <span className="ml-1 text-xs text-red-600">({error})</span>}
+    </>
+  );
+}
+
+/** Renders assistant text, turning `[label](/path)` into a real in-SPA navigation link - or, for a /statements/... path, a PDF-download button instead. */
 function ChatText({ text }: { text: string }) {
   const parts: (string | { label: string; href: string })[] = [];
   let lastIndex = 0;
@@ -43,6 +91,8 @@ function ChatText({ text }: { text: string }) {
       {parts.map((part, i) =>
         typeof part === 'string' ? (
           <Fragment key={i}>{part}</Fragment>
+        ) : STATEMENT_RE.test(part.href) ? (
+          <StatementLink key={i} href={part.href} label={part.label} />
         ) : (
           <Link key={i} to={part.href} className="font-medium text-indigo-600 underline hover:text-indigo-700">
             {part.label}

@@ -17,8 +17,13 @@ export class PaymentsController {
   }
 
   @Get()
-  findAll(@Query('accountId') accountId: string | undefined, @CurrentUser() user: { businessId: string }) {
-    return this.paymentsService.findAll({ accountId }, user.businessId);
+  findAll(
+    @Query('accountId') accountId: string | undefined,
+    @Query('dateFrom') dateFrom: string | undefined,
+    @Query('dateTo') dateTo: string | undefined,
+    @CurrentUser() user: { businessId: string },
+  ) {
+    return this.paymentsService.findAll({ accountId, dateFrom, dateTo }, user.businessId);
   }
 
   @Get(':id')

@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
+import { downloadQuotePdf } from '../lib/quotePdf';
+import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n';
 
 interface QuoteItem {
@@ -29,6 +31,7 @@ function money(cents: number) {
 }
 
 export default function QuoteDetail() {
+  const { business } = useAuth();
   const { t, locale } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -131,13 +134,21 @@ export default function QuoteDetail() {
           </Link>
           {quote.property && <span className="text-sm text-slate-500"> — {quote.property.name}</span>}
         </div>
-        <span
-          className={`rounded px-2 py-1 text-sm font-medium ${
-            locked ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
-          }`}
-        >
-          {t(`status.${quote.status}`)}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => business && downloadQuotePdf(quote, business)}
+            className="rounded border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100"
+          >
+            {t('quoteDetail.downloadPdf')}
+          </button>
+          <span
+            className={`rounded px-2 py-1 text-sm font-medium ${
+              locked ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
+            }`}
+          >
+            {t(`status.${quote.status}`)}
+          </span>
+        </div>
       </div>
 
       {error && <div className="rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}

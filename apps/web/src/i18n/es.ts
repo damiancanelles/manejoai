@@ -332,6 +332,7 @@ export const es: Record<string, string> = {
   'quoteDetail.approvedOn': 'el {date}',
   'quoteDetail.convertedTo': '— convertida en',
   'quoteDetail.invoiceLabel': 'factura {number}',
+  'quoteDetail.downloadPdf': 'Descargar PDF',
   'quoteDetail.issued': 'Emitida',
   'quoteDetail.job': 'Trabajo',
   'quoteDetail.items': 'Renglones',

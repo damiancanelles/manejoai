@@ -63,9 +63,20 @@ export class PaymentsService {
     return this.findOne(payment.id, businessId);
   }
 
-  findAll(filters: { accountId?: string }, businessId: string) {
+  findAll(filters: { accountId?: string; dateFrom?: string; dateTo?: string }, businessId: string) {
     return this.prisma.payment.findMany({
-      where: { accountId: filters.accountId, account: { businessId } },
+      where: {
+        accountId: filters.accountId,
+        account: { businessId },
+        ...(filters.dateFrom || filters.dateTo
+          ? {
+              paidAt: {
+                gte: filters.dateFrom ? new Date(filters.dateFrom) : undefined,
+                lte: filters.dateTo ? new Date(`${filters.dateTo}T23:59:59.999`) : undefined,
+              },
+            }
+          : {}),
+      },
       orderBy: { paidAt: 'desc' },
       include: { account: true, invoices: true },
     });

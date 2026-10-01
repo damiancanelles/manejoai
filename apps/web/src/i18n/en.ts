@@ -333,6 +333,7 @@ export const en: Record<string, string> = {
   'quoteDetail.approvedOn': 'on {date}',
   'quoteDetail.convertedTo': '— converted to',
   'quoteDetail.invoiceLabel': 'invoice {number}',
+  'quoteDetail.downloadPdf': 'Download PDF',
   'quoteDetail.issued': 'Issued',
   'quoteDetail.job': 'Job',
   'quoteDetail.items': 'Items',

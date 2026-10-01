@@ -34,7 +34,7 @@ const MODEL = 'claude-sonnet-5';
 const MAX_TOOL_LOOPS = 10;
 const MAX_TOKENS = 8192;
 
-const SYSTEM_PROMPT = `You are the in-app assistant for manejoai, a business-management tool for property-services vendors (painting, cleaning, maintenance, etc). You're embedded in the app for one specific business - you can only see and change that business's own customers, jobs, quotes, and invoices, never any other business's data.
+const SYSTEM_PROMPT = `You are the in-app assistant for manejoai, a business-management tool for property-services vendors (painting, cleaning, maintenance, etc). You're embedded in the app for one specific business - you can only see and change that business's own customers, jobs, quotes, invoices, and payments, never any other business's data.
 
 ## What you can do
 You can look things up (search_* and get_* tools) and you can propose changes (every propose_* tool) - creating or editing customers, properties, contacts, jobs, quotes, invoices, and line items; approving quotes; marking invoices sent/canceled; recording payments; and sending draft invoices or payment reminders (these send real emails to real customers).
@@ -46,7 +46,9 @@ Every propose_* tool ONLY queues the change for the user to review - it never ac
 For anything beyond a single lookup, think it through before acting: figure out which real records are involved (search for them - never guess or invent an id), decide the sequence of steps, and propose each step as its own action so the user can approve some and reject others. Explain the plan in plain language in your reply (e.g. "Here's what I'd do: 1) add a $540 invoice for Unit 413, 2) send it to Harborview's AP contact - both below for your approval"). If a request is ambiguous (which customer, which property, draft vs. send now, etc.) ask a clarifying question instead of guessing.
 
 ## Look things up first
-Use search_accounts/search_jobs/search_quotes/search_invoices to find the real id of anything you're about to reference or change, and get_quote/get_invoice to see full details (including line item ids) before editing an existing quote or invoice's items. Every id you put in a propose_* tool's input must come from one of these tools - never make one up.
+Use search_accounts/search_jobs/search_quotes/search_invoices/search_payments to find the real id of anything you're about to reference or change, and get_quote/get_invoice/get_payment to see full details (including line item ids, or which invoices a payment covers) before editing an existing quote/invoice's items or answering a question about a specific payment. Every id you put in a propose_* tool's input must come from one of these tools - never make one up.
+
+A payment is the "money actually received" record - created either by the single-invoice "mark as paid" button or by recording one payment against several invoices at once (see propose_record_payment). It's separate from an invoice's own status: search_payments/get_payment answer "what have we actually collected" questions (by date, by customer), while search_invoices answers "what's outstanding/what did we bill" questions.
 
 How work is recorded here: most businesses log the work they did as an INVOICE - the invoice title describes the job (e.g. "Unit 413 Punch Out", "Unit 620 Sheetrock repair"). A separate "Job" record exists but many businesses never use it. So for "what did we do at X" type questions, search invoices first; also search jobs, but don't conclude nothing happened just because search_jobs is empty - check invoices too. If a search comes back empty, retry with just the single most distinctive term (e.g. a unit number) before giving up.
 
@@ -184,6 +186,30 @@ const READ_TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: { quoteId: { type: 'string' } },
       required: ['quoteId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'search_payments',
+    description:
+      "Search this business's payment register - the record of money actually received, created either by the single-invoice \"mark as paid\" button or by recording a payment against one or more invoices at once. Returns a summary list, not full records - use get_payment for full detail including which invoices it covers.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        accountId: { type: 'string', description: 'Optional - only payments from this customer id' },
+        dateFrom: { type: 'string', description: 'Optional - ISO date, only payments received on or after this date' },
+        dateTo: { type: 'string', description: 'Optional - ISO date, only payments received on or before this date' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'get_payment',
+    description: "Fetch one payment's full detail by id, including every invoice it covers.",
+    input_schema: {
+      type: 'object',
+      properties: { paymentId: { type: 'string' } },
+      required: ['paymentId'],
       additionalProperties: false,
     },
   },
@@ -495,6 +521,35 @@ export class AssistantService {
             description: it.description,
             quantity: it.quantity,
             unitPriceCents: it.unitPriceCents,
+          })),
+        };
+      }
+      case 'search_payments': {
+        const rows: any[] = await this.paymentsService.findAll(
+          { accountId: input.accountId, dateFrom: input.dateFrom, dateTo: input.dateTo },
+          businessId,
+        );
+        return rows.slice(0, 25).map((p) => ({
+          id: p.id,
+          paidAt: p.paidAt,
+          amountCents: p.amountCents,
+          notes: p.notes,
+          customer: p.account?.name,
+          invoiceNumbers: (p.invoices ?? []).map((inv: any) => inv.invoiceNumber),
+        }));
+      }
+      case 'get_payment': {
+        const p: any = await this.paymentsService.findOne(input.paymentId, businessId);
+        return {
+          id: p.id,
+          paidAt: p.paidAt,
+          amountCents: p.amountCents,
+          notes: p.notes,
+          customer: p.account ? { id: p.account.id, name: p.account.name } : undefined,
+          invoices: (p.invoices ?? []).map((inv: any) => ({
+            id: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            amountCents: inv.amountCents,
           })),
         };
       }

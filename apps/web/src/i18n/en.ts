@@ -617,6 +617,12 @@ export const en: Record<string, string> = {
   'assistant.upgradeCta': 'Upgrade to Pro - $25/month',
   'assistant.openAria': 'Open assistant',
   'assistant.closeAria': 'Close assistant',
+  'assistant.startRecording': 'Record a voice message',
+  'assistant.stopRecording': 'Stop recording',
+  'assistant.transcribing': 'Transcribing…',
+  'assistant.transcribeEmpty': "Didn't catch that - try again.",
+  'assistant.transcribeError': 'Could not transcribe that - try again.',
+  'assistant.micError': "Couldn't access the microphone - check your browser's permissions.",
 
   // Platform (super-admin)
   'platform.badge': 'Platform',

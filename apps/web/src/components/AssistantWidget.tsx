@@ -170,18 +170,18 @@ export default function AssistantWidget() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, open, sending]);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const text = input.trim();
-    if (!text || sending) return;
-
+  async function sendMessage(text: string) {
     setError(null);
     const next = [...messages, { role: 'user' as const, content: text }];
     setMessages(next);
@@ -198,6 +198,61 @@ export default function AssistantWidget() {
       setError(err.message || t('assistant.error'));
     } finally {
       setSending(false);
+    }
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || sending) return;
+    await sendMessage(text);
+  }
+
+  async function startRecording() {
+    if (recording || sending || transcribing) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((track) => track.stop());
+        void handleRecordingStop(recorder.mimeType);
+      };
+      mediaRecorderRef.current = recorder;
+      setError(null);
+      recorder.start();
+      setRecording(true);
+    } catch {
+      setError(t('assistant.micError'));
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  }
+
+  async function handleRecordingStop(mimeType: string) {
+    const blob = new Blob(chunksRef.current, { type: mimeType });
+    chunksRef.current = [];
+    if (blob.size === 0) return;
+
+    setTranscribing(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append('audio', blob, mimeType.includes('mp4') ? 'voice.m4a' : 'voice.webm');
+      const res = await api.post<{ text: string }>('/assistant/transcribe', form);
+      const text = res.text.trim();
+      if (text) await sendMessage(text);
+      else setError(t('assistant.transcribeEmpty'));
+    } catch (err: any) {
+      setError(err.message || t('assistant.transcribeError'));
+    } finally {
+      setTranscribing(false);
     }
   }
 
@@ -281,13 +336,27 @@ export default function AssistantWidget() {
                 <input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={t('assistant.inputPlaceholder')}
-                  disabled={sending}
+                  placeholder={transcribing ? t('assistant.transcribing') : t('assistant.inputPlaceholder')}
+                  disabled={sending || recording || transcribing}
                   className="flex-1 rounded border border-slate-300 px-3 py-1.5 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 />
                 <button
+                  type="button"
+                  onClick={recording ? stopRecording : startRecording}
+                  disabled={sending || transcribing}
+                  aria-label={recording ? t('assistant.stopRecording') : t('assistant.startRecording')}
+                  className={`flex items-center justify-center rounded px-2.5 py-1.5 text-sm shadow-sm transition-colors disabled:opacity-50 ${
+                    recording ? 'animate-pulse bg-red-600 text-white hover:bg-red-700' : 'border border-slate-300 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 1a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4M9 22h6" />
+                  </svg>
+                </button>
+                <button
                   type="submit"
-                  disabled={sending || !input.trim()}
+                  disabled={sending || recording || transcribing || !input.trim()}
                   className="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {t('assistant.send')}

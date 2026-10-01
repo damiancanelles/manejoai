@@ -1,10 +1,12 @@
-import { BadRequestException, Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { SubscriptionGuard } from '../common/guards/subscription.guard';
 import { ProTierGuard } from '../common/guards/pro-tier.guard';
 import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AssistantService } from './assistant.service';
+import { TranscriptionService } from './transcription.service';
 import { ChatDto, ExecuteActionDto } from './dto';
 
 const MAX_HISTORY = 20; // basic cost guard against an unbounded client-side history
@@ -16,7 +18,23 @@ const MAX_HISTORY = 20; // basic cost guard against an unbounded client-side his
 @UseGuards(JwtAuthGuard, SubscriptionGuard, CrewGuard, ProTierGuard)
 @Controller('assistant')
 export class AssistantController {
-  constructor(private assistantService: AssistantService) {}
+  constructor(
+    private assistantService: AssistantService,
+    private transcriptionService: TranscriptionService,
+  ) {}
+
+  // Voice input for the chat - multipart/form-data with a single "audio"
+  // field. Returns the transcript only; the widget sends it through
+  // POST /assistant/message itself, same as anything typed.
+  @Post('transcribe')
+  @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 25 * 1024 * 1024 } }))
+  async transcribe(@UploadedFile() audio: Express.Multer.File) {
+    if (!audio) {
+      throw new BadRequestException('audio file is required');
+    }
+    const text = await this.transcriptionService.transcribe(audio.buffer, audio.mimetype);
+    return { text };
+  }
 
   @Post('message')
   async message(@Body() dto: ChatDto, @CurrentUser() user: { businessId: string }) {

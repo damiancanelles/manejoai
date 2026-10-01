@@ -36,7 +36,13 @@
           "cameraPermission": "manejoai uses your camera so you can photograph a job as you finish it."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "manejoai uses your microphone so you can send a voice message to the assistant."
+        }
+      ]
     ],
     "extra": {
       "eas": {

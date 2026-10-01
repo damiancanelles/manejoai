@@ -1,6 +1,7 @@
 import { Fragment, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync, useAudioRecorder } from 'expo-audio';
+import { File } from 'expo-file-system';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { useT } from '../i18n';
@@ -78,16 +81,17 @@ export default function AssistantScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 
   function handleLink(path: string) {
     openAssistantLink(navigation, path);
   }
 
-  async function onSend() {
-    const text = input.trim();
-    if (!text || sending) return;
+  async function sendMessage(text: string) {
     setError(null);
     const next = [...messages, { role: 'user' as const, content: text }];
     setMessages(next);
@@ -104,6 +108,56 @@ export default function AssistantScreen() {
       setError(err.message || t('assistant.error'));
     } finally {
       setSending(false);
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    }
+  }
+
+  async function onSend() {
+    const text = input.trim();
+    if (!text || sending) return;
+    await sendMessage(text);
+  }
+
+  async function startRecording() {
+    if (recording || sending || transcribing) return;
+    try {
+      const permission = await requestRecordingPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(t('assistant.micError'));
+        return;
+      }
+      await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+      setError(null);
+      setRecording(true);
+    } catch {
+      setError(t('assistant.micError'));
+    }
+  }
+
+  async function stopRecording() {
+    setRecording(false);
+    try {
+      await recorder.stop();
+      const uri = recorder.uri;
+      if (!uri) return;
+
+      setTranscribing(true);
+      setError(null);
+      const form = new FormData();
+      // Same fix as ReportJobScreen's photo upload: Expo's fetch polyfill
+      // rejects the classic {uri, name, type} FormData part, so the file
+      // has to go in via expo-file-system's File class instead.
+      form.append('audio', new File(uri));
+      const res = await api.post<{ text: string }>('/assistant/transcribe', form);
+      const text = res.text.trim();
+      if (text) await sendMessage(text);
+      else setError(t('assistant.transcribeEmpty'));
+    } catch (err: any) {
+      setError(err.message || t('assistant.transcribeError'));
+    } finally {
+      setTranscribing(false);
       requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
     }
   }
@@ -177,13 +231,24 @@ export default function AssistantScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder={t('assistant.inputPlaceholder')}
+            placeholder={transcribing ? t('assistant.transcribing') : t('assistant.inputPlaceholder')}
             placeholderTextColor={colors.textMuted}
-            editable={!sending}
+            editable={!sending && !recording && !transcribing}
             style={styles.input}
             multiline
           />
-          <Pressable onPress={onSend} disabled={sending || !input.trim()} style={[styles.sendBtn, (sending || !input.trim()) && styles.sendBtnDisabled]}>
+          <Pressable
+            onPress={recording ? stopRecording : startRecording}
+            disabled={sending || transcribing}
+            style={[styles.micBtn, recording && styles.micBtnActive, (sending || transcribing) && styles.sendBtnDisabled]}
+          >
+            {transcribing ? <ActivityIndicator color={colors.accent} size="small" /> : <Text style={styles.micBtnText}>{recording ? '■' : '🎤'}</Text>}
+          </Pressable>
+          <Pressable
+            onPress={onSend}
+            disabled={sending || recording || transcribing || !input.trim()}
+            style={[styles.sendBtn, (sending || recording || transcribing || !input.trim()) && styles.sendBtnDisabled]}
+          >
             {sending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.sendBtnText}>{t('assistant.send')}</Text>}
           </Pressable>
         </View>
@@ -270,6 +335,9 @@ const styles = StyleSheet.create({
   actionError: { fontSize: 12, color: colors.danger },
   inputRow: { flexDirection: 'row', gap: spacing.sm, padding: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.surface, alignItems: 'flex-end' },
   input: { flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: spacing.sm, paddingVertical: 8, fontSize: 14, color: colors.text, maxHeight: 100 },
+  micBtn: { borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, borderRadius: 10, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  micBtnActive: { backgroundColor: colors.danger, borderColor: colors.danger },
+  micBtnText: { fontSize: 16 },
   sendBtn: { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: spacing.md, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { opacity: 0.5 },
   sendBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },

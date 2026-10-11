@@ -88,7 +88,6 @@ export default function AccountDetail() {
   const [account, setAccount] = useState<Account | null>(null);
   const [showPropertyForm, setShowPropertyForm] = useState(false);
   const [showContactForm, setShowContactForm] = useState(false);
-  const [showJobForm, setShowJobForm] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
   const [reminderResult, setReminderResult] = useState<ReminderResult | null>(null);
   const [reminderError, setReminderError] = useState<string | null>(null);
@@ -169,18 +168,6 @@ export default function AccountDetail() {
       return;
     }
     await api.delete(`/payments/${paymentId}`);
-    load();
-  }
-
-  async function addJob(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const form = new FormData(e.currentTarget);
-    await api.post('/jobs', {
-      accountId: id,
-      title: form.get('title'),
-      description: form.get('description') || undefined,
-    });
-    setShowJobForm(false);
     load();
   }
 
@@ -358,80 +345,6 @@ export default function AccountDetail() {
             </li>
           ))}
           {account.contacts.length === 0 && <li className="text-slate-400">{t('accountDetail.noContacts')}</li>}
-        </ul>
-      </section>
-
-      {/* Jobs */}
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t('accountDetail.jobs')}</h2>
-          <button onClick={() => setShowJobForm((v) => !v)} className="text-sm text-indigo-600">
-            {showJobForm ? t('common.cancel') : t('accountDetail.logJob')}
-          </button>
-        </div>
-        {showJobForm && (
-          <form onSubmit={addJob} className="mb-3 flex flex-wrap gap-2 rounded border border-slate-200 bg-white p-3 shadow-sm text-sm">
-            <input name="title" placeholder={t('accountDetail.jobTitlePlaceholder')} required className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1" />
-            <input name="description" placeholder={t('accountDetail.jobDescPlaceholder')} className="min-w-[10rem] flex-1 rounded border border-slate-300 px-2 py-1" />
-            <button type="submit" className="rounded bg-indigo-600 hover:bg-indigo-700 transition-colors px-3 py-1 text-white">
-              {t('common.add')}
-            </button>
-          </form>
-        )}
-        <ul className="space-y-1 text-sm">
-          {account.jobs.map((j) => (
-            <li key={j.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
-              <Link to={`/jobs/${j.id}`} className="font-medium text-indigo-600 hover:underline">
-                {j.title}
-              </Link>{' '}
-              — {t(`status.${j.status}`)} — {new Date(j.createdAt).toLocaleDateString(locale)}
-            </li>
-          ))}
-          {account.jobs.length === 0 && <li className="text-slate-400">{t('accountDetail.noJobs')}</li>}
-        </ul>
-      </section>
-
-      {/* Quotes */}
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t('accountDetail.quotes')}</h2>
-          <Link to={`/quotes/new?accountId=${id}`} className="text-sm text-indigo-600">
-            {t('accountDetail.newQuote')}
-          </Link>
-        </div>
-        <ul className="space-y-1 text-sm">
-          {account.quotes.map((q) => (
-            <li key={q.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
-              <Link to={`/quotes/${q.id}`} className="font-medium text-indigo-600 hover:underline">
-                {q.quoteNumber}
-              </Link>{' '}
-              — {money(q.amountCents)} — {t(`status.${q.status}`)} —{' '}
-              {t('accountDetail.issuedOn', { date: new Date(q.issueDate).toLocaleDateString(locale) })}
-            </li>
-          ))}
-          {account.quotes.length === 0 && <li className="text-slate-400">{t('accountDetail.noQuotes')}</li>}
-        </ul>
-      </section>
-
-      {/* Invoices */}
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">{t('accountDetail.invoices')}</h2>
-          <Link to={`/invoices/new?accountId=${id}`} className="text-sm text-indigo-600">
-            {t('accountDetail.newInvoice')}
-          </Link>
-        </div>
-        <ul className="space-y-1 text-sm">
-          {account.invoices.map((inv) => (
-            <li key={inv.id} className="rounded border border-slate-200 bg-white px-3 py-2 shadow-sm">
-              <Link to={`/invoices/${inv.id}`} className="font-medium text-indigo-600 hover:underline">
-                {inv.invoiceNumber}
-              </Link>{' '}
-              — {money(inv.amountCents)} — {t(`status.${inv.status}`)} —{' '}
-              {t('accountDetail.dueOn', { date: new Date(inv.dueDate).toLocaleDateString(locale) })}
-            </li>
-          ))}
-          {account.invoices.length === 0 && <li className="text-slate-400">{t('accountDetail.noInvoices')}</li>}
         </ul>
       </section>
 

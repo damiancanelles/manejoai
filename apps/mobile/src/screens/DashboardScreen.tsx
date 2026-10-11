@@ -9,7 +9,7 @@ import YearSwitcher from '../components/YearSwitcher';
 import MonthlyBarChart from '../components/MonthlyBarChart';
 import RankedList from '../components/RankedList';
 import { money } from '../lib/money';
-import { sumByStatus, monthlyIncome, incomeByCustomer, yearsWithInvoices, type StatsInvoice } from '../lib/invoiceStats';
+import { sumByStatus, sumPending, monthlyIncome, incomeByCustomer, yearsWithInvoices, type StatsInvoice } from '../lib/invoiceStats';
 import { colors, spacing } from '../theme';
 
 // Mirrors apps/web/src/pages/Dashboard.tsx: same stat tiles, same monthly
@@ -43,6 +43,7 @@ export default function DashboardScreen() {
   const sentCount = scoped.filter((i) => i.status === 'SENT' && (year == null || new Date(i.issueDate).getFullYear() === year)).length;
   const overdueTotal = sumByStatus(scoped, 'OVERDUE', year);
   const paidTotal = sumByStatus(scoped, 'PAID', year);
+  const pendingTotal = sumPending(scoped, year);
   const monthly = monthlyIncome(scoped, year, locale);
   const byCustomer = incomeByCustomer(scoped, year);
 
@@ -71,6 +72,7 @@ export default function DashboardScreen() {
           <View style={styles.tileRow}>
             <StatTile label={t('dashboard.overdue', { year: yearLabel })} value={String(overdueCount)} sub={t('dashboard.overdueSub', { amount: money(overdueTotal) })} tone="danger" />
             <StatTile label={t('dashboard.sentNotDue', { year: yearLabel })} value={String(sentCount)} tone="warning" />
+            <StatTile label={t('dashboard.pending', { year: yearLabel })} value={money(pendingTotal)} tone="accent" />
             <StatTile label={t('dashboard.paid', { year: yearLabel })} value={money(paidTotal)} tone="success" />
           </View>
 

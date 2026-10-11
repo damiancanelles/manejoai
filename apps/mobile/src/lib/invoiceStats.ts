@@ -34,6 +34,13 @@ export function sumByStatus(invoices: StatsInvoice[], status: string, year: numb
     .reduce((sum, i) => sum + i.amountCents, 0);
 }
 
+/** Invoiced but not yet paid and not yet overdue - SENT or AWAITING_PAYMENT (the brief grace window right after the due date, before reminders kick in). */
+export function sumPending(invoices: StatsInvoice[], year: number | null = null): number {
+  return invoices
+    .filter((i) => (i.status === 'SENT' || i.status === 'AWAITING_PAYMENT') && matchesYear(i, year))
+    .reduce((sum, i) => sum + i.amountCents, 0);
+}
+
 export interface MonthBucket {
   key: string; // "2026-03"
   label: string; // "Mar" (a specific year) or "Mar '26" (all time, spans years)

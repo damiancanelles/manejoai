@@ -4,7 +4,7 @@ import StatTile from '../components/StatTile';
 import MonthlyIncomeChart from '../components/MonthlyIncomeChart';
 import RankedTable from '../components/RankedTable';
 import YearSwitcher from '../components/YearSwitcher';
-import { sumByStatus, monthlyIncome, incomeByCustomer, yearsWithInvoices, money } from '../lib/invoiceStats';
+import { sumByStatus, sumPending, monthlyIncome, incomeByCustomer, yearsWithInvoices, money } from '../lib/invoiceStats';
 import { useI18n } from '../i18n';
 
 interface Invoice {
@@ -45,6 +45,7 @@ export default function Dashboard() {
   const sent = scoped.filter((i) => i.status === 'SENT');
   const overdueTotal = sumByStatus(invoices, 'OVERDUE', year);
   const paidTotal = sumByStatus(invoices, 'PAID', year);
+  const pendingTotal = sumPending(invoices, year);
   const monthly = monthlyIncome(invoices, year, locale);
   const byCustomer = incomeByCustomer(invoices, year);
 
@@ -55,7 +56,7 @@ export default function Dashboard() {
         <YearSwitcher years={years} selected={year} onChange={setYear} />
       </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
           label={t('dashboard.overdue', { year: yearLabel })}
           value={String(overdue.length)}
@@ -63,6 +64,7 @@ export default function Dashboard() {
           tone="red"
         />
         <StatTile label={t('dashboard.sentNotDue', { year: yearLabel })} value={String(sent.length)} tone="amber" />
+        <StatTile label={t('dashboard.pending', { year: yearLabel })} value={money(pendingTotal)} tone="indigo" />
         <StatTile label={t('dashboard.paid', { year: yearLabel })} value={money(paidTotal)} tone="green" />
       </div>
 

@@ -185,6 +185,7 @@ export const es: Record<string, string> = {
   'dashboard.overdue': 'Vencidas ({year})',
   'dashboard.overdueSub': '{amount} pendiente',
   'dashboard.sentNotDue': 'Enviadas, aún no vencidas ({year})',
+  'dashboard.pending': 'Pendientes ({year})',
   'dashboard.paid': 'Pagadas ({year})',
   'dashboard.byMonth': 'Ingreso bruto por mes',
   'dashboard.byCustomer': 'Ingreso bruto por cliente',

@@ -8,6 +8,7 @@ import RankedTable from '../components/RankedTable';
 import YearSwitcher from '../components/YearSwitcher';
 import {
   sumByStatus,
+  sumPending,
   monthlyIncome,
   incomeByProperty,
   paidByProperty,
@@ -175,6 +176,7 @@ export default function AccountDetail() {
   const yearLabel = year != null ? `${year}` : t('dashboard.allTime');
   const paidTotal = sumByStatus(account.invoices, 'PAID', year);
   const overdueTotal = sumByStatus(account.invoices, 'OVERDUE', year);
+  const pendingTotal = sumPending(account.invoices, year);
   const monthly = monthlyIncome(account.invoices, year, locale);
   const propertyNames = new Map(account.properties.map((p) => [p.id, p.name]));
   const byProperty = incomeByProperty(account.invoices, propertyNames, year);
@@ -233,9 +235,10 @@ export default function AccountDetail() {
         <div className="mb-3 flex justify-end">
           <YearSwitcher years={years} selected={year} onChange={setYear} />
         </div>
-        <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <StatTile label={t('accountDetail.paid', { year: yearLabel })} value={money(paidTotal)} tone="green" />
+        <div className="mb-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatTile label={t('accountDetail.pending', { year: yearLabel })} value={money(pendingTotal)} tone="indigo" />
           <StatTile label={t('accountDetail.overdue', { year: yearLabel })} value={money(overdueTotal)} tone="red" />
+          <StatTile label={t('accountDetail.paid', { year: yearLabel })} value={money(paidTotal)} tone="green" />
         </div>
         <h2 className="mb-2 text-lg font-semibold">{t('accountDetail.byMonth')}</h2>
         <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">

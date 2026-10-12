@@ -45,9 +45,16 @@ function dateRangeFilter(dateFrom?: string, dateTo?: string) {
   };
 }
 
-function totalsFrom(invoices: StatementInvoiceRow[], payments: StatementPaymentRow[]) {
+// "Paid" is driven by each invoice's own status, not by summing Payment
+// rows - Payment-backed recording (select invoices, record a payment) is a
+// newer feature, so plenty of invoices were marked PAID directly (imports,
+// manual status changes) with no Payment row behind them at all. Totaling
+// Payment.amountCents would silently undercount every one of those. The
+// payments list stays in the statement as reference ("last payment on
+// file"), it just doesn't drive the totals.
+function totalsFrom(invoices: StatementInvoiceRow[]) {
   const invoicedCents = invoices.filter((i) => i.status !== InvoiceStatus.CANCELED).reduce((sum, i) => sum + i.amountCents, 0);
-  const paidCents = payments.reduce((sum, p) => sum + p.appliedCents, 0);
+  const paidCents = invoices.filter((i) => i.status === InvoiceStatus.PAID).reduce((sum, i) => sum + i.amountCents, 0);
   return { invoicedCents, paidCents, balanceCents: invoicedCents - paidCents };
 }
 
@@ -102,7 +109,7 @@ export async function buildAccountStatement(
     periodTo: dateTo ?? null,
     invoices,
     payments,
-    totals: totalsFrom(invoices, payments),
+    totals: totalsFrom(invoices),
   };
 }
 
@@ -155,6 +162,6 @@ export async function buildPropertyStatement(
     periodTo: dateTo ?? null,
     invoices,
     payments,
-    totals: totalsFrom(invoices, payments),
+    totals: totalsFrom(invoices),
   };
 }

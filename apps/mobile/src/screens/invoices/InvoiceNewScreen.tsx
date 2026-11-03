@@ -42,6 +42,9 @@ export default function InvoiceNewScreen() {
   const [dueDate, setDueDate] = useState(defaultDueDate());
   const [title, setTitle] = useState('');
   const [items, setItems] = useState<ItemRow[]>([emptyItemRow()]);
+  const [showBackfill, setShowBackfill] = useState(false);
+  const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [issueDate, setIssueDate] = useState('');
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts', 'picker'],
@@ -66,6 +69,12 @@ export default function InvoiceNewScreen() {
       const parsedDue = new Date(dueDate);
       if (Number.isNaN(parsedDue.getTime())) throw new Error(t('invoiceNew.dueDate'));
       if (!title.trim()) throw new Error(t('invoiceNew.invoiceTitle'));
+      let parsedIssueDate: string | undefined;
+      if (issueDate.trim()) {
+        const d = new Date(issueDate.trim());
+        if (Number.isNaN(d.getTime())) throw new Error(t('invoiceNew.issueDate'));
+        parsedIssueDate = d.toISOString();
+      }
       return api.post<{ id: string }>('/invoices', {
         accountId,
         propertyId: propertyId || undefined,
@@ -73,10 +82,14 @@ export default function InvoiceNewScreen() {
         items: parsedItems,
         dueDate: parsedDue.toISOString(),
         title: title.trim(),
+        invoiceNumber: invoiceNumber.trim() || undefined,
+        issueDate: parsedIssueDate,
       });
     },
     onSuccess: (invoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      setInvoiceNumber('');
+      setIssueDate('');
       navigation.navigate('InvoiceDetail', { invoiceId: invoice.id });
     },
     onError: (err: any) => Alert.alert(t('assistant.error'), err.message),
@@ -128,6 +141,26 @@ export default function InvoiceNewScreen() {
         placeholder={t('invoiceNew.invoiceTitlePlaceholder')}
       />
 
+      <Pressable onPress={() => setShowBackfill((v) => !v)}>
+        <Text style={styles.link}>{showBackfill ? t('common.cancel') : t('invoiceNew.backfillToggle')}</Text>
+      </Pressable>
+      {showBackfill && (
+        <>
+          <TextField
+            label={t('invoiceNew.invoiceNumber')}
+            value={invoiceNumber}
+            onChangeText={setInvoiceNumber}
+            placeholder={t('invoiceNew.invoiceNumberPlaceholder')}
+          />
+          <TextField
+            label={`${t('invoiceNew.issueDate')} (YYYY-MM-DD)`}
+            value={issueDate}
+            onChangeText={setIssueDate}
+            placeholder="YYYY-MM-DD"
+          />
+        </>
+      )}
+
       <Pressable onPress={() => createInvoice.mutate()} disabled={!canSubmit} style={[styles.submit, !canSubmit && styles.submitDisabled]}>
         <Text style={styles.submitText}>{createInvoice.isPending ? t('common.saving') : t('invoiceNew.submit')}</Text>
       </Pressable>
@@ -141,4 +174,5 @@ const styles = StyleSheet.create({
   submit: { backgroundColor: colors.accent, borderRadius: 8, paddingVertical: 13, alignItems: 'center', marginTop: spacing.sm },
   submitDisabled: { opacity: 0.5 },
   submitText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  link: { color: colors.accent, fontSize: 14, fontWeight: '600' },
 });

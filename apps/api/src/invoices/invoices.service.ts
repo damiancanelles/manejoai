@@ -42,6 +42,22 @@ export class InvoicesService {
     return String(max + 1);
   }
 
+  // A caller-supplied number backfills a historical invoice under its real
+  // number instead of the live sequence; omitted (the normal case) falls
+  // back to auto-numbering.
+  private async resolveInvoiceNumber(requested: string | undefined, businessId: string): Promise<string> {
+    const invoiceNumber = requested?.trim();
+    if (!invoiceNumber) return this.nextInvoiceNumber(businessId);
+
+    const existing = await this.prisma.invoice.findUnique({
+      where: { businessId_invoiceNumber: { businessId, invoiceNumber } },
+    });
+    if (existing) {
+      throw new BadRequestException(`Invoice number ${invoiceNumber} is already in use.`);
+    }
+    return invoiceNumber;
+  }
+
   /** Recomputes and persists amountCents from this invoice's current items. */
   private async recomputeAmount(invoiceId: string) {
     const items = await this.prisma.invoiceItem.findMany({ where: { invoiceId } });
@@ -91,7 +107,7 @@ export class InvoicesService {
     if (dto.jobId) {
       await this.assertJobBelongsToAccount(dto.jobId, dto.accountId);
     }
-    const invoiceNumber = await this.nextInvoiceNumber(businessId);
+    const invoiceNumber = await this.resolveInvoiceNumber(dto.invoiceNumber, businessId);
     const amountCents = dto.items.reduce((sum, item) => sum + lineTotal(item), 0);
     return this.prisma.invoice.create({
       data: {

@@ -384,6 +384,10 @@ export const es: Record<string, string> = {
   'invoiceNew.invoiceTitle': 'Título de la factura',
   'invoiceNew.invoiceTitlePlaceholder': 'p. ej. Unidad 731L Resane 1 lavabo de tocador',
   'invoiceNew.submit': 'Crear factura',
+  'invoiceNew.backfillToggle': '¿Agregando una factura antigua?',
+  'invoiceNew.invoiceNumber': 'N.º de factura (opcional)',
+  'invoiceNew.invoiceNumberPlaceholder': 'Déjalo en blanco para asignar el siguiente número automáticamente',
+  'invoiceNew.issueDate': 'Fecha de emisión (opcional)',
 
   // Invoice detail
   'invoiceDetail.downloadPdf': 'Descargar PDF',

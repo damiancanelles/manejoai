@@ -75,6 +75,13 @@ export class CreateInvoiceDto {
   @IsString()
   @IsNotEmpty()
   title!: string;
+
+  // Normally omitted - the server auto-assigns the next number. Set this to
+  // backfill a historical invoice that was missed on import, under its own
+  // real number instead of whatever's next in the live sequence.
+  @IsOptional()
+  @IsString()
+  invoiceNumber?: string;
 }
 
 export class UpdateInvoiceDto {

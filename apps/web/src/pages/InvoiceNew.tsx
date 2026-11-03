@@ -43,6 +43,7 @@ export default function InvoiceNew() {
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [items, setItems] = useState<ItemRow[]>([emptyRow()]);
   const [error, setError] = useState<string | null>(null);
+  const [showBackfill, setShowBackfill] = useState(false);
 
   useEffect(() => {
     api.get<Account[]>('/accounts').then(setAccounts);
@@ -101,6 +102,8 @@ export default function InvoiceNew() {
         items: parsedItems,
         dueDate: new Date(form.get('dueDate') as string).toISOString(),
         title: form.get('title') as string,
+        invoiceNumber: (form.get('invoiceNumber') as string)?.trim() || undefined,
+        issueDate: (form.get('issueDate') as string) ? new Date(form.get('issueDate') as string).toISOString() : undefined,
       });
       navigate(`/invoices/${invoice.id}`);
     } catch (err: any) {
@@ -263,6 +266,29 @@ export default function InvoiceNew() {
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
           />
         </label>
+
+        <div>
+          <button type="button" onClick={() => setShowBackfill((v) => !v)} className="text-sm text-indigo-600">
+            {showBackfill ? t('common.cancel') : t('invoiceNew.backfillToggle')}
+          </button>
+          {showBackfill && (
+            <div className="mt-2 grid grid-cols-1 gap-3 rounded border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+              <label className="block text-sm">
+                {t('invoiceNew.invoiceNumber')}
+                <input
+                  name="invoiceNumber"
+                  type="text"
+                  placeholder={t('invoiceNew.invoiceNumberPlaceholder')}
+                  className="mt-1 w-full rounded border border-slate-300 px-3 py-2"
+                />
+              </label>
+              <label className="block text-sm">
+                {t('invoiceNew.issueDate')}
+                <input name="issueDate" type="date" className="mt-1 w-full rounded border border-slate-300 px-3 py-2" />
+              </label>
+            </div>
+          )}
+        </div>
 
         <button
           type="submit"

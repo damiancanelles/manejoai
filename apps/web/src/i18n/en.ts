@@ -385,6 +385,10 @@ export const en: Record<string, string> = {
   'invoiceNew.invoiceTitle': 'Invoice title',
   'invoiceNew.invoiceTitlePlaceholder': 'e.g. Unit 731L Resurface 1 vanity bathroom sink',
   'invoiceNew.submit': 'Create invoice',
+  'invoiceNew.backfillToggle': 'Backfilling an old invoice?',
+  'invoiceNew.invoiceNumber': 'Invoice # (optional)',
+  'invoiceNew.invoiceNumberPlaceholder': 'Leave blank to auto-assign the next number',
+  'invoiceNew.issueDate': 'Issue date (optional)',
 
   // Invoice detail
   'invoiceDetail.downloadPdf': 'Download PDF',

@@ -20,12 +20,14 @@ Scan the QR code with **Expo Go** (fastest way to try it) on a physical
 iOS/Android device, or press `a`/`i` for an emulator/simulator if you have
 one set up locally.
 
-**It talks to staging by default** (`EXPO_PUBLIC_API_BASE_URL` defaults to
-`manejoai-api-staging` in `src/api/client.ts`) — same rule as the rest of
-this project: nothing touches production until that's explicitly asked
-for. `eas.json`'s `production` build profile is the only place the real
-API URL (`api.manejoai.cloud`) is configured, and that profile shouldn't
-be built/submitted until told to.
+**It talks to a locally-running API by default** (`EXPO_PUBLIC_API_BASE_URL`
+defaults to the dev machine's own LAN IP in `src/api/client.ts` — update it
+there, or set the env var yourself, if that IP changes). Run `apps/api`
+locally (`docker-compose up` for Postgres, then
+`npm run start:dev --workspace=@manejoai/api`) and make sure your phone is
+on the same WiFi as the computer running it. `eas.json`'s `production`
+build profile is the only place the real API URL (`api.manejoai.cloud`) is
+configured, and that profile shouldn't be built/submitted until told to.
 
 ## What's real vs. placeholder right now
 

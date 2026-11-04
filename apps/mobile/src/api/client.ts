@@ -4,11 +4,16 @@ const TOKEN_KEY = 'manejoai_token';
 
 // Unlike the web app, a native client has no same-origin/relative-path
 // trick (no dev proxy, no netlify.toml redirect) - every request needs a
-// real absolute URL. Defaults to STAGING, never production, so a build
-// that forgets to set EXPO_PUBLIC_API_BASE_URL can't accidentally touch
-// real customer data. Set this per build profile in eas.json when a
-// production build is actually wanted.
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://manejoai-api-staging-65cc6d441cef.herokuapp.com';
+// real absolute URL. There's no hosted staging backend anymore (deleted
+// 2026-11-03 to save Heroku cost - staging is local-only now), so this
+// defaults to the dev machine's own LAN IP, reachable from Expo Go or a
+// dev-client build on a phone on the same WiFi, as long as the API is
+// running locally (npm run start:dev --workspace=@manejoai/api). Update
+// the IP below if it changes (DHCP, different network), or override per
+// run with EXPO_PUBLIC_API_BASE_URL. Never defaults to production - set
+// that explicitly per build profile in eas.json when a real prod build is
+// wanted.
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://10.0.0.74:3001';
 
 // SecureStore (iOS Keychain / Android Keystore) instead of localStorage -
 // encrypted at rest, and it's the platform-recommended place for an auth

@@ -97,4 +97,19 @@ export class UpdateInvoiceDto {
   @IsOptional()
   @IsEnum(InvoiceStatus)
   status?: InvoiceStatus;
+
+  // Fixes a mis-assigned invoice - picked the wrong customer/property/job
+  // when it was created, with no way to correct it otherwise. propertyId/
+  // jobId accept null to explicitly clear (not just omit) either one.
+  @IsOptional()
+  @IsString()
+  accountId?: string;
+
+  @IsOptional()
+  @IsString()
+  propertyId?: string | null;
+
+  @IsOptional()
+  @IsString()
+  jobId?: string | null;
 }

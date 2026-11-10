@@ -26,6 +26,7 @@ interface Invoice {
   title: string;
   account: { id: string; name: string };
   property?: {
+    id: string;
     name: string;
     addressLine1: string;
     addressLine2?: string | null;
@@ -33,9 +34,18 @@ interface Invoice {
     state: string;
     zip: string;
   } | null;
-  job?: { title: string } | null;
+  job?: { id: string; title: string } | null;
   items: InvoiceItem[];
   reminders: Reminder[];
+}
+interface AccountOption {
+  id: string;
+  name: string;
+}
+interface AccountDetail {
+  id: string;
+  properties: { id: string; name: string }[];
+  jobs: { id: string; title: string }[];
 }
 
 function money(cents: number) {
@@ -51,6 +61,12 @@ export default function InvoiceDetail() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState(false);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
+  const [assignAccountId, setAssignAccountId] = useState('');
+  const [assignAccount, setAssignAccount] = useState<AccountDetail | null>(null);
+  const [assignPropertyId, setAssignPropertyId] = useState('');
+  const [assignJobId, setAssignJobId] = useState('');
 
   function load() {
     if (!id) return;
@@ -58,6 +74,56 @@ export default function InvoiceDetail() {
   }
 
   useEffect(load, [id]);
+
+  useEffect(() => {
+    if (!assignAccountId) {
+      setAssignAccount(null);
+      return;
+    }
+    api.get<AccountDetail>(`/accounts/${assignAccountId}`).then(setAssignAccount);
+  }, [assignAccountId]);
+
+  function startEditAssignment() {
+    if (!invoice) return;
+    setError(null);
+    if (accounts.length === 0) {
+      api.get<AccountOption[]>('/accounts').then(setAccounts);
+    }
+    setAssignAccountId(invoice.account.id);
+    setAssignPropertyId(invoice.property?.id ?? '');
+    setAssignJobId(invoice.job?.id ?? '');
+    setEditingAssignment(true);
+  }
+
+  function changeAssignAccount(newAccountId: string) {
+    setAssignAccountId(newAccountId);
+    // Switching customers - the old property/job almost certainly don't
+    // belong to the new one, so don't leave a stale selection showing.
+    if (invoice && newAccountId !== invoice.account.id) {
+      setAssignPropertyId('');
+      setAssignJobId('');
+    } else if (invoice) {
+      setAssignPropertyId(invoice.property?.id ?? '');
+      setAssignJobId(invoice.job?.id ?? '');
+    }
+  }
+
+  async function saveAssignment(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!id) return;
+    setError(null);
+    try {
+      await api.patch(`/invoices/${id}`, {
+        accountId: assignAccountId,
+        propertyId: assignPropertyId || null,
+        jobId: assignJobId || null,
+      });
+      setEditingAssignment(false);
+      load();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }
 
   async function action(path: string) {
     if (!id) return;
@@ -135,10 +201,68 @@ export default function InvoiceDetail() {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold">{invoice.invoiceNumber}</h1>
-          <Link to={`/accounts/${invoice.account.id}`} className="text-sm text-indigo-600 hover:underline">
-            {invoice.account.name}
-          </Link>
-          {invoice.property && <span className="text-sm text-slate-500"> — {invoice.property.name}</span>}
+          {editingAssignment ? (
+            <form onSubmit={saveAssignment} className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+              <select
+                value={assignAccountId}
+                onChange={(e) => changeAssignAccount(e.target.value)}
+                required
+                className="rounded border border-slate-300 px-2 py-1"
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+              {assignAccount && assignAccount.properties.length > 0 && (
+                <select
+                  value={assignPropertyId}
+                  onChange={(e) => setAssignPropertyId(e.target.value)}
+                  className="rounded border border-slate-300 px-2 py-1"
+                >
+                  <option value="">{t('common.none')}</option>
+                  {assignAccount.properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {assignAccount && assignAccount.jobs.length > 0 && (
+                <select
+                  value={assignJobId}
+                  onChange={(e) => setAssignJobId(e.target.value)}
+                  className="rounded border border-slate-300 px-2 py-1"
+                >
+                  <option value="">{t('common.none')}</option>
+                  {assignAccount.jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button type="submit" className="text-indigo-600 hover:underline">
+                {t('common.save')}
+              </button>
+              <button type="button" onClick={() => setEditingAssignment(false)} className="text-slate-500 hover:underline">
+                {t('common.cancel')}
+              </button>
+            </form>
+          ) : (
+            <div>
+              <Link to={`/accounts/${invoice.account.id}`} className="text-sm text-indigo-600 hover:underline">
+                {invoice.account.name}
+              </Link>
+              {invoice.property && <span className="text-sm text-slate-500"> — {invoice.property.name}</span>}
+              {!locked && (
+                <button onClick={startEditAssignment} className="ml-2 text-sm text-indigo-600 hover:underline">
+                  {t('common.edit')}
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button

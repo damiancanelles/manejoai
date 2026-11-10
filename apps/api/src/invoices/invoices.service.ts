@@ -201,11 +201,50 @@ export class InvoicesService {
     if (dto.title !== undefined && invoice.status !== InvoiceStatus.DRAFT) {
       throw new BadRequestException("Can't change the title once an invoice has been sent.");
     }
+
+    // Fixes a mis-assigned invoice (wrong customer/property/job picked at
+    // creation, with no other way to correct it) - allowed any time before
+    // the invoice is settled, same cutoff as editing its items.
+    let propertyId = dto.propertyId;
+    let jobId = dto.jobId;
+    if (dto.accountId !== undefined || propertyId !== undefined || jobId !== undefined) {
+      if (LOCKED_STATUSES.includes(invoice.status)) {
+        throw new BadRequestException(`Can't change the customer, property, or job on a ${invoice.status.toLowerCase()} invoice.`);
+      }
+
+      const accountChanged = dto.accountId !== undefined && dto.accountId !== invoice.accountId;
+      const effectiveAccountId = dto.accountId ?? invoice.accountId;
+      if (accountChanged) {
+        await this.assertOwnsAccount(dto.accountId!, businessId);
+      }
+
+      if (propertyId) {
+        await this.assertPropertyBelongsToAccount(propertyId, effectiveAccountId);
+      } else if (propertyId === undefined && accountChanged && invoice.propertyId) {
+        // Switched customers without saying what happens to the property -
+        // the old one almost certainly doesn't belong to the new account, so
+        // clear it instead of leaving a dangling cross-account reference.
+        const stillBelongs = await this.prisma.property.findFirst({ where: { id: invoice.propertyId, accountId: effectiveAccountId } });
+        if (!stillBelongs) propertyId = null;
+      }
+
+      if (jobId) {
+        await this.assertJobBelongsToAccount(jobId, effectiveAccountId);
+      } else if (jobId === undefined && accountChanged && invoice.jobId) {
+        const stillBelongs = await this.prisma.job.findFirst({ where: { id: invoice.jobId, accountId: effectiveAccountId } });
+        if (!stillBelongs) jobId = null;
+      }
+    }
+
     return this.prisma.invoice.update({
       where: { id },
       data: {
-        ...dto,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+        title: dto.title,
+        status: dto.status,
+        accountId: dto.accountId,
+        propertyId,
+        jobId,
       },
     });
   }

@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n';
 import Badge from '../../components/Badge';
 import DetailField, { DetailCard } from '../../components/DetailField';
 import EditableLineItems from '../../components/EditableLineItems';
+import SelectField from '../../components/SelectField';
 import { statusTone } from '../../lib/statusTone';
 import { colors, spacing } from '../../theme';
 import type { InvoicesStackParamList } from '../../navigation/types';
@@ -31,10 +32,19 @@ interface InvoiceDetail {
   dueDate: string;
   title: string;
   account: { id: string; name: string };
-  property?: { name: string } | null;
-  job?: { title: string } | null;
+  property?: { id: string; name: string } | null;
+  job?: { id: string; title: string } | null;
   items: InvoiceItem[];
   reminders: Reminder[];
+}
+interface AccountOption {
+  id: string;
+  name: string;
+}
+interface AccountDetail {
+  id: string;
+  properties: { id: string; name: string }[];
+  jobs: { id: string; title: string }[];
 }
 
 export default function InvoiceDetailScreen() {
@@ -45,6 +55,10 @@ export default function InvoiceDetailScreen() {
   const queryClient = useQueryClient();
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
+  const [editingAssignment, setEditingAssignment] = useState(false);
+  const [assignAccountId, setAssignAccountId] = useState('');
+  const [assignPropertyId, setAssignPropertyId] = useState('');
+  const [assignJobId, setAssignJobId] = useState('');
 
   useLayoutEffect(() => {
     if (invoiceNumber) navigation.setOptions({ title: invoiceNumber });
@@ -59,6 +73,30 @@ export default function InvoiceDetailScreen() {
     queryClient.invalidateQueries({ queryKey: ['invoices', invoiceId] });
     queryClient.invalidateQueries({ queryKey: ['invoices'] });
   }
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts', 'picker'],
+    queryFn: () => api.get<AccountOption[]>('/accounts'),
+    enabled: editingAssignment,
+  });
+  const { data: assignAccount } = useQuery({
+    queryKey: ['accounts', assignAccountId],
+    queryFn: () => api.get<AccountDetail>(`/accounts/${assignAccountId}`),
+    enabled: editingAssignment && !!assignAccountId,
+  });
+  const saveAssignment = useMutation({
+    mutationFn: () =>
+      api.patch(`/invoices/${invoiceId}`, {
+        accountId: assignAccountId,
+        propertyId: assignPropertyId || null,
+        jobId: assignJobId || null,
+      }),
+    onSuccess: () => {
+      invalidate();
+      setEditingAssignment(false);
+    },
+    onError: (err: any) => Alert.alert(t('assistant.error'), err.message),
+  });
 
   const addItem = useMutation({
     mutationFn: (row: { description: string; quantity: number; unitPriceCents: number }) => api.post<void>(`/invoices/${invoiceId}/items`, row),
@@ -104,13 +142,80 @@ export default function InvoiceDetailScreen() {
 
   const locked = data.status === 'PAID' || data.status === 'CANCELED';
 
+  function startEditAssignment() {
+    setAssignAccountId(data!.account.id);
+    setAssignPropertyId(data!.property?.id ?? '');
+    setAssignJobId(data!.job?.id ?? '');
+    setEditingAssignment(true);
+  }
+
+  function changeAssignAccount(newAccountId: string) {
+    setAssignAccountId(newAccountId);
+    // Switching customers - the old property/job almost certainly don't
+    // belong to the new one, so don't leave a stale selection showing.
+    if (newAccountId !== data!.account.id) {
+      setAssignPropertyId('');
+      setAssignJobId('');
+    } else {
+      setAssignPropertyId(data!.property?.id ?? '');
+      setAssignJobId(data!.job?.id ?? '');
+    }
+  }
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <Text style={styles.title}>{data.invoiceNumber}</Text>
         <Badge label={t(`status.${data.status}`)} tone={statusTone(data.status)} />
       </View>
-      <Text style={styles.subtitle}>{data.account.name}{data.property ? ` · ${data.property.name}` : ''}</Text>
+
+      {editingAssignment ? (
+        <View style={styles.assignEdit}>
+          <SelectField
+            label={t('invoiceNew.customer')}
+            value={assignAccountId}
+            onChange={changeAssignAccount}
+            placeholder={t('invoiceNew.selectCustomer')}
+            options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+          />
+          {assignAccount && assignAccount.properties.length > 0 && (
+            <SelectField
+              label={t('invoiceNew.property')}
+              value={assignPropertyId}
+              onChange={setAssignPropertyId}
+              placeholder={t('common.none')}
+              options={assignAccount.properties.map((p) => ({ value: p.id, label: p.name }))}
+            />
+          )}
+          {assignAccount && assignAccount.jobs.length > 0 && (
+            <SelectField
+              label={t('invoiceNew.relatedJob')}
+              value={assignJobId}
+              onChange={setAssignJobId}
+              placeholder={t('common.none')}
+              options={assignAccount.jobs.map((j) => ({ value: j.id, label: j.title }))}
+            />
+          )}
+          <View style={styles.titleEditRow}>
+            <Pressable onPress={() => saveAssignment.mutate()} disabled={saveAssignment.isPending}>
+              <Text style={styles.saveText}>{t('common.save')}</Text>
+            </Pressable>
+            <Pressable onPress={() => setEditingAssignment(false)} disabled={saveAssignment.isPending}>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Text style={styles.subtitle}>
+          {data.account.name}
+          {data.property ? ` · ${data.property.name}` : ''}
+          {!locked && (
+            <Text style={styles.editText} onPress={startEditAssignment}>
+              {'  '}{t('common.edit')}
+            </Text>
+          )}
+        </Text>
+      )}
 
       <DetailCard>
         <DetailField label={t('invoiceDetail.issued')} value={new Date(data.issueDate).toLocaleDateString(locale)} />
@@ -198,6 +303,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   title: { fontSize: 20, fontWeight: '700', color: colors.text },
   subtitle: { fontSize: 13, color: colors.textMuted, marginTop: -8 },
+  assignEdit: { gap: spacing.sm },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
   empty: { fontSize: 13, color: colors.textMuted },
   titleRow: { gap: 2, paddingTop: spacing.xs, marginTop: spacing.xs, borderTopWidth: 1, borderTopColor: colors.border },

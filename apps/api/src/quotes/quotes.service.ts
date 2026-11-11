@@ -12,9 +12,18 @@ function lineTotal(item: { quantity: number; unitPriceCents: number }) {
 export class QuotesService {
   constructor(private prisma: PrismaService) {}
 
+  // MAX-based, not a row count - a row count collides with an existing
+  // quoteNumber (unique per business) the moment any quote is ever deleted,
+  // since the count shifts down but old numbers are still taken. Same fix,
+  // same reason, as InvoicesService.nextInvoiceNumber.
   private async nextQuoteNumber(businessId: string): Promise<string> {
-    const count = await this.prisma.quote.count({ where: { businessId } });
-    return `QUO-${1001 + count}`;
+    const result = await this.prisma.$queryRaw<{ max: number | null }[]>`
+      SELECT MAX(CAST(SUBSTRING("quoteNumber" FROM 'QUO-([0-9]+)') AS INTEGER)) as max
+      FROM "Quote"
+      WHERE "quoteNumber" ~ '^QUO-[0-9]+$' AND "businessId" = ${businessId}
+    `;
+    const max = result[0]?.max ?? 1000;
+    return `QUO-${max + 1}`;
   }
 
   // Kept in sync with InvoicesService.nextInvoiceNumber - see the comment

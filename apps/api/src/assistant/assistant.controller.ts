@@ -7,6 +7,7 @@ import { CrewGuard } from '../common/guards/crew.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AssistantService } from './assistant.service';
 import { TranscriptionService } from './transcription.service';
+import { SpreadsheetService } from './spreadsheet.service';
 import { ChatDto, ExecuteActionDto } from './dto';
 
 const MAX_HISTORY = 20; // basic cost guard against an unbounded client-side history
@@ -21,6 +22,7 @@ export class AssistantController {
   constructor(
     private assistantService: AssistantService,
     private transcriptionService: TranscriptionService,
+    private spreadsheetService: SpreadsheetService,
   ) {}
 
   // Voice input for the chat - multipart/form-data with a single "audio"
@@ -33,6 +35,20 @@ export class AssistantController {
       throw new BadRequestException('audio file is required');
     }
     const text = await this.transcriptionService.transcribe(audio.buffer, audio.mimetype);
+    return { text };
+  }
+
+  // A spreadsheet attached from the dedicated chat page - multipart with a
+  // single "file" field. Returns the parsed text only, same as /transcribe;
+  // the page inserts it into the compose box for the user to see/edit
+  // before sending.
+  @Post('parse-spreadsheet')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  async parseSpreadsheet(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('file is required');
+    }
+    const text = this.spreadsheetService.parseToText(file.buffer);
     return { text };
   }
 

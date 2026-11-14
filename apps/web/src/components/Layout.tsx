@@ -20,6 +20,7 @@ const links = [
   { to: '/quotes', key: 'nav.quotes' },
   { to: '/invoices', key: 'nav.invoices' },
   { to: '/reports', key: 'nav.reports' },
+  { to: '/assistant', key: 'nav.assistant' },
 ];
 
 export default function Layout() {
@@ -100,7 +101,9 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <AssistantWidget />
+      {/* The dedicated page is its own full chat - the floating bubble on
+          top of it would just be a redundant second copy. */}
+      {location.pathname !== '/assistant' && <AssistantWidget />}
     </div>
   );
 }

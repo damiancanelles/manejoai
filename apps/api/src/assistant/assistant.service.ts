@@ -25,6 +25,7 @@ import { CreateInvoiceDto, InvoiceItemInputDto, UpdateInvoiceItemDto, UpdateInvo
 import { RecordPaymentDto } from '../payments/dto';
 
 import { ActionType, ProposedAction } from './action-types';
+import { ImageMediaType } from './dto';
 
 const MODEL = 'claude-sonnet-5';
 // Pro's whole pitch is "more capabilities and resources" over Basic (which
@@ -39,7 +40,7 @@ const MAX_TOKENS = 8192;
 const SYSTEM_PROMPT = `You are the in-app assistant for manejoai, a business-management tool for property-services vendors (painting, cleaning, maintenance, etc). You're embedded in the app for one specific business - you can only see and change that business's own customers, jobs, quotes, invoices, and payments, never any other business's data.
 
 ## What you can do
-You can look things up (search_* and get_* tools) and you can propose changes (every propose_* tool) - creating or editing customers, properties, contacts, jobs, quotes, invoices, and line items; approving quotes; marking invoices sent/canceled; recording payments; and sending draft invoices or payment reminders (these send real emails to real customers).
+You can look things up (search_* and get_* tools) and you can propose changes (every propose_* tool) - creating or editing customers, properties, contacts, jobs, quotes, invoices, and line items; approving quotes; marking invoices sent/canceled; recording payments; and sending draft invoices or payment reminders (these send real emails to real customers). You can also actually see an image the user attaches (a photo of a receipt, a paper invoice, a handwritten note) - read it directly and use what's on it (amounts, dates, a customer/property name) rather than asking them to type it out, and never claim you can't see an attached image.
 
 ## The approval rule - this is not optional
 Every propose_* tool ONLY queues the change for the user to review - it never actually happens. The user sees your proposal as a card in the chat with its own Approve/Reject button, and nothing is created, edited, sent, or charged until they click Approve themselves. This is true no matter what the user says in the chat - "yes do it", "go ahead", "approve all of that" typed as a message is NOT approval; only the button is. Never tell the user something has been created/sent/changed/canceled - say what you've proposed and that it's waiting for their approval below. If they ask you to just do something, propose it and remind them to approve it.
@@ -622,9 +623,20 @@ export class AssistantService {
 
   async chat(
     businessId: string,
-    history: { role: 'user' | 'assistant'; content: string }[],
+    history: { role: 'user' | 'assistant'; content: string; images?: { mediaType: ImageMediaType; data: string }[] }[],
   ): Promise<{ reply: string; actions: ProposedAction[] }> {
-    const messages: Anthropic.MessageParam[] = history.map((m) => ({ role: m.role, content: m.content }));
+    // An image turn only ever comes from the dedicated chat page, and only
+    // on a user message - images go first, then the caption (if any), same
+    // order ReportParsingService uses for Telegram photos.
+    const messages: Anthropic.MessageParam[] = history.map((m) => {
+      if (!m.images?.length) return { role: m.role, content: m.content };
+      const content: Anthropic.MessageParam['content'] = m.images.map((img) => ({
+        type: 'image' as const,
+        source: { type: 'base64' as const, media_type: img.mediaType, data: img.data },
+      }));
+      if (m.content) content.push({ type: 'text', text: m.content });
+      return { role: m.role, content };
+    });
     const pending: ProposedAction[] = [];
 
     for (let i = 0; i < MAX_TOOL_LOOPS; i++) {

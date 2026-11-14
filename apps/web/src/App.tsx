@@ -22,6 +22,7 @@ import IncomingReports from './pages/IncomingReports';
 import Team from './pages/Team';
 import TeamMemberDetail from './pages/TeamMemberDetail';
 import Settings from './pages/Settings';
+import Assistant from './pages/Assistant';
 import Billing from './pages/Billing';
 import PlatformDashboard from './pages/PlatformDashboard';
 import Crew from './pages/Crew';
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/job-reports" element={<IncomingReports />} />
           <Route path="/team" element={<Team />} />
           <Route path="/team/:id" element={<TeamMemberDetail />} />
+          <Route path="/assistant" element={<Assistant />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>

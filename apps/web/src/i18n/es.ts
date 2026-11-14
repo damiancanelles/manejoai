@@ -32,6 +32,7 @@ export const es: Record<string, string> = {
   'nav.quotes': 'Cotizaciones',
   'nav.invoices': 'Facturas',
   'nav.reports': 'Informes',
+  'nav.assistant': 'Asistente',
   'nav.settings': 'Configuración',
   'nav.billing': 'Facturación',
   'nav.openMenu': 'Abrir menú',
@@ -628,6 +629,15 @@ export const es: Record<string, string> = {
   'assistant.transcribeEmpty': 'No se entendió - intenta de nuevo.',
   'assistant.transcribeError': 'No se pudo transcribir - intenta de nuevo.',
   'assistant.micError': 'No se pudo acceder al micrófono - revisa los permisos del navegador.',
+  'assistant.pageTitle': 'Pregunta sobre tu negocio',
+  'assistant.openFullPage': 'Abrir página completa',
+  'assistant.inputPlaceholderBig': 'Haz una pregunta, pega un documento, o adjunta un archivo…',
+  'assistant.attachImage': 'Adjuntar imagen',
+  'assistant.attachSpreadsheet': 'Adjuntar hoja de cálculo',
+  'assistant.parsingFile': 'Leyendo archivo…',
+  'assistant.tooManyImages': 'Puedes adjuntar hasta {max} imágenes a la vez.',
+  'assistant.unsupportedImage': 'Ese tipo de imagen no es compatible - usa JPEG, PNG, GIF, o WebP.',
+  'assistant.unsupportedSpreadsheet': 'Ese tipo de archivo no es compatible - usa .xlsx, .xls, o .csv.',
 
   // Platform (super-admin)
   'platform.badge': 'Plataforma',

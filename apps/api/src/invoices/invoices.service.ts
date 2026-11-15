@@ -177,6 +177,20 @@ export class InvoicesService {
     });
   }
 
+  /**
+   * Looks up many invoices by their exact invoiceNumber in one query -
+   * built for the assistant cross-referencing a pasted list (e.g. a
+   * property manager's export) against what's on file, which would
+   * otherwise mean one search_invoices tool call per number and could run
+   * long enough to hit Heroku's 30s router timeout on a big list.
+   */
+  async findByNumbers(numbers: string[], businessId: string) {
+    return this.prisma.invoice.findMany({
+      where: { businessId, invoiceNumber: { in: numbers } },
+      include: { account: true, property: true },
+    });
+  }
+
   async findOne(id: string, businessId: string) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id },

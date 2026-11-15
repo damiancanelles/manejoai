@@ -51,6 +51,8 @@ For anything beyond a single lookup, think it through before acting: figure out 
 ## Look things up first
 Use search_accounts/search_jobs/search_quotes/search_invoices/search_payments to find the real id of anything you're about to reference or change, and get_quote/get_invoice/get_payment to see full details (including line item ids, or which invoices a payment covers) before editing an existing quote/invoice's items or answering a question about a specific payment. Every id you put in a propose_* tool's input must come from one of these tools - never make one up.
 
+If the user pastes a list of invoice numbers to check against the system (e.g. a property manager's export, "which of these haven't I submitted"), call search_invoices_by_numbers ONCE with every number rather than calling search_invoices once per number - a long list of individual searches can take long enough to time out.
+
 A payment is the "money actually received" record - created either by the single-invoice "mark as paid" button or by recording one payment against several invoices at once (see propose_record_payment). It's separate from an invoice's own status: search_payments/get_payment answer "what have we actually collected" questions (by date, by customer), while search_invoices answers "what's outstanding/what did we bill" questions.
 
 When asked for a "statement" (of account, or for one property), use get_statement rather than piecing one together from search_invoices/search_payments yourself - its paid/balance totals come from each invoice's own status, not from summing Payment records (plenty of invoices were marked PAID before the payment-recording feature existed and have no Payment row behind them, so totaling payments would undercount) - and it gives you the one link that becomes a real downloadable PDF.
@@ -123,6 +125,19 @@ const READ_TOOLS: Anthropic.Tool[] = [
         },
         accountId: { type: 'string', description: 'Optional - only invoices for this customer id' },
       },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'search_invoices_by_numbers',
+    description:
+      "Check many invoice numbers against this business's system in one call - e.g. a customer or property manager sent a list of invoice numbers and you need to say which ones are/aren't on file. Always use this instead of calling search_invoices once per number (that's slow enough to time out on a long list). Returns only the ones found, each with its id, status, and amount - compare the length against what you were given to know which are missing.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        invoiceNumbers: { type: 'array', items: { type: 'string' }, minItems: 1, description: 'The exact invoice numbers to look up' },
+      },
+      required: ['invoiceNumbers'],
       additionalProperties: false,
     },
   },
@@ -466,6 +481,20 @@ export class AssistantService {
           property: i.property?.name,
         }));
       }
+      case 'search_invoices_by_numbers': {
+        const numbers: string[] = Array.isArray(input.invoiceNumbers) ? input.invoiceNumbers : [];
+        const rows = await this.invoicesService.findByNumbers(numbers, businessId);
+        return rows.map((i) => ({
+          id: i.id,
+          invoiceNumber: i.invoiceNumber,
+          title: i.title,
+          status: i.status,
+          amountCents: i.amountCents,
+          dueDate: i.dueDate,
+          customer: i.account?.name,
+          property: i.property?.name,
+        }));
+      }
       case 'get_invoice': {
         const inv: any = await this.invoicesService.findOne(input.invoiceId, businessId);
         return {
@@ -646,8 +675,16 @@ export class AssistantService {
           model: MODEL,
           max_tokens: MAX_TOKENS,
           system: SYSTEM_PROMPT,
+          // Was 'high' - dropped a notch because manejoai-api runs on
+          // Heroku's Common Runtime, which hard-kills any request still
+          // running after 30s (not configurable) with a connection reset,
+          // not a clean error response - so every extra second of
+          // per-round thinking directly eats into that budget on a request
+          // that needs several tool-use rounds (e.g. cross-referencing a
+          // long pasted list). 'medium' still reasons through multi-step
+          // plans fine; it just doesn't belabor each round as long.
           thinking: { type: 'adaptive' },
-          output_config: { effort: 'high' },
+          output_config: { effort: 'medium' },
           tools: TOOLS,
           messages,
         });

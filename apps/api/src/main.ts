@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -7,7 +8,16 @@ async function bootstrap() {
   // by the Stripe webhook handler to verify its signature against the
   // exact original bytes - without changing normal @Body() JSON parsing
   // anywhere else (see BillingController.webhook).
-  const app = await NestFactory.create(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
+
+  // Express's default JSON body limit is 100kb - fine for every other
+  // endpoint, but the assistant chat sends attached photos as base64 inside
+  // the JSON body (see Assistant.tsx/assistant.service.ts), which blows past
+  // that easily and aborts the connection mid-upload (browser reports it as
+  // "Failed to fetch", not a clean 413). Raised here rather than disabling
+  // the body parser, so req.rawBody above still works for the webhook.
+  app.useBodyParser('json', { limit: '15mb' });
+  app.useBodyParser('urlencoded', { extended: true, limit: '15mb' });
 
   // In dev there's no separate frontend origin (Vite proxies /api to this
   // server, so the browser only ever talks to one origin) - FRONTEND_URL is

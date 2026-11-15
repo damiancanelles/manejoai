@@ -6,7 +6,7 @@ const TOKEN_KEY = 'manejoai_token';
 // this at build time (e.g. VITE_API_BASE_URL=https://api.manejoai.cloud -
 // bare host, no trailing /api) makes the frontend call a different API
 // directly instead - used for the production build.
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);

@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { streamAssistantMessage } from '../api/assistantStream';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../i18n';
 import { ActionCard, ChatText, type ChatMessage, type UIAction } from './assistant/ChatParts';
@@ -27,13 +28,15 @@ export default function AssistantWidget() {
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [liveReply, setLiveReply] = useState('');
+  const [status, setStatus] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages, open, sending]);
+  }, [messages, open, sending, liveReply, status]);
 
   async function sendMessage(text: string) {
     setError(null);
@@ -41,17 +44,31 @@ export default function AssistantWidget() {
     setMessages(next);
     setInput('');
     setSending(true);
+    setLiveReply('');
+    setStatus(t('assistant.thinking'));
     try {
-      const res = await api.post<{
-        reply: string;
-        actions: { id: string; type: string; summary: string; params: Record<string, unknown> }[];
-      }>('/assistant/message', { messages: next.map(({ role, content }) => ({ role, content })) });
-      const actions: UIAction[] = (res.actions ?? []).map((a) => ({ ...a, status: 'pending' }));
-      setMessages([...next, { role: 'assistant', content: res.reply, actions: actions.length ? actions : undefined }]);
+      await streamAssistantMessage(
+        { messages: next.map(({ role, content }) => ({ role, content })) },
+        (event) => {
+          if (event.type === 'status') {
+            setStatus(event.message);
+          } else if (event.type === 'text') {
+            setStatus(null);
+            setLiveReply((prev) => prev + event.delta);
+          } else if (event.type === 'done') {
+            const actions: UIAction[] = (event.actions ?? []).map((a) => ({ ...a, status: 'pending' }));
+            setMessages((prev) => [...prev, { role: 'assistant', content: event.reply, actions: actions.length ? actions : undefined }]);
+          } else if (event.type === 'error') {
+            setError(event.message || t('assistant.error'));
+          }
+        },
+      );
     } catch (err: any) {
       setError(err.message || t('assistant.error'));
     } finally {
       setSending(false);
+      setLiveReply('');
+      setStatus(null);
     }
   }
 
@@ -187,7 +204,14 @@ export default function AssistantWidget() {
                     </div>
                   </div>
                 ))}
-                {sending && <div className="text-slate-400">{t('assistant.thinking')}</div>}
+                {sending &&
+                  (liveReply ? (
+                    <div className="whitespace-pre-wrap rounded-lg bg-slate-100 px-3 py-2 text-slate-800">
+                      <ChatText text={liveReply} />
+                    </div>
+                  ) : (
+                    <div className="text-slate-400">{status || t('assistant.thinking')}</div>
+                  ))}
                 {error && <div className="rounded bg-red-50 p-2 text-red-700">{error}</div>}
               </div>
 

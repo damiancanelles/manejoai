@@ -439,6 +439,40 @@ const WRITE_TOOLS: Anthropic.Tool[] = [
 
 const TOOLS: Anthropic.Tool[] = [...READ_TOOLS, ...WRITE_TOOLS];
 
+// Emitted by chatStream() as NDJSON lines over POST /assistant/message/stream
+// - the web chat UI's only transport. The plain /assistant/message JSON
+// endpoint (chat(), below) is untouched for the mobile app, which doesn't
+// stream. 'status' lines exist purely so the connection keeps sending bytes
+// during a long tool-use round: Heroku's router only enforces its 30s
+// timeout before the first byte of a response, not between bytes once
+// streaming has started, so periodic output here is what actually avoids
+// the timeout, on top of being a nicer "what's it doing" indicator.
+export type AssistantStreamEvent =
+  | { type: 'text'; delta: string }
+  | { type: 'status'; message: string }
+  | { type: 'done'; reply: string; actions: ProposedAction[] }
+  | { type: 'error'; message: string };
+
+const TOOL_STATUS_LABELS: Record<string, string> = {
+  search_accounts: 'Looking up customers...',
+  search_jobs: 'Looking up jobs...',
+  search_quotes: 'Looking up quotes...',
+  search_invoices: 'Looking up invoices...',
+  search_invoices_by_numbers: 'Checking invoice numbers...',
+  find_invoices_missing_from_list: 'Comparing against your list...',
+  search_payments: 'Looking up payments...',
+  get_invoice: 'Pulling up invoice details...',
+  get_quote: 'Pulling up quote details...',
+  get_payment: 'Pulling up payment details...',
+  get_statement: 'Building statement...',
+};
+
+function toolStatusLabel(name: string): string {
+  if (TOOL_STATUS_LABELS[name]) return TOOL_STATUS_LABELS[name];
+  if (name.startsWith('propose_')) return 'Preparing a proposed change...';
+  return 'Working on it...';
+}
+
 @Injectable()
 export class AssistantService {
   private logger = new Logger(AssistantService.name);
@@ -696,9 +730,48 @@ export class AssistantService {
     }
   }
 
-  async chat(
+  /**
+   * One round's call to Claude. Non-streaming (onEvent omitted) for chat()'s
+   * sake, used as-is by the mobile app via plain JSON - unchanged behavior.
+   * With onEvent, streams text deltas and a status line per tool call
+   * straight through, for chatStream()'s NDJSON response.
+   */
+  private async createRound(messages: Anthropic.MessageParam[], onEvent?: (event: AssistantStreamEvent) => void): Promise<Anthropic.Message> {
+    const params = {
+      model: MODEL,
+      max_tokens: MAX_TOKENS,
+      system: SYSTEM_PROMPT,
+      // Was 'high' - dropped a notch because manejoai-api runs on
+      // Heroku's Common Runtime, which hard-kills any request still
+      // running after 30s (not configurable) with a connection reset,
+      // not a clean error response - so every extra second of
+      // per-round thinking directly eats into that budget on a request
+      // that needs several tool-use rounds (e.g. cross-referencing a
+      // long pasted list). 'medium' still reasons through multi-step
+      // plans fine; it just doesn't belabor each round as long.
+      thinking: { type: 'adaptive' as const },
+      output_config: { effort: 'medium' as const },
+      tools: TOOLS,
+      messages,
+    };
+    if (!onEvent) {
+      return this.client.messages.create(params);
+    }
+    const stream = this.client.messages.stream(params);
+    stream.on('text', (delta) => onEvent({ type: 'text', delta }));
+    stream.on('streamEvent', (event) => {
+      if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') {
+        onEvent({ type: 'status', message: toolStatusLabel(event.content_block.name) });
+      }
+    });
+    return stream.finalMessage();
+  }
+
+  /** The tool-use loop shared by chat() and chatStream() - see createRound() for the only thing that differs between them. */
+  private async runConversation(
     businessId: string,
     history: { role: 'user' | 'assistant'; content: string; images?: { mediaType: ImageMediaType; data: string }[] }[],
+    onEvent?: (event: AssistantStreamEvent) => void,
   ): Promise<{ reply: string; actions: ProposedAction[] }> {
     // An image turn only ever comes from the dedicated chat page, and only
     // on a user message - images go first, then the caption (if any), same
@@ -717,23 +790,7 @@ export class AssistantService {
     for (let i = 0; i < MAX_TOOL_LOOPS; i++) {
       let response: Anthropic.Message;
       try {
-        response = await this.client.messages.create({
-          model: MODEL,
-          max_tokens: MAX_TOKENS,
-          system: SYSTEM_PROMPT,
-          // Was 'high' - dropped a notch because manejoai-api runs on
-          // Heroku's Common Runtime, which hard-kills any request still
-          // running after 30s (not configurable) with a connection reset,
-          // not a clean error response - so every extra second of
-          // per-round thinking directly eats into that budget on a request
-          // that needs several tool-use rounds (e.g. cross-referencing a
-          // long pasted list). 'medium' still reasons through multi-step
-          // plans fine; it just doesn't belabor each round as long.
-          thinking: { type: 'adaptive' },
-          output_config: { effort: 'medium' },
-          tools: TOOLS,
-          messages,
-        });
+        response = await this.createRound(messages, onEvent);
       } catch (err) {
         this.logger.error(`Claude request failed: ${(err as Error).message}`);
         if (err instanceof Anthropic.RateLimitError) {
@@ -788,6 +845,34 @@ export class AssistantService {
       reply: 'That took more digging than I can do in one go - try narrowing your question a bit.',
       actions: pending,
     };
+  }
+
+  /** Plain JSON reply - what the mobile app and anything else non-streaming calls. */
+  async chat(
+    businessId: string,
+    history: { role: 'user' | 'assistant'; content: string; images?: { mediaType: ImageMediaType; data: string }[] }[],
+  ): Promise<{ reply: string; actions: ProposedAction[] }> {
+    return this.runConversation(businessId, history);
+  }
+
+  /**
+   * Streaming version for the web chat (POST /assistant/message/stream) -
+   * same tool loop, but forwards text/status events as they happen and
+   * always ends in a 'done' or 'error' event rather than throwing, since by
+   * the time an error can occur here the HTTP response has already started
+   * (see AssistantController.messageStream).
+   */
+  async chatStream(
+    businessId: string,
+    history: { role: 'user' | 'assistant'; content: string; images?: { mediaType: ImageMediaType; data: string }[] }[],
+    onEvent: (event: AssistantStreamEvent) => void,
+  ): Promise<void> {
+    try {
+      const { reply, actions } = await this.runConversation(businessId, history, onEvent);
+      onEvent({ type: 'done', reply, actions });
+    } catch (err) {
+      onEvent({ type: 'error', message: (err as Error).message || 'Something went wrong talking to the assistant - try again.' });
+    }
   }
 
   private requireId(value: unknown, field: string): string {

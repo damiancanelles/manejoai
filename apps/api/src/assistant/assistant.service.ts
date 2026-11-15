@@ -51,7 +51,7 @@ For anything beyond a single lookup, think it through before acting: figure out 
 ## Look things up first
 Use search_accounts/search_jobs/search_quotes/search_invoices/search_payments to find the real id of anything you're about to reference or change, and get_quote/get_invoice/get_payment to see full details (including line item ids, or which invoices a payment covers) before editing an existing quote/invoice's items or answering a question about a specific payment. Every id you put in a propose_* tool's input must come from one of these tools - never make one up.
 
-If the user pastes a list of invoice numbers to check against the system (e.g. a property manager's export, "which of these haven't I submitted"), call search_invoices_by_numbers ONCE with every number rather than calling search_invoices once per number - a long list of individual searches can take long enough to time out.
+If the user pastes a list of invoice numbers to check against the system: use search_invoices_by_numbers for "which of these are/aren't in our system" (checking their list against ours), and find_invoices_missing_from_list for "which of ours aren't in this list" (the reverse - checking your system against their list, for one customer/property). Either way, call the tool ONCE with the whole list - never loop search_invoices once per number, and never try to diff a truncated search_invoices result yourself.
 
 A payment is the "money actually received" record - created either by the single-invoice "mark as paid" button or by recording one payment against several invoices at once (see propose_record_payment). It's separate from an invoice's own status: search_payments/get_payment answer "what have we actually collected" questions (by date, by customer), while search_invoices answers "what's outstanding/what did we bill" questions.
 
@@ -136,6 +136,21 @@ const READ_TOOLS: Anthropic.Tool[] = [
       type: 'object',
       properties: {
         invoiceNumbers: { type: 'array', items: { type: 'string' }, minItems: 1, description: 'The exact invoice numbers to look up' },
+      },
+      required: ['invoiceNumbers'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'find_invoices_missing_from_list',
+    description:
+      "The reverse comparison from search_invoices_by_numbers: given a customer (accountId) or one of their properties (propertyId), returns every invoice on file for them whose number is NOT in the list you pass - i.e. invoices we have that weren't in what someone sent you. Pass exactly one of accountId/propertyId. Use this for \"which of ours are missing from this list\" - don't try to diff a search_invoices result yourself, it's capped at 25 rows and this isn't.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        accountId: { type: 'string', description: 'Compare against this whole customer\'s invoices - omit if using propertyId' },
+        propertyId: { type: 'string', description: "Compare against just one property's invoices - omit if using accountId" },
+        invoiceNumbers: { type: 'array', items: { type: 'string' }, minItems: 1, description: 'The numbers that were sent to you - anything on file not in this list comes back' },
       },
       required: ['invoiceNumbers'],
       additionalProperties: false,
@@ -494,6 +509,37 @@ export class AssistantService {
           customer: i.account?.name,
           property: i.property?.name,
         }));
+      }
+      case 'find_invoices_missing_from_list': {
+        if (!input.accountId && !input.propertyId) {
+          return { error: 'Pass exactly one of accountId or propertyId.' };
+        }
+        if (input.accountId && input.propertyId) {
+          return { error: 'Pass only one of accountId or propertyId, not both.' };
+        }
+        const exclude: string[] = Array.isArray(input.invoiceNumbers) ? input.invoiceNumbers : [];
+        const rows = await this.invoicesService.findNotInList(
+          { accountId: input.accountId, propertyId: input.propertyId },
+          exclude,
+          businessId,
+        );
+        const MAX_ROWS = 200;
+        return {
+          totalMissing: rows.length,
+          invoices: rows.slice(0, MAX_ROWS).map((i) => ({
+            id: i.id,
+            invoiceNumber: i.invoiceNumber,
+            title: i.title,
+            status: i.status,
+            amountCents: i.amountCents,
+            dueDate: i.dueDate,
+            customer: i.account?.name,
+            property: i.property?.name,
+          })),
+          ...(rows.length > MAX_ROWS
+            ? { note: `Showing the first ${MAX_ROWS} of ${rows.length} - totalMissing is the real count, mention that it's a partial list.` }
+            : {}),
+        };
       }
       case 'get_invoice': {
         const inv: any = await this.invoicesService.findOne(input.invoiceId, businessId);

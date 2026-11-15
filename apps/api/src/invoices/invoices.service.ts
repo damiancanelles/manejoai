@@ -191,6 +191,32 @@ export class InvoicesService {
     });
   }
 
+  /**
+   * The inverse comparison: every invoice on file for an account/property
+   * whose number is NOT in a given list (e.g. "which of ours are missing
+   * from what the property manager sent back"). Returns the full set with
+   * no row limit - unlike findAll's plain listing, a partial/truncated
+   * answer here would be actively wrong, not just incomplete - so the
+   * diff itself happens in SQL rather than asking the model to reason over
+   * a possibly-truncated search result.
+   */
+  async findNotInList(
+    filters: { accountId?: string; propertyId?: string },
+    excludeNumbers: string[],
+    businessId: string,
+  ) {
+    return this.prisma.invoice.findMany({
+      where: {
+        businessId,
+        accountId: filters.accountId,
+        propertyId: filters.propertyId,
+        invoiceNumber: { notIn: excludeNumbers },
+      },
+      include: { account: true, property: true },
+      orderBy: { issueDate: 'desc' },
+    });
+  }
+
   async findOne(id: string, businessId: string) {
     const invoice = await this.prisma.invoice.findUnique({
       where: { id },

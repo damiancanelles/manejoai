@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import Pagination from '../components/Pagination';
 import { PAGE_SIZE, paginate } from '../lib/paginate';
+import { downloadQuotePdfById } from '../lib/quotePdf';
+import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n';
 
 interface Quote {
@@ -24,12 +26,28 @@ function money(cents: number) {
 
 export default function Quotes() {
   const { t, locale } = useI18n();
+  const { business } = useAuth();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  async function handleDownload(id: string) {
+    if (!business || downloadingId) return;
+    setDownloadingId(id);
+    setDownloadError(null);
+    try {
+      await downloadQuotePdfById(id, business);
+    } catch (err: any) {
+      setDownloadError(err.message || 'Download failed');
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -85,6 +103,8 @@ export default function Quotes() {
         />
       </div>
 
+      {downloadError && <div className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700">{downloadError}</div>}
+
       {loading ? (
         <p>{t('common.loading')}</p>
       ) : (
@@ -100,6 +120,7 @@ export default function Quotes() {
                   <th className="px-4 py-2">{t('quotes.colAmount')}</th>
                   <th className="px-4 py-2">{t('quotes.colStatus')}</th>
                   <th className="px-4 py-2">{t('quotes.colIssued')}</th>
+                  <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -116,11 +137,28 @@ export default function Quotes() {
                     <td className="px-4 py-2">{money(q.amountCents)}</td>
                     <td className="px-4 py-2">{t(`status.${q.status}`)}</td>
                     <td className="px-4 py-2">{new Date(q.issueDate).toLocaleDateString(locale)}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => handleDownload(q.id)}
+                        disabled={downloadingId === q.id}
+                        aria-label={t('common.downloadPdf')}
+                        title={t('common.downloadPdf')}
+                        className="text-slate-400 hover:text-indigo-600 disabled:opacity-50"
+                      >
+                        {downloadingId === q.id ? (
+                          <span className="text-xs">…</span>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />
+                          </svg>
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {quotes.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-4 text-slate-400">
+                    <td colSpan={8} className="px-4 py-4 text-slate-400">
                       {t('quotes.empty')}
                     </td>
                   </tr>

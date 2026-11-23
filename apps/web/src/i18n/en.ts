@@ -23,6 +23,7 @@ export const en: Record<string, string> = {
   'common.wholeAccountLower': 'whole account',
   'common.noEmail': 'no email',
   'common.backToDashboard': '← Back to dashboard',
+  'common.downloadPdf': 'Download PDF',
 
   // Nav / layout
   'nav.dashboard': 'Dashboard',

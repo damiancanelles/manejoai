@@ -22,6 +22,7 @@ export const es: Record<string, string> = {
   'common.wholeAccountLower': 'toda la cuenta',
   'common.noEmail': 'sin correo',
   'common.backToDashboard': '← Volver al panel',
+  'common.downloadPdf': 'Descargar PDF',
 
   // Nav / layout
   'nav.dashboard': 'Panel',

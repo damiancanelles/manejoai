@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { api } from '../api/client';
 
 // The invoice issuer's own info - printed in the header and the payment
 // footer. Comes from the logged-in user's Business (see useAuth().business)
@@ -264,4 +265,16 @@ export function downloadInvoicePdf(invoice: InvoicePdfData, company: CompanyInfo
 /** Downloads every given invoice as its own separate PDF file (not merged into one). */
 export function downloadInvoicesPdf(invoices: InvoicePdfData[], company: CompanyInfo) {
   invoices.forEach((invoice) => downloadInvoicePdf(invoice, company));
+}
+
+/**
+ * Fetches one invoice's full detail (with line items, which list views don't
+ * load) and downloads its PDF in one call - used by the Invoices list row's
+ * download icon and the assistant chat's approved-action download button,
+ * neither of which already has the full invoice object in hand the way the
+ * detail page does.
+ */
+export async function downloadInvoicePdfById(id: string, company: CompanyInfo) {
+  const invoice = await api.get<InvoicePdfData>(`/invoices/${id}`);
+  downloadInvoicePdf(invoice, company);
 }

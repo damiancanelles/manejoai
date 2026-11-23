@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { CompanyInfo } from './invoicePdf';
+import { api } from '../api/client';
 
 interface QuoteItem {
   description: string;
@@ -159,4 +160,10 @@ export function downloadQuotePdf(quote: QuotePdfData, company: CompanyInfo) {
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
   renderQuotePage(doc, quote, company);
   doc.save(downloadFilename(quote));
+}
+
+/** Same pattern as invoicePdf.ts's downloadInvoicePdfById - fetches full detail (with items) by id, then downloads. */
+export async function downloadQuotePdfById(id: string, company: CompanyInfo) {
+  const quote = await api.get<QuotePdfData>(`/quotes/${id}`);
+  downloadQuotePdf(quote, company);
 }

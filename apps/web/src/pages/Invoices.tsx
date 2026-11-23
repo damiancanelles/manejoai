@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import Pagination from '../components/Pagination';
 import { PAGE_SIZE, paginate } from '../lib/paginate';
+import { downloadInvoicePdfById } from '../lib/invoicePdf';
+import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../i18n';
 
 interface Invoice {
@@ -36,7 +38,9 @@ function todayStr() {
 
 export default function Invoices() {
   const { t, locale } = useI18n();
+  const { business } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [status, setStatus] = useState('ALL');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -126,6 +130,18 @@ export default function Invoices() {
       setError(err.message);
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleDownload(id: string) {
+    if (!business || downloadingId) return;
+    setDownloadingId(id);
+    try {
+      await downloadInvoicePdfById(id, business);
+    } catch (err: any) {
+      setError(err.message || 'Download failed');
+    } finally {
+      setDownloadingId(null);
     }
   }
 
@@ -320,6 +336,7 @@ export default function Invoices() {
                   <th className="px-4 py-2">{t('invoices.colAmount')}</th>
                   <th className="px-4 py-2">{t('invoices.colStatus')}</th>
                   <th className="px-4 py-2">{t('invoices.colDueDate')}</th>
+                  <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -344,11 +361,28 @@ export default function Invoices() {
                     <td className="px-4 py-2">{money(inv.amountCents)}</td>
                     <td className="px-4 py-2">{t(`status.${inv.status}`)}</td>
                     <td className="px-4 py-2">{new Date(inv.dueDate).toLocaleDateString(locale)}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => handleDownload(inv.id)}
+                        disabled={downloadingId === inv.id}
+                        aria-label={t('common.downloadPdf')}
+                        title={t('common.downloadPdf')}
+                        className="text-slate-400 hover:text-indigo-600 disabled:opacity-50"
+                      >
+                        {downloadingId === inv.id ? (
+                          <span className="text-xs">…</span>
+                        ) : (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />
+                          </svg>
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 ))}
                 {invoices.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-4 text-slate-400">
+                    <td colSpan={9} className="px-4 py-4 text-slate-400">
                       {t('invoices.empty')}
                     </td>
                   </tr>

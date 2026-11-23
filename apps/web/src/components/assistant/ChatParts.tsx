@@ -1,6 +1,8 @@
 import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { downloadStatementPdf } from '../../lib/statementPdf';
+import { downloadInvoicePdfById } from '../../lib/invoicePdf';
+import { downloadQuotePdfById } from '../../lib/quotePdf';
 import { useAuth } from '../../context/AuthContext';
 import { useT } from '../../i18n';
 
@@ -32,6 +34,13 @@ const LINK_RE = /\[([^\]]+)\]\((\/[^\s)]+)\)/g;
 // /statements/property/<id> "link" (see assistant.service.ts) - it never
 // opens a page, it's the chat's own signal to download a PDF right there.
 const STATEMENT_RE = /^\/statements\/(account|property)\/([^/?]+)(?:\?(.*))?$/;
+
+// An approved action whose link points at a real invoice or quote (creating
+// one, approving a quote into an invoice, marking one sent, etc. - see every
+// propose_* case in assistant.service.ts's executeAction) can offer a direct
+// PDF download right on the card, same id the "View result" link already uses.
+const INVOICE_LINK_RE = /^\/invoices\/([^/?]+)$/;
+const QUOTE_LINK_RE = /^\/quotes\/([^/?]+)$/;
 
 /** A statement link downloads a PDF on click instead of navigating - same visual style as a normal chat link. */
 function StatementLink({ href, label }: { href: string; label: string }) {
@@ -105,6 +114,27 @@ export function ChatText({ text }: { text: string }) {
 
 export function ActionCard({ action, onApprove, onReject }: { action: UIAction; onApprove: () => void; onReject: () => void }) {
   const t = useT();
+  const { business } = useAuth();
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const invoiceId = action.link?.match(INVOICE_LINK_RE)?.[1];
+  const quoteId = action.link?.match(QUOTE_LINK_RE)?.[1];
+
+  async function handleDownload() {
+    if (!business || downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      if (invoiceId) await downloadInvoicePdfById(invoiceId, business);
+      else if (quoteId) await downloadQuotePdfById(quoteId, business);
+    } catch (err: any) {
+      setDownloadError(err.message || 'Download failed');
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-sm">
       <p className="text-slate-800">{action.summary}</p>
@@ -126,13 +156,25 @@ export function ActionCard({ action, onApprove, onReject }: { action: UIAction; 
       )}
       {action.status === 'approving' && <p className="mt-1.5 text-xs text-slate-500">{t('assistant.approving')}</p>}
       {action.status === 'approved' && (
-        <div className="mt-1.5 flex items-center gap-2 text-xs">
-          <span className="font-medium text-green-700">✓ {t('assistant.approved')}</span>
-          {action.link && (
-            <Link to={action.link} className="font-medium text-indigo-600 underline hover:text-indigo-700">
-              {t('assistant.viewResult')}
-            </Link>
-          )}
+        <div className="mt-1.5 space-y-1">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="font-medium text-green-700">✓ {t('assistant.approved')}</span>
+            {action.link && (
+              <Link to={action.link} className="font-medium text-indigo-600 underline hover:text-indigo-700">
+                {t('assistant.viewResult')}
+              </Link>
+            )}
+            {(invoiceId || quoteId) && (
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
+                className="font-medium text-indigo-600 underline hover:text-indigo-700 disabled:opacity-50"
+              >
+                {downloading ? '…' : t('common.downloadPdf')}
+              </button>
+            )}
+          </div>
+          {downloadError && <p className="text-xs text-red-600">{downloadError}</p>}
         </div>
       )}
       {action.status === 'rejected' && <p className="mt-1.5 text-xs text-slate-400">{t('assistant.rejected')}</p>}

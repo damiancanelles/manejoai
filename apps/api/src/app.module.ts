@@ -24,6 +24,7 @@ import { TimeEntriesModule } from './time-entries/time-entries.module';
 import { PlatformModule } from './platform/platform.module';
 import { BillingModule } from './billing/billing.module';
 import { AssistantModule } from './assistant/assistant.module';
+import { MonitoringModule } from './monitoring/monitoring.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { AssistantModule } from './assistant/assistant.module';
     PrismaModule,
     StorageModule,
     MailModule,
+    MonitoringModule,
     AuthModule,
     UsersModule,
     BusinessesModule,

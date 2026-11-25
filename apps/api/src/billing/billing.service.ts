@@ -60,8 +60,26 @@ export class BillingService {
       await this.prisma.business.update({ where: { id: businessId }, data: { stripeCustomerId: customerId } });
     }
 
+    // Promotion codes (e.g. a founding-customer deal): on unless
+    // STRIPE_PROMO_CODES_ENABLED=false. Checkout shows an "Add promotion
+    // code" link; the codes themselves are created in the Stripe Dashboard.
+    const promoCodesEnabled = this.config.get<string>('STRIPE_PROMO_CODES_ENABLED', 'true') !== 'false';
+    // Stripe Tax: off unless STRIPE_TAX_ENABLED=true (turn on only once your
+    // accountant says to collect sales tax AND Stripe Tax is set up in the
+    // Dashboard - registrations, origin address). Tax needs the customer's
+    // address, so Checkout collects it and saves it to the Stripe customer.
+    const taxEnabled = this.config.get<string>('STRIPE_TAX_ENABLED') === 'true';
+
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
+      allow_promotion_codes: promoCodesEnabled,
+      ...(taxEnabled
+        ? {
+            automatic_tax: { enabled: true },
+            billing_address_collection: 'required' as const,
+            customer_update: { address: 'auto' as const, name: 'auto' as const },
+          }
+        : {}),
       customer: customerId,
       // How the webhook maps a completed session back to this Business,
       // without needing an extra lookup.

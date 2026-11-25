@@ -135,6 +135,11 @@ model User {
   // once and granted notification permission.
   expoPushToken String?
 
+  // When this user ticked "I agree to the Terms of Service and Privacy
+  // Policy" at sign-up. Null for every user created before the checkbox
+  // existed (and for crew accounts, who never see the sign-up page).
+  termsAcceptedAt DateTime?
+
   jobsCreated     Job[]     @relation("JobCreatedBy")
   invoicesCreated Invoice[] @relation("InvoiceCreatedBy")
   quotesCreated   Quote[]   @relation("QuoteCreatedBy")
@@ -142,8 +147,25 @@ model User {
   reportsReviewed  IncomingReport[] @relation("ReportReviewedBy")
   reportsSubmitted IncomingReport[] @relation("ReportSubmittedBy")
   timeEntries      TimeEntry[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([businessId])
+}
+
+// One "forgot password" email. Only a SHA-256 hash of the token is stored,
+// so a leaked database can't be used to reset anyone's password. A token
+// works once (usedAt) and only until expiresAt. Rows are never deleted -
+// used/expired ones just stop working.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ---------- Customers ----------

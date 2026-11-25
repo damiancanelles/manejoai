@@ -6,6 +6,7 @@ import { ContactRole, InvoiceStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { subscriptionActiveWhere } from '../common/subscription';
+import { AlertsService } from '../monitoring/alerts.service';
 
 function money(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
@@ -37,6 +38,7 @@ export class RemindersService {
     private prisma: PrismaService,
     private mail: MailService,
     private config: ConfigService,
+    private alerts: AlertsService,
   ) {}
 
   // Flagging runs daily so the app's own displayed statuses (Dashboard,
@@ -47,7 +49,13 @@ export class RemindersService {
   @Cron('0 8 * * *', { timeZone: 'America/New_York' })
   async runDailyFlagging() {
     if (!this.remindersEnabled()) return;
-    await this.flagOverdueInvoices();
+    try {
+      await this.flagOverdueInvoices();
+    } catch (err) {
+      // A cron job has no HTTP request, so the global exception filter
+      // never sees its errors - report them here instead.
+      await this.alerts.notify('Daily overdue-flagging job failed', (err as Error).stack ?? String(err));
+    }
   }
 
   // The actual reminder emails go out once a week. Change the cron
@@ -56,7 +64,11 @@ export class RemindersService {
   @Cron('0 9 * * 1', { timeZone: 'America/New_York' }) // every Monday at 9am Eastern
   async runWeeklyDigest() {
     if (!this.remindersEnabled()) return;
-    await this.sendOverdueDigest();
+    try {
+      await this.sendOverdueDigest();
+    } catch (err) {
+      await this.alerts.notify('Weekly reminder digest job failed', (err as Error).stack ?? String(err));
+    }
   }
 
   // Kill switch for the automated cron jobs above - defaults to OFF so a

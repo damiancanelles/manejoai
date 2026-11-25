@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../auth/AuthContext';
 import { useT } from '../i18n';
 import LangToggle from '../components/LangToggle';
+import { emailSupport, openWebPage } from '../lib/links';
 import { colors, spacing } from '../theme';
 import type { MoreStackParamList } from '../navigation/types';
 
@@ -39,6 +40,17 @@ export default function MoreScreen() {
       </View>
 
       <View style={styles.footer}>
+        <View style={styles.linksRow}>
+          <Pressable onPress={emailSupport}>
+            <Text style={styles.linkText}>{t('more.contactSupport')}</Text>
+          </Pressable>
+          <Pressable onPress={() => openWebPage('/terms')}>
+            <Text style={styles.linkText}>{t('more.terms')}</Text>
+          </Pressable>
+          <Pressable onPress={() => openWebPage('/privacy')}>
+            <Text style={styles.linkText}>{t('more.privacy')}</Text>
+          </Pressable>
+        </View>
         <LangToggle />
         <Pressable onPress={() => logout()} style={styles.logoutRow}>
           <Text style={styles.logoutText}>{t('common.logOut')}</Text>
@@ -64,6 +76,8 @@ const styles = StyleSheet.create({
   rowText: { fontSize: 15, color: colors.text },
   chevron: { fontSize: 18, color: colors.textMuted },
   footer: { padding: spacing.lg, gap: spacing.md },
+  linksRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  linkText: { color: colors.accent, fontSize: 14 },
   logoutRow: { alignItems: 'flex-start' },
   logoutText: { color: colors.danger, fontSize: 14, fontWeight: '600' },
 });

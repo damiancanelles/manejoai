@@ -37,6 +37,7 @@ export const es: Record<string, string> = {
   'nav.settings': 'Configuración',
   'nav.billing': 'Facturación',
   'nav.openMenu': 'Abrir menú',
+  'nav.contactSupport': 'Contactar soporte',
   'nav.language': 'Idioma',
 
   // Job statuses
@@ -146,6 +147,9 @@ export const es: Record<string, string> = {
   'landing.cta.body': 'Configura tu negocio gratis y envía tu primera factura profesional hoy.',
   'landing.cta.button': 'Crea tu cuenta',
   'landing.footer.tagline': '© {year} manejoai. Hecho para prestadores, no para hojas de cálculo.',
+  'landing.footer.support': 'Soporte',
+  'landing.footer.terms': 'Términos del servicio',
+  'landing.footer.privacy': 'Política de privacidad',
 
   // Login
   'login.error': 'No se pudo iniciar sesión',
@@ -155,6 +159,28 @@ export const es: Record<string, string> = {
   'login.submitting': 'Iniciando sesión…',
   'login.newHere': '¿Nuevo por aquí?',
   'login.createAccount': 'Crear una cuenta',
+  'login.forgotPassword': '¿Olvidaste tu contraseña?',
+
+  // Forgot / reset password
+  'forgot.title': 'Restablece tu contraseña',
+  'forgot.intro': 'Escribe el correo de tu cuenta y te enviaremos un enlace para elegir una nueva contraseña.',
+  'forgot.submit': 'Enviar enlace',
+  'forgot.sent': 'Si {email} tiene una cuenta de manejoai, el enlace ya va en camino. Vence en 1 hora. Si no lo ves, revisa la carpeta de spam.',
+  'forgot.error': 'No se pudo enviar el enlace. Inténtalo de nuevo.',
+  'forgot.backToLogin': '← Volver a iniciar sesión',
+  'reset.title': 'Elige una nueva contraseña',
+  'reset.newPassword': 'Nueva contraseña',
+  'reset.submit': 'Guardar contraseña',
+  'reset.done': 'Tu contraseña se cambió. Ya puedes iniciar sesión con ella.',
+  'reset.error': 'No se pudo restablecer la contraseña.',
+  'reset.missingToken': 'Este enlace está incompleto. Abre de nuevo el enlace del correo o pide uno nuevo.',
+  'reset.goToLogin': 'Ir a iniciar sesión',
+  'reset.requestNew': 'Pedir un enlace nuevo',
+
+  // Not found
+  'notFound.title': 'Página no encontrada',
+  'notFound.body': 'La página que buscas no existe.',
+  'notFound.home': 'Ir a la página principal',
 
   // Register
   'register.title': 'Crea tu negocio',
@@ -176,6 +202,11 @@ export const es: Record<string, string> = {
   'register.submitting': 'Creando cuenta…',
   'register.haveAccount': '¿Ya tienes una cuenta?',
   'register.signIn': 'Iniciar sesión',
+  'register.agreePrefix': 'Acepto los',
+  'register.terms': 'Términos del servicio',
+  'register.agreeAnd': 'y la',
+  'register.privacy': 'Política de privacidad',
+  'register.errTerms': 'Para crear una cuenta, acepta los Términos del servicio y la Política de privacidad.',
 
   // Dashboard
   'dashboard.title': 'Panel',

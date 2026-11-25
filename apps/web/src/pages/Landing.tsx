@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import LogoMark from '../components/LogoMark';
 import LangToggle from '../components/LangToggle';
 import { useT } from '../i18n';
+import { SUPPORT_EMAIL } from '../lib/support';
 
 function Icon({ path, className = '' }: { path: string; className?: string }) {
   return (
@@ -272,9 +273,17 @@ export default function Landing() {
             <span className="font-semibold text-slate-700">manejoai</span>
           </div>
           <p>{t('landing.footer.tagline', { year: new Date().getFullYear() })}</p>
-          <Link to="/privacy" className="text-slate-400 hover:text-indigo-600 hover:underline">
-            Privacy Policy
-          </Link>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-slate-400 hover:text-indigo-600 hover:underline">
+              {t('landing.footer.support')}
+            </a>
+            <Link to="/terms" className="text-slate-400 hover:text-indigo-600 hover:underline">
+              {t('landing.footer.terms')}
+            </Link>
+            <Link to="/privacy" className="text-slate-400 hover:text-indigo-600 hover:underline">
+              {t('landing.footer.privacy')}
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

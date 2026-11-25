@@ -5,6 +5,7 @@ import { useT } from '../i18n';
 import LogoMark from './LogoMark';
 import LangToggle from './LangToggle';
 import AssistantWidget from './AssistantWidget';
+import { SUPPORT_EMAIL } from '../lib/support';
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
@@ -53,9 +54,20 @@ export default function Layout() {
         <NavLink to="/billing" className="mt-1 block text-slate-400 underline hover:text-indigo-600">
           {t('nav.billing')}
         </NavLink>
+        <a href={`mailto:${SUPPORT_EMAIL}`} className="mt-1 block text-slate-400 underline hover:text-indigo-600">
+          {t('nav.contactSupport')}
+        </a>
         <button onClick={logout} className="mt-1 text-slate-400 underline hover:text-indigo-600">
           {t('common.logOut')}
         </button>
+        <div className="mt-3 flex gap-3 text-xs text-slate-400">
+          <a href="/terms" target="_blank" rel="noopener" className="hover:text-indigo-600 hover:underline">
+            {t('landing.footer.terms')}
+          </a>
+          <a href="/privacy" target="_blank" rel="noopener" className="hover:text-indigo-600 hover:underline">
+            {t('landing.footer.privacy')}
+          </a>
+        </div>
         <div className="mt-3">
           <LangToggle />
         </div>

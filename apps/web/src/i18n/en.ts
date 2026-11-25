@@ -38,6 +38,7 @@ export const en: Record<string, string> = {
   'nav.settings': 'Settings',
   'nav.billing': 'Billing',
   'nav.openMenu': 'Open menu',
+  'nav.contactSupport': 'Contact support',
   'nav.language': 'Language',
 
   // Job statuses
@@ -147,6 +148,9 @@ export const en: Record<string, string> = {
   'landing.cta.body': 'Set up your business for free and send your first professional invoice today.',
   'landing.cta.button': 'Create your account',
   'landing.footer.tagline': '© {year} manejoai. Built for vendors, not spreadsheets.',
+  'landing.footer.support': 'Support',
+  'landing.footer.terms': 'Terms of Service',
+  'landing.footer.privacy': 'Privacy Policy',
 
   // Login
   'login.error': 'Login failed',
@@ -156,6 +160,28 @@ export const en: Record<string, string> = {
   'login.submitting': 'Signing in…',
   'login.newHere': 'New here?',
   'login.createAccount': 'Create an account',
+  'login.forgotPassword': 'Forgot password?',
+
+  // Forgot / reset password
+  'forgot.title': 'Reset your password',
+  'forgot.intro': "Enter your account's email and we'll send you a link to choose a new password.",
+  'forgot.submit': 'Send reset link',
+  'forgot.sent': 'If {email} has a manejoai account, a reset link is on its way. It expires in 1 hour. Check your spam folder if you don\'t see it.',
+  'forgot.error': 'Could not send the reset link. Try again.',
+  'forgot.backToLogin': '← Back to sign in',
+  'reset.title': 'Choose a new password',
+  'reset.newPassword': 'New password',
+  'reset.submit': 'Save new password',
+  'reset.done': 'Your password was changed. You can sign in with it now.',
+  'reset.error': 'Could not reset the password.',
+  'reset.missingToken': 'This reset link is incomplete. Open the link from the email again, or request a new one.',
+  'reset.goToLogin': 'Go to sign in',
+  'reset.requestNew': 'Request a new link',
+
+  // Not found
+  'notFound.title': 'Page not found',
+  'notFound.body': "The page you're looking for doesn't exist.",
+  'notFound.home': 'Go to the home page',
 
   // Register
   'register.title': 'Create your business',
@@ -177,6 +203,11 @@ export const en: Record<string, string> = {
   'register.submitting': 'Creating account…',
   'register.haveAccount': 'Already have an account?',
   'register.signIn': 'Sign in',
+  'register.agreePrefix': 'I agree to the',
+  'register.terms': 'Terms of Service',
+  'register.agreeAnd': 'and the',
+  'register.privacy': 'Privacy Policy',
+  'register.errTerms': 'Please agree to the Terms of Service and Privacy Policy to create an account.',
 
   // Dashboard
   'dashboard.title': 'Dashboard',

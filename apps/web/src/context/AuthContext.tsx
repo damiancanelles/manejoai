@@ -37,6 +37,8 @@ interface RegisterInput {
   name: string;
   email: string;
   password: string;
+  // Must be true - the server rejects sign-up without it.
+  acceptTerms: boolean;
 }
 
 interface AuthContextValue {

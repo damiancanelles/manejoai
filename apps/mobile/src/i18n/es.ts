@@ -157,6 +157,10 @@ export const es: Record<string, string> = {
   'login.submitting': 'Iniciando sesión…',
   'login.newHere': '¿Nuevo por aquí?',
   'login.createAccount': 'Crear una cuenta',
+  'login.forgotPassword': '¿Olvidaste tu contraseña?',
+  'more.contactSupport': 'Contactar soporte',
+  'more.terms': 'Términos del servicio',
+  'more.privacy': 'Política de privacidad',
 
   // Register
   'register.title': 'Crea tu negocio',

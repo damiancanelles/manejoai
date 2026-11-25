@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../auth/AuthContext';
 import { useT } from '../i18n';
 import LangToggle from '../components/LangToggle';
+import { openWebPage } from '../lib/links';
 import { colors, spacing } from '../theme';
 
 export default function LoginScreen() {
@@ -67,6 +68,10 @@ export default function LoginScreen() {
             secureTextEntry
             style={styles.input}
           />
+
+          <Pressable onPress={() => openWebPage('/forgot-password')} style={styles.forgotRow}>
+            <Text style={styles.forgotText}>{t('login.forgotPassword')}</Text>
+          </Pressable>
 
           <Pressable
             onPress={onSubmit}
@@ -135,4 +140,6 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   langRow: { alignItems: 'center', marginTop: spacing.lg },
+  forgotRow: { alignSelf: 'flex-end', marginTop: spacing.sm },
+  forgotText: { color: colors.accent, fontSize: 13 },
 });

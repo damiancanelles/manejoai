@@ -5,6 +5,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './src/auth/AuthContext';
 import { I18nProvider } from './src/i18n';
 import RootNavigator from './src/navigation/RootNavigator';
+import { reportClientError } from './src/api/client';
+
+// Report uncaught JS errors (then let React Native's own handler do what it
+// always did - red box in dev, crash in a release build). ErrorUtils is a
+// React Native global; guarded in case it's ever missing.
+const errorUtils = (globalThis as any).ErrorUtils;
+if (errorUtils?.getGlobalHandler && errorUtils?.setGlobalHandler) {
+  const previousHandler = errorUtils.getGlobalHandler();
+  errorUtils.setGlobalHandler((error: unknown, isFatal?: boolean) => {
+    const err = error instanceof Error ? error : new Error(String(error));
+    reportClientError(err.message, err.stack, isFatal ? 'fatal' : undefined);
+    previousHandler?.(error, isFatal);
+  });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {

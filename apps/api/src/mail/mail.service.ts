@@ -20,6 +20,16 @@ export interface SendEmailInput {
   // single business behind it - falls back to the MAIL_FROM/MAIL_REPLY_TO
   // env vars, which is all this app had before businesses existed.
   business?: { name: string; emailSlug: string; replyToEmail?: string | null };
+  // Set only by AlertsService on its own alert emails, so a failed alert
+  // doesn't trigger another alert.
+  skipFailureAlert?: boolean;
+}
+
+export interface MailFailure {
+  to: string;
+  subject: string;
+  status: number | 'network';
+  error: string;
 }
 
 /**
@@ -38,9 +48,24 @@ export interface SendEmailInput {
 export class MailService {
   private logger = new Logger(MailService.name);
   private driver: string;
+  private failureListener: ((info: MailFailure) => void) | null = null;
 
   constructor(private config: ConfigService) {
     this.driver = this.config.get<string>('MAIL_DRIVER', 'console');
+  }
+
+  /** Registered by AlertsService - called whenever a real send fails. */
+  setFailureListener(fn: ((info: MailFailure) => void) | null) {
+    this.failureListener = fn;
+  }
+
+  private reportFailure(input: SendEmailInput, status: MailFailure['status'], error: string) {
+    if (input.skipFailureAlert) return;
+    try {
+      this.failureListener?.({ to: input.to, subject: input.subject, status, error });
+    } catch {
+      /* alerting is best-effort - never let it break a send */
+    }
   }
 
   private resolveFrom(business?: SendEmailInput['business']): string {
@@ -48,7 +73,9 @@ export class MailService {
       const domain = this.config.get<string>('MAIL_SENDING_DOMAIN', 'manejoai.cloud');
       return `${business.name} <${business.emailSlug}@${domain}>`;
     }
-    return this.config.get<string>('MAIL_FROM') ?? '';
+    // System emails (password reset, alerts) aren't from any one business -
+    // MAIL_SYSTEM_FROM lets them say "manejoai" instead of MAIL_FROM's name.
+    return this.config.get<string>('MAIL_SYSTEM_FROM') || this.config.get<string>('MAIL_FROM') || '';
   }
 
   private resolveReplyTo(business?: SendEmailInput['business']): string | undefined {
@@ -87,29 +114,38 @@ export class MailService {
       return;
     }
 
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from,
-        to: input.to,
-        subject: input.subject,
-        html: input.html,
-        ...(replyTo ? { reply_to: replyTo } : {}),
-        // Resend wants attachment content as base64 (https://resend.com/docs/api-reference/emails/send-email)
-        attachments: input.attachments?.map((a) => ({
-          filename: a.filename,
-          content: a.content.toString('base64'),
-        })),
-      }),
-    });
+    let res: Response;
+    try {
+      res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from,
+          to: input.to,
+          subject: input.subject,
+          html: input.html,
+          ...(replyTo ? { reply_to: replyTo } : {}),
+          // Resend wants attachment content as base64 (https://resend.com/docs/api-reference/emails/send-email)
+          attachments: input.attachments?.map((a) => ({
+            filename: a.filename,
+            content: a.content.toString('base64'),
+          })),
+        }),
+      });
+    } catch (err) {
+      // Same behavior as before (the error still propagates to the caller),
+      // plus an alert.
+      this.reportFailure(input, 'network', (err as Error).message);
+      throw err;
+    }
 
     if (!res.ok) {
       const body = await res.text();
       this.logger.error(`Resend send failed (${res.status}): ${body}`);
+      this.reportFailure(input, res.status, body.slice(0, 1000));
     }
   }
 }

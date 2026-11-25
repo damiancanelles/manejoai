@@ -21,6 +21,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -38,6 +39,10 @@ export default function Register() {
       setError(t('register.errShort'));
       return;
     }
+    if (!acceptTerms) {
+      setError(t('register.errTerms'));
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -49,6 +54,7 @@ export default function Register() {
         name,
         email,
         password,
+        acceptTerms,
       });
       navigate('/dashboard');
     } catch (err: any) {
@@ -131,6 +137,27 @@ export default function Register() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             className={inputClass}
           />
+        </label>
+
+        <label className="mb-4 flex items-start gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            required
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span>
+            {t('register.agreePrefix')}{' '}
+            <Link to="/terms" target="_blank" className="text-indigo-600 hover:underline">
+              {t('register.terms')}
+            </Link>{' '}
+            {t('register.agreeAnd')}{' '}
+            <Link to="/privacy" target="_blank" className="text-indigo-600 hover:underline">
+              {t('register.privacy')}
+            </Link>
+            .
+          </span>
         </label>
 
         <button

@@ -1,0 +1,76 @@
+import { FormEvent, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../api/client';
+import { useI18n } from '../i18n';
+import LogoMark from '../components/LogoMark';
+import LangToggle from '../components/LangToggle';
+
+export default function ForgotPassword() {
+  const { t, lang } = useI18n();
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      // The API answers the same whether or not the email has an account.
+      await api.post('/auth/forgot-password', { email, lang });
+      setSent(true);
+    } catch (err: any) {
+      setError(err.message || t('forgot.error'));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-indigo-50 via-slate-50 to-amber-50 px-4">
+      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-lg">
+        <Link to="/" className="mb-6 flex flex-col items-center">
+          <LogoMark size={48} />
+          <h1 className="mt-3 text-xl font-bold tracking-tight text-slate-900">{t('forgot.title')}</h1>
+        </Link>
+
+        {sent ? (
+          <p className="rounded bg-green-50 p-3 text-sm text-green-800">{t('forgot.sent', { email })}</p>
+        ) : (
+          <>
+            <p className="mb-4 text-sm text-slate-500">{t('forgot.intro')}</p>
+            {error && <div className="mb-3 rounded bg-red-50 p-2 text-sm text-red-700">{error}</div>}
+            <label className="mb-4 block text-sm">
+              {t('login.email')}
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded bg-indigo-600 py-2 text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {submitting ? t('common.sending') : t('forgot.submit')}
+            </button>
+          </>
+        )}
+
+        <p className="mt-4 text-center text-sm text-slate-500">
+          <Link to="/login" className="text-indigo-600 hover:underline">
+            {t('forgot.backToLogin')}
+          </Link>
+        </p>
+
+        <div className="mt-4 flex justify-center">
+          <LangToggle />
+        </div>
+      </form>
+    </div>
+  );
+}

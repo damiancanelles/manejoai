@@ -84,6 +84,27 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json();
 }
 
+/**
+ * Crash report to POST /api/client-errors (alerts by email/webhook - see
+ * apps/api/src/monitoring). Best-effort: never throws, no auth needed, and
+ * each distinct message is sent at most once per app launch.
+ */
+const reportedErrors = new Set<string>();
+export function reportClientError(message: string, stack?: string, where?: string) {
+  const msg = (message || 'Unknown error').slice(0, 500);
+  if (reportedErrors.has(msg) || reportedErrors.size >= 10) return;
+  reportedErrors.add(msg);
+  try {
+    void fetch(`${API_BASE}/api/client-errors`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: 'mobile', message: msg, stack: stack?.slice(0, 4000), where: where?.slice(0, 200) }),
+    }).catch(() => {});
+  } catch {
+    /* reporting must never cause another error */
+  }
+}
+
 export const api = {
   get: <T,>(path: string) => request<T>(path),
   post: <T,>(path: string, body?: unknown) =>

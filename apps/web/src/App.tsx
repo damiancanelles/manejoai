@@ -5,6 +5,10 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import NotFound from './pages/NotFound';
 import Dashboard from './pages/Dashboard';
 import Accounts from './pages/Accounts';
 import AccountDetail from './pages/AccountDetail';
@@ -44,6 +48,9 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route element={<ProtectedRoute />}>
         {/* No sidebar/Layout here - a super-admin has no business of their
             own to navigate (Jobs/Invoices/etc are meaningless for them),
@@ -76,6 +83,8 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Route>
+      {/* Anything unmatched - used to render a blank page. */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import LogoMark from '../components/LogoMark';
+import LegalFooter from '../components/LegalFooter';
 
 // Static English legal text, not run through the app's i18n dictionary -
 // unlike the rest of the UI, a policy like this needs one authoritative
@@ -19,7 +20,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center gap-2 px-4 py-4">
           <Link to="/" className="flex items-center gap-2">
@@ -29,7 +30,7 @@ export default function Privacy() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-10">
+      <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10">
         <h1 className="text-2xl font-bold text-slate-900">Privacy Policy</h1>
         <p className="mt-1 text-sm text-slate-500">Effective {EFFECTIVE_DATE}</p>
 
@@ -158,6 +159,8 @@ export default function Privacy() {
           </p>
         </Section>
       </main>
+
+      <LegalFooter />
     </div>
   );
 }

@@ -73,9 +73,8 @@ to `npm install` or run a build in the environment that wrote it, so treat
 the very first `npm install` on your machine as the real first test. Beyond
 that, worth knowing before you rely on this day to day:
 
-- No "forgot password" or "change password" screen - use Prisma Studio
-  (`npm run prisma:studio`) to update a user's `passwordHash` by hand for now
-  if needed.
+- Forgot password: /forgot-password emails a one-hour, single-use link to
+  /reset-password (needs `FRONTEND_URL` and a real `MAIL_DRIVER` to arrive).
 - No customer-facing portal or online payment collection - matches what you
   described (checks/wire, tracked manually), but flag it if that changes.
 - The Excel importer defaults every imported account to `INDIVIDUAL` type and

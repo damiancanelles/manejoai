@@ -160,6 +160,10 @@ export const en: Record<string, string> = {
   'login.submitting': 'Signing in…',
   'login.newHere': 'New here?',
   'login.createAccount': 'Create an account',
+  'login.forgotPassword': 'Forgot password?',
+  'more.contactSupport': 'Contact support',
+  'more.terms': 'Terms of Service',
+  'more.privacy': 'Privacy Policy',
 
   // Register
   'register.title': 'Create your business',

@@ -48,7 +48,7 @@ export default function Login() {
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </label>
-        <label className="mb-4 block text-sm">
+        <label className="mb-1 block text-sm">
           {t('login.password')}
           <input
             type="password"
@@ -58,6 +58,11 @@ export default function Login() {
             className="mt-1 w-full rounded border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
           />
         </label>
+        <div className="mb-4 text-right text-sm">
+          <Link to="/forgot-password" className="text-indigo-600 hover:underline">
+            {t('login.forgotPassword')}
+          </Link>
+        </div>
         <button
           type="submit"
           disabled={submitting}

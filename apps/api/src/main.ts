@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { AlertsService } from './monitoring/alerts.service';
 
 async function bootstrap() {
   // rawBody: true exposes req.rawBody (a Buffer) on every request, needed
@@ -34,6 +35,23 @@ async function bootstrap() {
     }),
   );
   app.setGlobalPrefix('api');
+
+  // Errors outside any request (a timer, a dropped promise) never reach the
+  // global exception filter - alert on those too. Node's default for an
+  // uncaught exception is to exit, and that's kept: alert, then exit so
+  // Heroku restarts the dyno in a clean state.
+  const alerts = app.get(AlertsService);
+  process.on('unhandledRejection', (reason) => {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    void alerts.notify(`Unhandled promise rejection: ${err.message}`.slice(0, 180), err.stack ?? err.message);
+  });
+  process.on('uncaughtException', (err) => {
+    void alerts
+      .notify(`Uncaught exception: ${err.message}`.slice(0, 180), err.stack ?? err.message)
+      .finally(() => process.exit(1));
+    // Don't hang forever if the alert itself can't go out.
+    setTimeout(() => process.exit(1), 5000).unref();
+  });
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3001;
   await app.listen(port);
